@@ -1,0 +1,79 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
+import { authService } from "@/features/auth/auth.service";
+
+export function useCurrentUser() {
+  return useQuery({
+    queryKey: queryKeys.auth.currentUser,
+    queryFn: ({ signal }) => authService.getCurrentUser(signal),
+    retry: false,
+    staleTime: 5 * 60_000,
+    gcTime: 30 * 60_000,
+    refetchOnMount: false,
+  });
+}
+
+export function useBootstrapStatus() {
+  return useQuery({
+    queryKey: ["auth", "bootstrap-status"],
+    queryFn: ({ signal }) => authService.getBootstrapStatus(signal),
+    retry: false,
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function useSignIn() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: authService.signIn,
+    onSuccess: (user) => {
+      queryClient.setQueryData(queryKeys.auth.currentUser, user);
+    },
+  });
+}
+
+export function useBootstrapAdmin() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: authService.bootstrapAdmin,
+    onSuccess: (user) => {
+      queryClient.setQueryData(queryKeys.auth.currentUser, user);
+    },
+  });
+}
+
+export function useSignOut() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: authService.signOut,
+    onSuccess: async () => {
+      queryClient.setQueryData(queryKeys.auth.currentUser, null);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
+    },
+  });
+}
+
+export function useUploadProfileAvatar() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: authService.uploadProfileAvatar,
+    onSuccess: (user) => {
+      queryClient.setQueryData(queryKeys.auth.currentUser, user);
+    },
+  });
+}
+
+export function useRemoveProfileAvatar() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: authService.removeProfileAvatar,
+    onSuccess: (user) => {
+      queryClient.setQueryData(queryKeys.auth.currentUser, user);
+    },
+  });
+}

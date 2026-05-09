@@ -1,0 +1,63 @@
+export const queryKeys = {
+  auth: {
+    currentUser: ["auth", "current-user"] as const,
+  },
+  clientAuth: {
+    currentClient: ["client-auth", "current-client"] as const,
+  },
+  applications: {
+    all: ["applications"] as const,
+    list: (params: {
+      page: number;
+      pageSize: number;
+      search: string;
+      country: string;
+      stage: string;
+      status: string;
+      staffId: string;
+      clientId: string;
+      dateFrom: string;
+      dateTo: string;
+    }) => ["applications", "list", params] as const,
+    detail: (id: string) => ["applications", "detail", id] as const,
+    own: ["applications", "own"] as const,
+  },
+  clients: {
+    all: ["clients"] as const,
+    list: (params: {
+      page: number;
+      pageSize: number;
+      search: string;
+      status: string;
+      country: string;
+      targetCountry: string;
+      targetService: string;
+      staffId: string;
+    }) =>
+      ["clients", "list", params] as const,
+    detail: (id: string) => ["clients", "detail", id] as const,
+  },
+  leads: {
+    all: ["leads"] as const,
+    list: (params: {
+      page: number;
+      pageSize: number;
+      search: string;
+      status: string;
+      country: string;
+      service: string;
+      staffId: string;
+      dateFrom: string;
+      dateTo: string;
+    }) => ["leads", "list", params] as const,
+    detail: (id: string) => ["leads", "detail", id] as const,
+  },
+  users: {
+    all: ["internal-users"] as const,
+    list: (params: { page: number; pageSize: number; search: string }) =>
+      ["internal-users", "list", params] as const,
+  },
+  siteContent: {
+    public: ["site-content", "public"] as const,
+  },
+} as const;

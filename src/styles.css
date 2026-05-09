@@ -1,0 +1,680 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+@import "bootstrap-daterangepicker/daterangepicker.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-mint: var(--mint);
+  --color-dark: var(--dark);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-ink-foreground: var(--brand-ink-foreground);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-line: var(--brand-line);
+  --font-display: "Plus Jakarta Sans", sans-serif;
+  --font-sans: "Inter", sans-serif;
+}
+
+:root {
+  --radius: 0.75rem;
+  /* Brand: dark green #022816, gold #fbb040, mint #a4ffee */
+  --dark: oklch(0.25 0.05 165);
+  --mint: oklch(0.93 0.08 180);
+  --brand-ink: oklch(0.36 0.06 304);
+  --brand-ink-foreground: oklch(0.98 0.01 95);
+  --brand-soft: color-mix(in oklab, white 84%, var(--mint) 16%);
+  --brand-line: color-mix(in oklab, var(--primary) 26%, var(--border));
+
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.25 0.05 165);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.25 0.05 165);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.25 0.05 165);
+  --primary: oklch(0.78 0.16 75); /* gold #fbb040 */
+  --primary-foreground: oklch(0.25 0.05 165);
+  --secondary: oklch(0.25 0.05 165); /* dark green */
+  --secondary-foreground: oklch(0.98 0.02 180);
+  --muted: oklch(0.96 0.01 180);
+  --muted-foreground: oklch(0.45 0.03 165);
+  --accent: oklch(0.93 0.08 180); /* mint */
+  --accent-foreground: oklch(0.25 0.05 165);
+  --destructive: oklch(0.52 0.12 336);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.9 0.02 180);
+  --input: oklch(0.9 0.02 180);
+  --ring: oklch(0.78 0.16 75);
+}
+
+@layer base {
+  * { border-color: var(--color-border); }
+  html { scroll-behavior: smooth; }
+  a[href],
+  button:not(:disabled),
+  summary,
+  select:not(:disabled) {
+    cursor: pointer;
+  }
+  select:not([multiple]):not([size]):not([class*="appearance-none"]) {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding-inline-end: 2.75rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M4 6.5L8 10.5L12 6.5' stroke='%2364748b' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-position: right 1rem center;
+    background-repeat: no-repeat;
+    background-size: 1rem 1rem;
+  }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+  }
+  h1, h2, h3, h4, h5 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+}
+
+@layer utilities {
+  .site-shell {
+    width: 100%;
+    max-width: 1380px;
+    margin-inline: auto;
+    padding-inline: 1.5rem;
+  }
+
+  .bg-dark { background-color: var(--dark); }
+  .text-dark { color: var(--dark); }
+  .bg-mint { background-color: var(--mint); }
+  .text-mint { color: var(--mint); }
+  .bg-gold { background-color: var(--primary); }
+  .text-gold { color: var(--primary); }
+
+  .btn-gold {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: var(--primary); color: var(--dark);
+    padding: 0.85rem 1.6rem; border-radius: 999px;
+    font-weight: 600; font-family: var(--font-display);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 24px -8px color-mix(in oklab, var(--primary) 60%, transparent);
+  }
+  .btn-gold:hover { transform: translateY(-2px); filter: brightness(1.05); }
+
+  .btn-dark {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: var(--dark); color: white;
+    padding: 0.85rem 1.6rem; border-radius: 999px;
+    font-weight: 600; font-family: var(--font-display);
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  .btn-dark:hover { transform: translateY(-2px); }
+
+  .btn-ink {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: var(--brand-ink); color: var(--brand-ink-foreground);
+    padding: 0.85rem 1.6rem; border-radius: 999px;
+    font-weight: 600; font-family: var(--font-display);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 24px -10px color-mix(in oklab, var(--brand-ink) 70%, transparent);
+  }
+  .btn-ink:hover { transform: translateY(-2px); filter: brightness(1.06); }
+
+  .section-label {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    color: var(--primary); font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.15em;
+    font-size: 0.8rem;
+  }
+  .section-label::before, .section-label::after {
+    content: "✦"; color: var(--primary);
+  }
+
+  .clip-angle {
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 8% 100%, 0 85%);
+  }
+
+  .section-label::before, .section-label::after {
+    content: "+";
+    color: var(--primary);
+  }
+
+  .about-stat-number {
+    background: linear-gradient(
+      135deg,
+      var(--primary) 0%,
+      color-mix(in oklab, var(--primary) 62%, white) 28%,
+      var(--mint) 58%,
+      var(--dark) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+
+  .about-feature-card::before {
+    content: "";
+    position: absolute;
+    left: -34px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-top: 18px solid transparent;
+    border-bottom: 18px solid transparent;
+    border-right: 34px solid white;
+  }
+
+  .about-feature-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    box-shadow: inset 0 0 0 1px rgba(27, 34, 51, 0.04);
+    pointer-events: none;
+  }
+
+  @media (max-width: 1023px) {
+    .about-feature-card::before {
+      display: none;
+    }
+  }
+
+  .why-choose-card {
+    background: color-mix(in oklab, var(--brand-soft) 88%, white);
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--brand-line) 62%, white);
+  }
+
+  .why-choose-card:hover {
+    background: var(--dark);
+  }
+
+  .why-choose-card::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 3px;
+    background: transparent;
+    transition: background-color 0.3s ease;
+  }
+
+  .why-choose-card:hover::after {
+    background: var(--primary);
+  }
+
+  .why-choose-note {
+    position: relative;
+  }
+
+  .why-choose-note::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.4rem;
+    width: 2px;
+    height: 1.75rem;
+    background: var(--primary);
+  }
+
+  .countries-offer-section::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 14% 12%, rgba(255, 255, 255, 0.06) 0, rgba(255, 255, 255, 0.06) 11%, transparent 11.5%),
+      radial-gradient(circle at 27% 10%, rgba(255, 255, 255, 0.05) 0, rgba(255, 255, 255, 0.05) 9%, transparent 9.5%),
+      radial-gradient(circle at 75% 18%, rgba(255, 255, 255, 0.04) 0, rgba(255, 255, 255, 0.04) 10%, transparent 10.5%),
+      radial-gradient(circle at 92% 72%, rgba(255, 255, 255, 0.04) 0, rgba(255, 255, 255, 0.04) 14%, transparent 14.5%),
+      radial-gradient(circle at 18% 88%, rgba(255, 255, 255, 0.04) 0, rgba(255, 255, 255, 0.04) 12%, transparent 12.5%);
+    opacity: 0.9;
+    pointer-events: none;
+  }
+
+  .countries-offer-section::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(ellipse 30% 20% at 12% 15%, rgba(255,255,255,0.05) 0 60%, transparent 61%),
+      radial-gradient(ellipse 22% 16% at 32% 12%, rgba(255,255,255,0.04) 0 60%, transparent 61%),
+      radial-gradient(ellipse 18% 12% at 69% 18%, rgba(255,255,255,0.04) 0 60%, transparent 61%),
+      radial-gradient(ellipse 26% 18% at 84% 73%, rgba(255,255,255,0.04) 0 60%, transparent 61%),
+      radial-gradient(ellipse 40% 24% at 32% 88%, rgba(255,255,255,0.035) 0 60%, transparent 61%);
+    opacity: 0.7;
+    pointer-events: none;
+  }
+
+  .flag-block {
+    position: relative;
+    width: 40px;
+    height: 26px;
+    overflow: hidden;
+    box-shadow: 0 0 0 1px rgba(23, 33, 51, 0.08);
+  }
+
+  .flag-germany {
+    background: linear-gradient(to bottom, #111111 0 33.33%, #d4171f 33.33% 66.66%, #f3c12f 66.66% 100%);
+  }
+
+  .flag-europe {
+    background: #1947ba;
+  }
+
+  .flag-europe::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 12px;
+    height: 12px;
+    transform: translate(-50%, -50%);
+    border-radius: 999px;
+    box-shadow:
+      0 -7px 0 0 #f2c438,
+      5px -5px 0 0 #f2c438,
+      7px 0 0 0 #f2c438,
+      5px 5px 0 0 #f2c438,
+      0 7px 0 0 #f2c438,
+      -5px 5px 0 0 #f2c438,
+      -7px 0 0 0 #f2c438,
+      -5px -5px 0 0 #f2c438;
+  }
+
+  .flag-portugal {
+    background: linear-gradient(to right, #0e8c46 0 42%, #ff1f2d 42% 100%);
+  }
+
+  .flag-portugal::after {
+    content: "";
+    position: absolute;
+    left: 36%;
+    top: 50%;
+    width: 8px;
+    height: 8px;
+    transform: translate(-50%, -50%);
+    border-radius: 999px;
+    background: #f2c438;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
+  }
+
+  .flag-argentina {
+    background: linear-gradient(to bottom, #80a9e7 0 33.33%, #ffffff 33.33% 66.66%, #80a9e7 66.66% 100%);
+  }
+
+  .flag-argentina::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 7px;
+    height: 7px;
+    transform: translate(-50%, -50%);
+    border-radius: 999px;
+    background: #eab933;
+  }
+
+  .flag-united-kingdom {
+    background:
+      linear-gradient(to bottom right, transparent 44%, white 44% 56%, transparent 56%),
+      linear-gradient(to top right, transparent 44%, white 44% 56%, transparent 56%),
+      linear-gradient(to right, transparent 38%, white 38% 62%, transparent 62%),
+      linear-gradient(to bottom, transparent 34%, white 34% 66%, transparent 66%),
+      linear-gradient(to bottom right, transparent 47%, #d91f33 47% 53%, transparent 53%),
+      linear-gradient(to top right, transparent 47%, #d91f33 47% 53%, transparent 53%),
+      linear-gradient(to right, transparent 43%, #d91f33 43% 57%, transparent 57%),
+      linear-gradient(to bottom, transparent 39%, #d91f33 39% 61%, transparent 61%),
+      #2948a6;
+  }
+
+  .flag-united-states {
+    background:
+      linear-gradient(
+        to bottom,
+        #b22234 0 7.69%,
+        #ffffff 7.69% 15.38%,
+        #b22234 15.38% 23.07%,
+        #ffffff 23.07% 30.76%,
+        #b22234 30.76% 38.45%,
+        #ffffff 38.45% 46.14%,
+        #b22234 46.14% 53.83%,
+        #ffffff 53.83% 61.52%,
+        #b22234 61.52% 69.21%,
+        #ffffff 69.21% 76.9%,
+        #b22234 76.9% 84.59%,
+        #ffffff 84.59% 92.28%,
+        #b22234 92.28% 100%
+      );
+  }
+
+  .flag-united-states::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 40%;
+    height: 53%;
+    background: #3c3b6e;
+  }
+
+  .flag-united-states::after {
+    content: "";
+    position: absolute;
+    left: 6px;
+    top: 5px;
+    width: 2px;
+    height: 2px;
+    border-radius: 999px;
+    background: #ffffff;
+    box-shadow:
+      5px 0 0 #ffffff,
+      10px 0 0 #ffffff,
+      0 5px 0 #ffffff,
+      5px 5px 0 #ffffff,
+      10px 5px 0 #ffffff,
+      0 10px 0 #ffffff,
+      5px 10px 0 #ffffff,
+      10px 10px 0 #ffffff;
+  }
+
+  .team-member-frame {
+    background: var(--dark);
+  }
+
+  .team-member-frame::before,
+  .team-member-frame::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    width: 18px;
+    height: 46px;
+    background: white;
+    z-index: 1;
+  }
+
+  .team-member-frame::before {
+    left: 0;
+    border-top-right-radius: 6px;
+  }
+
+  .team-member-frame::after {
+    right: 0;
+    border-top-left-radius: 6px;
+  }
+
+  .team-member-info::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 2px;
+    width: 3px;
+    height: 30px;
+    background: var(--primary);
+    border-radius: 999px;
+  }
+
+  .footer-shell::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 30%),
+      radial-gradient(circle at 15% 20%, rgba(255,255,255,0.03), transparent 35%);
+    pointer-events: none;
+  }
+
+  .footer-bottom-bar {
+    position: relative;
+    color: var(--dark);
+    background: var(--primary);
+    clip-path: polygon(6% 0, 94% 0, 100% 100%, 0 100%);
+  }
+
+  @media (max-width: 767px) {
+    .footer-bottom-bar {
+      clip-path: none;
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+
+  .contact-ribbon {
+    filter: drop-shadow(0 10px 20px rgba(17, 24, 39, 0.08));
+  }
+
+  .contact-ribbon::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -34px;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 32px solid transparent;
+    border-right: 32px solid transparent;
+    border-top: 34px solid white;
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(28px) scale(0.985);
+    transition:
+      opacity 0.7s ease,
+      transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: var(--reveal-delay, 0ms);
+    will-change: opacity, transform;
+  }
+
+  .reveal-visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal,
+    .reveal-visible {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+  }
+
+  .daterangepicker {
+    width: auto;
+    min-width: 640px;
+    border: 1px solid color-mix(in oklab, var(--border) 88%, var(--dark) 12%);
+    border-radius: 24px;
+    box-shadow: 0 30px 70px -36px rgba(2, 40, 22, 0.35);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.4;
+    overflow: hidden;
+  }
+
+  .daterangepicker:before,
+  .daterangepicker:after {
+    display: none;
+  }
+
+  .daterangepicker .ranges {
+    float: none;
+    width: 180px;
+    margin: 0;
+    padding: 18px 0;
+    background: color-mix(in oklab, var(--mint) 28%, white);
+    border-right: 1px solid color-mix(in oklab, var(--border) 88%, var(--dark) 12%);
+  }
+
+  .daterangepicker .ranges ul {
+    width: 100%;
+  }
+
+  .daterangepicker .ranges li {
+    margin: 0 10px 6px;
+    padding: 11px 14px;
+    border: none;
+    border-radius: 16px;
+    color: var(--muted-foreground);
+    font-size: 13px;
+    font-weight: 600;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  .daterangepicker .ranges li:hover,
+  .daterangepicker .ranges li.active {
+    background: var(--dark);
+    color: white;
+  }
+
+  .daterangepicker .drp-calendar {
+    max-width: 308px;
+  }
+
+  .daterangepicker .drp-calendar.left {
+    padding: 18px 8px 18px 18px;
+  }
+
+  .daterangepicker .drp-calendar.right {
+    padding: 18px 18px 18px 8px;
+  }
+
+  .daterangepicker .calendar-table {
+    border: none;
+  }
+
+  .daterangepicker .calendar-table table {
+    border-collapse: separate;
+    border-spacing: 0 4px;
+  }
+
+  .daterangepicker .calendar-table th,
+  .daterangepicker .calendar-table td {
+    min-width: 36px;
+    width: 36px;
+    height: 34px;
+    border-radius: 12px;
+    font-size: 12px;
+  }
+
+  .daterangepicker .calendar-table th.month {
+    color: var(--foreground);
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 800;
+  }
+
+  .daterangepicker .calendar-table th.available:hover,
+  .daterangepicker .calendar-table td.available:hover {
+    background: color-mix(in oklab, var(--mint) 60%, white);
+    color: var(--foreground);
+  }
+
+  .daterangepicker td.in-range {
+    background: color-mix(in oklab, var(--mint) 62%, white);
+    color: var(--foreground);
+  }
+
+  .daterangepicker td.active,
+  .daterangepicker td.active:hover {
+    background: var(--primary);
+    color: var(--dark);
+  }
+
+  .daterangepicker td.off,
+  .daterangepicker td.off.in-range,
+  .daterangepicker td.off.start-date,
+  .daterangepicker td.off.end-date {
+    color: color-mix(in oklab, var(--muted-foreground) 75%, white);
+  }
+
+  .daterangepicker .drp-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 18px 18px;
+    border-top: 1px solid color-mix(in oklab, var(--border) 88%, var(--dark) 12%);
+    background: white;
+  }
+
+  .daterangepicker .drp-selected {
+    margin-right: auto;
+    color: var(--muted-foreground);
+    font-size: 13px;
+    line-height: 36px;
+  }
+
+  .daterangepicker .daterangepicker-action {
+    height: 40px;
+    min-width: 110px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    transition: transform 0.2s ease, filter 0.2s ease, background-color 0.2s ease;
+  }
+
+  .daterangepicker .daterangepicker-action:hover {
+    transform: translateY(-1px);
+  }
+
+  .daterangepicker .daterangepicker-apply {
+    background: var(--primary);
+    color: var(--dark);
+    border-color: var(--primary);
+  }
+
+  .daterangepicker .daterangepicker-cancel {
+    background: white;
+    color: var(--muted-foreground);
+    border-color: color-mix(in oklab, var(--border) 80%, var(--dark) 20%);
+  }
+
+  @media (max-width: 960px) {
+    .daterangepicker {
+      min-width: 0;
+      max-width: calc(100vw - 24px);
+    }
+
+    .daterangepicker .ranges {
+      width: 100%;
+      border-right: none;
+      border-bottom: 1px solid color-mix(in oklab, var(--border) 88%, var(--dark) 12%);
+    }
+
+    .daterangepicker .drp-calendar.left,
+    .daterangepicker .drp-calendar.right {
+      padding: 16px;
+    }
+  }
+}
