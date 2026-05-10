@@ -191,7 +191,16 @@ export function DashboardUsersPage() {
                               <span className="font-semibold text-slate-900">{user.name}</span>
                             </div>
                           </td>
-                          <td className="px-5 py-4 text-center text-slate-600">{user.email}</td>
+                          <td className="px-5 py-4 text-center text-slate-600">
+                            <div className="space-y-2">
+                              <div>{user.email}</div>
+                              <div className="flex justify-center">
+                                <Badge variant={user.emailVerifiedAt ? "success" : "light"}>
+                                  {user.emailVerifiedAt ? "Verified" : "Pending verification"}
+                                </Badge>
+                              </div>
+                            </div>
+                          </td>
                           <td className="px-5 py-4 text-center">
                             <div className="flex justify-center">
                               <Badge variant={user.role === "admin" ? "dark" : "primary"}>
@@ -303,8 +312,12 @@ export function DashboardUsersPage() {
                       });
                       toast.success("Internal user updated.");
                     } else {
-                      await createUserMutation.mutateAsync(userForm);
-                      toast.success("Internal user created.");
+                      const createdUser = await createUserMutation.mutateAsync(userForm);
+                      toast.success(
+                        createdUser.role === "admin"
+                          ? "Internal admin created."
+                          : "Staff user created. Verification email sent.",
+                      );
                     }
 
                     closeDialog();

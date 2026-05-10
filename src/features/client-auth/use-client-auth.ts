@@ -25,13 +25,8 @@ export function useClientSignIn() {
 }
 
 export function useClientSignUp() {
-  const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: clientAuthService.signUp,
-    onSuccess: (client) => {
-      queryClient.setQueryData(queryKeys.clientAuth.currentClient, client);
-    },
   });
 }
 

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { ChevronDown, LogOut, Menu, UserCircle2 } from "lucide-react";
+import { Bell, ChevronDown, LogOut, Menu, UserCircle2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -22,6 +22,14 @@ import {
   getUserInitials,
   getUserAvatarUrl,
 } from "@/features/dashboard/profile-utils";
+import {
+  useClientNotifications,
+  useInternalNotifications,
+  useMarkAllClientNotificationsRead,
+  useMarkAllInternalNotificationsRead,
+  useMarkClientNotificationRead,
+  useMarkInternalNotificationRead,
+} from "@/features/notifications/use-notifications";
 import { buildPath, useAppNavigate } from "@/lib/router";
 
 type DashboardLayoutActor = {
@@ -227,6 +235,37 @@ function Topbar({
     }
   };
 
+  const internalNotificationsQuery = useInternalNotifications(area !== "client");
+  const clientNotificationsQuery = useClientNotifications(area === "client");
+  const internalMarkReadMutation = useMarkInternalNotificationRead();
+  const clientMarkReadMutation = useMarkClientNotificationRead();
+  const internalReadAllMutation = useMarkAllInternalNotificationsRead();
+  const clientReadAllMutation = useMarkAllClientNotificationsRead();
+  const notifications =
+    area === "client"
+      ? clientNotificationsQuery.data
+      : internalNotificationsQuery.data;
+
+  const handleNotificationOpen = async (notification: {
+    id: string;
+    link: string | null;
+    isRead: boolean;
+  }) => {
+    try {
+      if (!notification.isRead) {
+        if (area === "client") {
+          await clientMarkReadMutation.mutateAsync(notification.id);
+        } else {
+          await internalMarkReadMutation.mutateAsync(notification.id);
+        }
+      }
+    } finally {
+      if (notification.link) {
+        navigate(notification.link);
+      }
+    }
+  };
+
   return (
     <header className="sticky top-4 z-20 rounded-[28px] border border-slate-200 bg-white px-5 py-4 shadow-sm xl:px-7">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
@@ -282,6 +321,79 @@ function Topbar({
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="relative inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-700 transition hover:bg-slate-100"
+                aria-label="Notifications"
+              >
+                <Bell className="h-5 w-5" />
+                {notifications && notifications.unreadCount > 0 ? (
+                  <span className="absolute right-2 top-2 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1 text-[11px] font-bold text-dark">
+                    {notifications.unreadCount > 9 ? "9+" : notifications.unreadCount}
+                  </span>
+                ) : null}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[360px] rounded-2xl border-slate-200 p-2">
+              <div className="flex items-center justify-between px-3 py-2">
+                <div>
+                  <p className="font-semibold text-slate-900">Notifications</p>
+                  <p className="text-xs text-slate-500">
+                    {notifications?.unreadCount ?? 0} unread
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled={!notifications || notifications.unreadCount === 0}
+                  onClick={() =>
+                    area === "client"
+                      ? clientReadAllMutation.mutate()
+                      : internalReadAllMutation.mutate()
+                  }
+                  className="text-xs font-semibold text-sky-700 disabled:text-slate-400"
+                >
+                  Mark all read
+                </button>
+              </div>
+              <DropdownMenuSeparator />
+              <div className="max-h-[360px] space-y-1 overflow-y-auto p-1">
+                {notifications?.items.length ? (
+                  notifications.items.map((notification) => (
+                    <button
+                      key={notification.id}
+                      type="button"
+                      onClick={() => void handleNotificationOpen(notification)}
+                      className={`block w-full rounded-xl px-3 py-3 text-left transition hover:bg-slate-50 ${
+                        notification.isRead ? "bg-white" : "bg-gold/10"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-semibold text-slate-900">{notification.title}</p>
+                          <p className="mt-1 text-sm leading-6 text-slate-600">
+                            {notification.body}
+                          </p>
+                        </div>
+                        {!notification.isRead ? (
+                          <span className="mt-1 h-2.5 w-2.5 rounded-full bg-gold" />
+                        ) : null}
+                      </div>
+                      <p className="mt-2 text-xs font-medium text-slate-400">
+                        {new Date(notification.createdAt).toLocaleString()}
+                      </p>
+                    </button>
+                  ))
+                ) : (
+                  <div className="px-3 py-8 text-center text-sm text-slate-500">
+                    No notifications yet.
+                  </div>
+                )}
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button

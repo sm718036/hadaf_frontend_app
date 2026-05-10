@@ -12,11 +12,13 @@ import {
   useCurrentUser,
   useSignIn,
 } from "@/features/auth/use-auth";
+import { authService } from "@/features/auth/auth.service";
 import {
   useClientSignIn,
   useClientSignUp,
   useCurrentClient,
 } from "@/features/client-auth/use-client-auth";
+import { clientAuthService } from "@/features/client-auth/client-auth.service";
 import { getDefaultInternalDashboardRoute } from "@/features/dashboard/access-control";
 
 type AuthMode = "client" | "staff";
@@ -34,6 +36,8 @@ export function AuthPage() {
   const clientSignUpMutation = useClientSignUp();
   const redirect = searchParams.get("redirect") || undefined;
   const modeParam = searchParams.get("mode");
+  const verifyToken = searchParams.get("verifyToken");
+  const verifyType = searchParams.get("verifyType");
   const mode = modeParam === "client" || modeParam === "staff" ? modeParam : undefined;
 
   const authMode = useMemo<AuthMode>(() => {
@@ -46,6 +50,10 @@ export function AuthPage() {
 
   const [clientView, setClientView] = useState<ClientView>("sign-in");
   const [rememberMe, setRememberMe] = useState(true);
+  const [verificationState, setVerificationState] = useState<{
+    status: "idle" | "loading" | "success" | "error";
+    message: string;
+  }>({ status: "idle", message: "" });
 
   const [staffName, setStaffName] = useState("");
   const [staffEmail, setStaffEmail] = useState("");
@@ -81,6 +89,57 @@ export function AuthPage() {
       navigate(getDefaultInternalDashboardRoute(currentUser), { replace: true });
     }
   }, [currentClient, currentUser, navigate, redirectTo, redirect]);
+
+  useEffect(() => {
+    if (!verifyToken || (verifyType !== "app_user" && verifyType !== "client")) {
+      return;
+    }
+
+    let cancelled = false;
+
+    setVerificationState({
+      status: "loading",
+      message: "Verifying your email address...",
+    });
+
+    const run = async () => {
+      try {
+        const result =
+          verifyType === "app_user"
+            ? await authService.verifyEmail(verifyToken)
+            : await clientAuthService.verifyEmail(verifyToken);
+
+        if (cancelled) {
+          return;
+        }
+
+        setVerificationState({
+          status: "success",
+          message: `${result.email} has been verified. You can sign in now.`,
+        });
+        toast.success("Email verified successfully.");
+        if (verifyType === "client") {
+          setClientView("sign-in");
+        }
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        setVerificationState({
+          status: "error",
+          message:
+            error instanceof Error ? error.message : "Unable to verify your email right now.",
+        });
+      }
+    };
+
+    void run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [verifyToken, verifyType]);
 
   const handleStaffSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -123,7 +182,7 @@ export function AuthPage() {
 
     try {
       if (clientView === "sign-up") {
-        await clientSignUpMutation.mutateAsync({
+        const result = await clientSignUpMutation.mutateAsync({
           name: clientName,
           email: clientEmail,
           phone: clientPhone,
@@ -131,7 +190,12 @@ export function AuthPage() {
           confirmPassword: clientConfirmPassword,
           rememberMe,
         });
-        toast.success("Client account created successfully.");
+        toast.success(result.message);
+        setVerificationState({ status: "success", message: result.message });
+        setClientView("sign-in");
+        setClientPassword("");
+        setClientConfirmPassword("");
+        return;
       } else {
         await clientSignInMutation.mutateAsync({
           email: clientEmail,
@@ -216,6 +280,20 @@ export function AuthPage() {
             {formTitle}
           </h2>
           <p className="mt-4 text-sm leading-7 text-slate-500">{formDescription}</p>
+
+          {verificationState.status !== "idle" ? (
+            <div
+              className={`mt-6 rounded-2xl border px-4 py-3 text-sm leading-6 ${
+                verificationState.status === "error"
+                  ? "border-red-200 bg-red-50 text-red-700"
+                  : verificationState.status === "loading"
+                    ? "border-sky-200 bg-sky-50 text-sky-700"
+                    : "border-emerald-200 bg-emerald-50 text-emerald-700"
+              }`}
+            >
+              {verificationState.message}
+            </div>
+          ) : null}
 
           {authMode === "client" ? (
             <>

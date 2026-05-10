@@ -27,6 +27,16 @@ export type ClientSessionUser = {
   updatedAt: string;
 };
 
+export type ClientSignUpResult = {
+  success: true;
+  message: string;
+};
+
+export type VerifyClientEmailResult = {
+  success: true;
+  email: string;
+};
+
 export const clientAuthService = {
   getCurrentClient: (signal?: AbortSignal) =>
     apiRequest<ClientSessionUser | null>("/api/client-auth/me", { signal }),
@@ -44,6 +54,10 @@ export const clientAuthService = {
   signIn: (input: ClientSignInInput) =>
     apiRequest<ClientSessionUser>("/api/client-auth/sign-in", { method: "POST", body: input }),
   signUp: (input: ClientSignUpInput) =>
-    apiRequest<ClientSessionUser>("/api/client-auth/sign-up", { method: "POST", body: input }),
+    apiRequest<ClientSignUpResult>("/api/client-auth/sign-up", { method: "POST", body: input }),
+  verifyEmail: (token: string) =>
+    apiRequest<VerifyClientEmailResult>(
+      `/api/client-auth/verify-email?token=${encodeURIComponent(token)}`,
+    ),
   signOut: () => apiRequest<{ success: true }>("/api/client-auth/sign-out", { method: "POST" }),
 };

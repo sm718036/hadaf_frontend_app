@@ -31,6 +31,7 @@ const internalUserSchema = z.object({
   avatarUrl: z.string().nullable(),
   role: userRoleSchema,
   permissions: z.array(permissionSchema),
+  emailVerifiedAt: z.string().nullable(),
   createdAt: z.string(),
 });
 

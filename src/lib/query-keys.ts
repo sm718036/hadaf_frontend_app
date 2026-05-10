@@ -5,6 +5,10 @@ export const queryKeys = {
   clientAuth: {
     currentClient: ["client-auth", "current-client"] as const,
   },
+  notifications: {
+    internal: ["notifications", "internal"] as const,
+    client: ["notifications", "client"] as const,
+  },
   applications: {
     all: ["applications"] as const,
     list: (params: {
