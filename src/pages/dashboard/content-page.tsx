@@ -1,6 +1,5 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Eye, Pencil } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
+import { Eye, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { APP_ROUTES } from "@/config/routes";
 import {
@@ -14,20 +13,14 @@ import { useCurrentUser } from "@/features/auth/use-auth";
 import { getDefaultInternalDashboardRoute } from "@/features/dashboard/access-control";
 import { useDashboardAccess } from "@/features/dashboard/dashboard-context";
 import { EmptyHint, Panel } from "@/features/dashboard/dashboard-ui";
-import {
-  type SiteContent,
-  siteContentSchema,
-} from "@/features/site-content/site-content.schemas";
+import { type SiteContent, siteContentSchema } from "@/features/site-content/site-content.schemas";
 import {
   useSiteContent,
   useUpdateSiteContent,
   useUploadSiteContentImage,
 } from "@/features/site-content/use-site-content";
 import { resolveContentImage } from "@/lib/content-assets";
-
-export const Route = createFileRoute("/dashboard/content")({
-  component: DashboardContentRedirect,
-});
+import { useAppNavigate } from "@/lib/router";
 
 type ModuleKey =
   | "branding"
@@ -108,10 +101,7 @@ export function DashboardContentPage() {
 
   if (siteContentQuery.isLoading || !draft) {
     return (
-      <Panel
-        title="Hybrid Landing CMS"
-        subtitle="Loading the reduced landing data model."
-      >
+      <Panel title="Hybrid Landing CMS" subtitle="Loading the reduced landing data model.">
         <EmptyHint message="Loading landing content..." loading />
       </Panel>
     );
@@ -194,8 +184,7 @@ export function DashboardContentPage() {
     },
   ];
 
-  const activeModuleDefinition =
-    moduleCards.find((module) => module.key === activeModule) ?? null;
+  const activeModuleDefinition = moduleCards.find((module) => module.key === activeModule) ?? null;
 
   const renderModuleEditor = (moduleKey: ModuleKey) => {
     switch (moduleKey) {
@@ -867,7 +856,6 @@ export function DashboardContentPage() {
         }
       >
         <div className="space-y-6">
-
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {moduleCards.map((module) => (
               <ModuleCard
@@ -882,7 +870,10 @@ export function DashboardContentPage() {
         </div>
       </Panel>
 
-      <Dialog open={Boolean(activeModuleDefinition)} onOpenChange={(open) => !open && setActiveModule(null)}>
+      <Dialog
+        open={Boolean(activeModuleDefinition)}
+        onOpenChange={(open) => !open && setActiveModule(null)}
+      >
         <DialogContent className="max-h-[92vh] max-w-6xl overflow-hidden rounded-[28px] border border-slate-200 bg-white p-0">
           {activeModuleDefinition ? (
             <>
@@ -923,8 +914,8 @@ export function DashboardContentPage() {
   );
 }
 
-function DashboardContentRedirect() {
-  const navigate = useNavigate();
+export function DashboardContentRedirect() {
+  const navigate = useAppNavigate();
   const { data: currentUser, isLoading } = useCurrentUser();
 
   useEffect(() => {
@@ -933,20 +924,19 @@ function DashboardContentRedirect() {
     }
 
     if (!currentUser) {
-      navigate({
-        to: APP_ROUTES.auth,
-        search: { redirect: APP_ROUTES.dashboardContent, mode: "staff" },
+      navigate(APP_ROUTES.auth, {
         replace: true,
+        search: { redirect: APP_ROUTES.dashboardContent, mode: "staff" },
       });
       return;
     }
 
     if (currentUser.role !== "admin") {
-      navigate({ to: getDefaultInternalDashboardRoute(currentUser), replace: true });
+      navigate(getDefaultInternalDashboardRoute(currentUser), { replace: true });
       return;
     }
 
-    navigate({ to: APP_ROUTES.dashboardAdminContent, replace: true });
+    navigate(APP_ROUTES.dashboardAdminContent, { replace: true });
   }, [currentUser, isLoading, navigate]);
 
   return null;
@@ -1043,7 +1033,9 @@ function ItemList({
   return (
     <div className="space-y-4 rounded-[24px] border border-slate-200 bg-slate-50 p-4">
       <div className="flex items-center justify-between gap-4">
-        <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">{title}</h4>
+        <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+          {title}
+        </h4>
         {!readOnly ? (
           <button
             type="button"
@@ -1150,7 +1142,9 @@ function HeroBannerEditor({
             value={item.subtitle}
             disabled={readOnly}
             onChange={(subtitle) =>
-              onChange(items.map((entry) => (entry.id === item.id ? { ...entry, subtitle } : entry)))
+              onChange(
+                items.map((entry) => (entry.id === item.id ? { ...entry, subtitle } : entry)),
+              )
             }
           />
           <ImageField
@@ -1172,7 +1166,9 @@ function HeroBannerEditor({
                     onUploadImage(`hero-banner-image-${item.id}`, file, (src) =>
                       onChange(
                         items.map((entry) =>
-                          entry.id === item.id ? { ...entry, image: { ...entry.image, src } } : entry,
+                          entry.id === item.id
+                            ? { ...entry, image: { ...entry.image, src } }
+                            : entry,
                         ),
                       ),
                     )
@@ -1195,7 +1191,9 @@ function HeroBannerEditor({
             value={item.linkLabel}
             disabled={readOnly}
             onChange={(linkLabel) =>
-              onChange(items.map((entry) => (entry.id === item.id ? { ...entry, linkLabel } : entry)))
+              onChange(
+                items.map((entry) => (entry.id === item.id ? { ...entry, linkLabel } : entry)),
+              )
             }
           />
           <TextField
@@ -1203,7 +1201,9 @@ function HeroBannerEditor({
             value={item.linkHref}
             disabled={readOnly}
             onChange={(linkHref) =>
-              onChange(items.map((entry) => (entry.id === item.id ? { ...entry, linkHref } : entry)))
+              onChange(
+                items.map((entry) => (entry.id === item.id ? { ...entry, linkHref } : entry)),
+              )
             }
           />
         </ItemCard>
@@ -1302,7 +1302,9 @@ function OfferEditor({
                     onUploadImage(`offer-image-${item.id}`, file, (src) =>
                       onChange(
                         items.map((entry) =>
-                          entry.id === item.id ? { ...entry, image: { ...entry.image, src } } : entry,
+                          entry.id === item.id
+                            ? { ...entry, image: { ...entry.image, src } }
+                            : entry,
                         ),
                       ),
                     )
@@ -1493,9 +1495,7 @@ function CountryEditor({
             disabled={readOnly}
             onChange={(flagClassName) =>
               onChange(
-                items.map((entry) =>
-                  entry.id === item.id ? { ...entry, flagClassName } : entry,
-                ),
+                items.map((entry) => (entry.id === item.id ? { ...entry, flagClassName } : entry)),
               )
             }
           />
@@ -1657,7 +1657,9 @@ function FaqEditor({
             value={item.question}
             disabled={readOnly}
             onChange={(question) =>
-              onChange(items.map((entry) => (entry.id === item.id ? { ...entry, question } : entry)))
+              onChange(
+                items.map((entry) => (entry.id === item.id ? { ...entry, question } : entry)),
+              )
             }
           />
           <TextAreaField
@@ -1831,7 +1833,9 @@ function TextField({
 }) {
   return (
     <div>
-      <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{label}</label>
+      <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+        {label}
+      </label>
       <input
         value={value}
         disabled={disabled}
@@ -1857,7 +1861,9 @@ function TextAreaField({
 }) {
   return (
     <div className={className}>
-      <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{label}</label>
+      <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+        {label}
+      </label>
       <textarea
         rows={4}
         value={value}
@@ -1888,7 +1894,9 @@ function ImageField({
 
   return (
     <div>
-      <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{label}</label>
+      <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+        {label}
+      </label>
       <div className="mt-2 rounded-2xl border border-slate-200 bg-slate-50 p-4">
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
           {previewSrc ? (
@@ -1957,7 +1965,9 @@ function SelectField({
 }) {
   return (
     <div>
-      <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{label}</label>
+      <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+        {label}
+      </label>
       <select
         value={value}
         disabled={disabled}
@@ -2006,7 +2016,9 @@ function CheckboxField({
     <div>
       <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{label}</div>
       <label className="mt-2 flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-        <span className="text-sm font-medium text-slate-700">{checked ? "Enabled" : "Disabled"}</span>
+        <span className="text-sm font-medium text-slate-700">
+          {checked ? "Enabled" : "Disabled"}
+        </span>
         <input
           type="checkbox"
           checked={checked}

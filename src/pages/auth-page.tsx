@@ -1,10 +1,11 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowRight, LockKeyhole, Mail, Phone, User2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { BrandLogo } from "@/components/BrandLogo";
 import { SpinnerTwo } from "@/components/ui/spinner";
 import { APP_ROUTES } from "@/config/routes";
+import { buildPath } from "@/lib/router";
 import {
   useBootstrapAdmin,
   useBootstrapStatus,
@@ -21,26 +22,9 @@ import { getDefaultInternalDashboardRoute } from "@/features/dashboard/access-co
 type AuthMode = "client" | "staff";
 type ClientView = "sign-in" | "sign-up";
 
-export const Route = createFileRoute("/auth")({
-  validateSearch: (search) => ({
-    redirect: typeof search.redirect === "string" ? search.redirect : undefined,
-    mode:
-      search.mode === "client" || search.mode === "staff"
-        ? search.mode
-        : undefined,
-  }),
-  head: () => ({
-    meta: [
-      { title: "Sign In - Hadaf" },
-      { name: "description", content: "Hadaf client and staff authentication." },
-    ],
-  }),
-  component: AuthPage,
-});
-
-function AuthPage() {
+export function AuthPage() {
   const navigate = useNavigate();
-  const search = Route.useSearch();
+  const [searchParams] = useSearchParams();
   const { data: currentUser, isLoading: isCurrentUserLoading } = useCurrentUser();
   const { data: currentClient, isLoading: isCurrentClientLoading } = useCurrentClient();
   const bootstrapStatusQuery = useBootstrapStatus();
@@ -48,14 +32,17 @@ function AuthPage() {
   const bootstrapMutation = useBootstrapAdmin();
   const clientSignInMutation = useClientSignIn();
   const clientSignUpMutation = useClientSignUp();
+  const redirect = searchParams.get("redirect") || undefined;
+  const modeParam = searchParams.get("mode");
+  const mode = modeParam === "client" || modeParam === "staff" ? modeParam : undefined;
 
   const authMode = useMemo<AuthMode>(() => {
-    if (search.mode) {
-      return search.mode === "client" ? "client" : "staff";
+    if (mode) {
+      return mode === "client" ? "client" : "staff";
     }
 
-    return search.redirect?.startsWith(APP_ROUTES.dashboard) ? "staff" : "client";
-  }, [search.mode, search.redirect]);
+    return redirect?.startsWith(APP_ROUTES.dashboard) ? "staff" : "client";
+  }, [mode, redirect]);
 
   const [clientView, setClientView] = useState<ClientView>("sign-in");
   const [rememberMe, setRememberMe] = useState(true);
@@ -71,7 +58,7 @@ function AuthPage() {
   const [clientPassword, setClientPassword] = useState("");
   const [clientConfirmPassword, setClientConfirmPassword] = useState("");
 
-  const redirectTo = search.redirect || APP_ROUTES.dashboard;
+  const redirectTo = redirect || APP_ROUTES.dashboard;
   const requiresSetup = bootstrapStatusQuery.data?.requiresSetup ?? false;
   const isSubmitting =
     signInMutation.isPending ||
@@ -80,20 +67,20 @@ function AuthPage() {
     clientSignUpMutation.isPending;
 
   useEffect(() => {
-    if (search.redirect?.startsWith(APP_ROUTES.dashboard) && currentUser) {
-      navigate({ to: redirectTo });
+    if (redirect?.startsWith(APP_ROUTES.dashboard) && currentUser) {
+      navigate(redirectTo, { replace: true });
       return;
     }
 
-    if (!search.redirect && currentClient) {
-      navigate({ to: APP_ROUTES.dashboardClient });
+    if (!redirect && currentClient) {
+      navigate(APP_ROUTES.dashboardClient, { replace: true });
       return;
     }
 
-    if (!search.redirect && currentUser) {
-      navigate({ to: getDefaultInternalDashboardRoute(currentUser) });
+    if (!redirect && currentUser) {
+      navigate(getDefaultInternalDashboardRoute(currentUser), { replace: true });
     }
-  }, [currentClient, currentUser, navigate, redirectTo, search.redirect]);
+  }, [currentClient, currentUser, navigate, redirectTo, redirect]);
 
   const handleStaffSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -119,13 +106,12 @@ function AuthPage() {
         toast.success("Signed in successfully.");
       }
 
-      navigate({
-        to:
-          search.redirect ||
+      navigate(
+        redirect ||
           (authenticatedUser
             ? getDefaultInternalDashboardRoute(authenticatedUser)
             : APP_ROUTES.dashboard),
-      });
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : "Authentication failed.";
       toast.error(message);
@@ -155,7 +141,7 @@ function AuthPage() {
         toast.success("Signed in successfully.");
       }
 
-      navigate({ to: APP_ROUTES.dashboardClient });
+      navigate(APP_ROUTES.dashboardClient);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Authentication failed.";
       toast.error(message);
@@ -193,13 +179,16 @@ function AuthPage() {
     <main className="min-h-screen lg:grid lg:grid-cols-2">
       <section className="relative flex min-h-[40vh] overflow-hidden bg-dark text-white lg:min-h-screen">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(164,255,238,0.16),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(251,176,64,0.18),transparent_32%),linear-gradient(155deg,#022816_0%,#0b3322_55%,#0f3a26_100%)]" />
-        <div className="absolute inset-0 opacity-40" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px)", backgroundSize: "42px 42px" }} />
+        <div
+          className="absolute inset-0 opacity-40"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px)",
+            backgroundSize: "42px 42px",
+          }}
+        />
         <div className="relative flex w-full flex-col px-8 py-10 sm:px-12 lg:px-14 lg:py-14 xl:px-18">
-          <BrandLogo
-            brandName="Hadaf"
-            imageClassName="h-14 sm:h-16"
-            priority
-          />
+          <BrandLogo brandName="Hadaf" imageClassName="h-14 sm:h-16" priority />
 
           <div className="flex flex-1 items-center">
             <div className="max-w-[560px] py-10 lg:py-0">
@@ -210,7 +199,8 @@ function AuthPage() {
                 Study abroad guidance with one clear access point.
               </h1>
               <p className="mt-6 max-w-[520px] text-base leading-8 text-white/72">
-                Track your Hadaf application journey or sign in as staff to manage clients, content, and internal access from the same platform.
+                Track your Hadaf application journey or sign in as staff to manage clients, content,
+                and internal access from the same platform.
               </p>
             </div>
           </div>
@@ -225,9 +215,7 @@ function AuthPage() {
           <h2 className="mt-4 text-3xl font-extrabold leading-tight text-slate-950 sm:text-[2.35rem]">
             {formTitle}
           </h2>
-          <p className="mt-4 text-sm leading-7 text-slate-500">
-            {formDescription}
-          </p>
+          <p className="mt-4 text-sm leading-7 text-slate-500">{formDescription}</p>
 
           {authMode === "client" ? (
             <>
@@ -249,8 +237,19 @@ function AuthPage() {
               <form onSubmit={handleClientSubmit} className="mt-8 space-y-5">
                 {clientView === "sign-up" ? (
                   <div className="grid gap-5 md:grid-cols-2">
-                    <InputField label="Full Name" value={clientName} onChange={setClientName} icon={User2} required />
-                    <InputField label="Phone" value={clientPhone} onChange={setClientPhone} icon={Phone} />
+                    <InputField
+                      label="Full Name"
+                      value={clientName}
+                      onChange={setClientName}
+                      icon={User2}
+                      required
+                    />
+                    <InputField
+                      label="Phone"
+                      value={clientPhone}
+                      onChange={setClientPhone}
+                      icon={Phone}
+                    />
                   </div>
                 ) : null}
 
@@ -263,7 +262,9 @@ function AuthPage() {
                   required
                 />
 
-                <div className={clientView === "sign-up" ? "grid gap-5 md:grid-cols-2" : "space-y-5"}>
+                <div
+                  className={clientView === "sign-up" ? "grid gap-5 md:grid-cols-2" : "space-y-5"}
+                >
                   <InputField
                     label="Password"
                     type="password"
@@ -318,7 +319,13 @@ function AuthPage() {
           ) : (
             <form onSubmit={handleStaffSubmit} className="mt-8 space-y-5">
               {requiresSetup ? (
-                <InputField label="Full Name" value={staffName} onChange={setStaffName} icon={User2} required />
+                <InputField
+                  label="Full Name"
+                  value={staffName}
+                  onChange={setStaffName}
+                  icon={User2}
+                  required
+                />
               ) : null}
 
               <InputField

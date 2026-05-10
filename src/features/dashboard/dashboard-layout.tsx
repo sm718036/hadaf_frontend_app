@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from "@tanstack/react-router";
+import { Link, useLocation } from "react-router-dom";
 import { ChevronDown, LogOut, Menu, UserCircle2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
@@ -17,7 +17,12 @@ import { useSignOut } from "@/features/auth/use-auth";
 import { useClientSignOut } from "@/features/client-auth/use-client-auth";
 import type { DashboardArea, DashboardNavItem } from "@/features/dashboard/access-control";
 import { AREA_META, getRoleLabel } from "@/features/dashboard/access-control";
-import { getAvatarDataUrl, getUserInitials, getUserAvatarUrl } from "@/features/dashboard/profile-utils";
+import {
+  getAvatarDataUrl,
+  getUserInitials,
+  getUserAvatarUrl,
+} from "@/features/dashboard/profile-utils";
+import { buildPath, useAppNavigate } from "@/lib/router";
 
 type DashboardLayoutActor = {
   id: string;
@@ -43,7 +48,13 @@ export function StatusBadge({
           ? "bg-sky-50 text-sky-700"
           : "bg-slate-100 text-slate-700";
 
-  return <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold capitalize ${className}`}>{children}</span>;
+  return (
+    <span
+      className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold capitalize ${className}`}
+    >
+      {children}
+    </span>
+  );
 }
 
 function StatCard({
@@ -129,13 +140,7 @@ function isNavItemActive(currentPathname: string, itemPath: string) {
   return currentPathname === itemPath || currentPathname.startsWith(`${itemPath}/`);
 }
 
-function Sidebar({
-  area,
-  navItems,
-}: {
-  area: DashboardArea;
-  navItems: DashboardNavItem[];
-}) {
+function Sidebar({ area, navItems }: { area: DashboardArea; navItems: DashboardNavItem[] }) {
   const location = useLocation();
   const meta = AREA_META[area];
 
@@ -149,12 +154,16 @@ function Sidebar({
           <div className="text-2xl font-display font-extrabold text-white">
             Hadaf<span className="text-gold">.</span>
           </div>
-          <div className="text-xs uppercase tracking-[0.28em] text-white/45">{meta.accentLabel}</div>
+          <div className="text-xs uppercase tracking-[0.28em] text-white/45">
+            {meta.accentLabel}
+          </div>
         </div>
       </Link>
 
       <nav className="mt-8 space-y-2">
-        <p className="px-3 text-xs font-semibold uppercase tracking-[0.3em] text-white/40">Modules</p>
+        <p className="px-3 text-xs font-semibold uppercase tracking-[0.3em] text-white/40">
+          Modules
+        </p>
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = isNavItemActive(location.pathname, item.to);
@@ -190,7 +199,7 @@ function Topbar({
   actor: DashboardLayoutActor;
   pageTitle: string;
 }) {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const signOutMutation = useSignOut();
@@ -212,12 +221,8 @@ function Topbar({
         await signOutMutation.mutateAsync();
       }
     } finally {
-      navigate({
-        to: APP_ROUTES.auth,
-        search:
-          area === "client"
-            ? { mode: "client", redirect: undefined }
-            : { mode: undefined, redirect: undefined },
+      navigate(APP_ROUTES.auth, {
+        search: area === "client" ? { mode: "client" } : undefined,
       });
     }
   };
@@ -227,14 +232,21 @@ function Topbar({
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">{meta.eyebrow}</div>
-            <h1 className="mt-2 text-3xl font-display font-extrabold text-slate-950">{pageTitle}</h1>
+            <div className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
+              {meta.eyebrow}
+            </div>
+            <h1 className="mt-2 text-3xl font-display font-extrabold text-slate-950">
+              {pageTitle}
+            </h1>
           </div>
 
           <div className="lg:hidden">
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
               <SheetTrigger asChild>
-                <button type="button" className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-600">
+                <button
+                  type="button"
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-600"
+                >
                   <Menu className="h-5 w-5" />
                 </button>
               </SheetTrigger>
@@ -272,10 +284,15 @@ function Topbar({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button type="button" className="inline-flex items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition hover:bg-slate-50">
+              <button
+                type="button"
+                className="inline-flex items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition hover:bg-slate-50"
+              >
                 <Avatar className="h-12 w-12">
                   <AvatarImage src={avatarUrl} alt={actor.name} />
-                  <AvatarFallback className="bg-gold text-sm font-bold text-dark">{initials}</AvatarFallback>
+                  <AvatarFallback className="bg-gold text-sm font-bold text-dark">
+                    {initials}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0">
                   <p className="truncate font-semibold text-slate-900">{actor.name}</p>
@@ -285,7 +302,10 @@ function Topbar({
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-72 rounded-2xl border-slate-200 p-2">
-              <DropdownMenuItem className="rounded-xl px-3 py-3 text-sm" onClick={() => navigate({ to: profileRoute })}>
+              <DropdownMenuItem
+                className="rounded-xl px-3 py-3 text-sm"
+                onClick={() => navigate(profileRoute)}
+              >
                 <UserCircle2 className="h-4 w-4 text-slate-500" />
                 Profile
               </DropdownMenuItem>

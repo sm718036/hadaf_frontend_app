@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "react-router-dom";
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -7,11 +7,23 @@ import { APP_ROUTES } from "@/config/routes";
 import { useCurrentUser } from "@/features/auth/use-auth";
 import { useDashboardAccess } from "@/features/dashboard/dashboard-context";
 import { DataTable, StatusBadge } from "@/features/dashboard/dashboard-layout";
-import { EmptyHint, PaginationControls, Panel, TableToolbar } from "@/features/dashboard/dashboard-ui";
+import {
+  EmptyHint,
+  PaginationControls,
+  Panel,
+  TableToolbar,
+} from "@/features/dashboard/dashboard-ui";
 import type { Lead, LeadStatus, LeadSource, UpsertLeadInput } from "@/features/leads/leads.schemas";
-import { useConvertLead, useDeleteLead, useLead, useLeads, useUpsertLead } from "@/features/leads/use-leads";
+import {
+  useConvertLead,
+  useDeleteLead,
+  useLead,
+  useLeads,
+  useUpsertLead,
+} from "@/features/leads/use-leads";
 import { useInternalUsers } from "@/features/internal-users/use-users";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
+import { buildPath, useAppNavigate } from "@/lib/router";
 
 const LEAD_STATUS_OPTIONS: LeadStatus[] = ["new", "contacted", "qualified", "converted", "lost"];
 const LEAD_SOURCE_OPTIONS: LeadSource[] = [
@@ -103,7 +115,7 @@ async function submitLeadWithDuplicateOverride(
 }
 
 export function LeadListPage({ area }: { area: "admin" | "staff" }) {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const access = useDashboardAccess();
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
@@ -185,7 +197,11 @@ export function LeadListPage({ area }: { area: "admin" | "staff" }) {
         />
 
         <div className="mb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-6">
-          <select value={status} onChange={(event) => setStatus(event.target.value)} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none">
+          <select
+            value={status}
+            onChange={(event) => setStatus(event.target.value)}
+            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none"
+          >
             <option value="">All statuses</option>
             {LEAD_STATUS_OPTIONS.map((option) => (
               <option key={option} value={option}>
@@ -193,10 +209,24 @@ export function LeadListPage({ area }: { area: "admin" | "staff" }) {
               </option>
             ))}
           </select>
-          <input value={country} onChange={(event) => setCountry(event.target.value)} placeholder="Country" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none" />
-          <input value={service} onChange={(event) => setService(event.target.value)} placeholder="Service" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none" />
+          <input
+            value={country}
+            onChange={(event) => setCountry(event.target.value)}
+            placeholder="Country"
+            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none"
+          />
+          <input
+            value={service}
+            onChange={(event) => setService(event.target.value)}
+            placeholder="Service"
+            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none"
+          />
           {area === "admin" ? (
-            <select value={staffId} onChange={(event) => setStaffId(event.target.value)} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none">
+            <select
+              value={staffId}
+              onChange={(event) => setStaffId(event.target.value)}
+              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none"
+            >
               <option value="">All staff</option>
               {staffUsers.map((user) => (
                 <option key={user.id} value={user.id}>
@@ -228,31 +258,46 @@ export function LeadListPage({ area }: { area: "admin" | "staff" }) {
         ) : (
           <>
             <DataTable
-              columns={["Lead", "Country", "Service", "Status", "Assigned", "Follow-up", "Created", "Action"]}
+              columns={[
+                "Lead",
+                "Country",
+                "Service",
+                "Status",
+                "Assigned",
+                "Follow-up",
+                "Created",
+                "Action",
+              ]}
               rows={leads.map((lead) => [
                 <div className="text-left">
                   <p className="font-semibold text-slate-900">{lead.fullName}</p>
-                  <p className="text-xs text-slate-500">{lead.email || lead.phone || "No contact info"}</p>
+                  <p className="text-xs text-slate-500">
+                    {lead.email || lead.phone || "No contact info"}
+                  </p>
                 </div>,
                 lead.interestedCountry || "—",
                 lead.interestedService || "—",
-                <StatusBadge tone={getStatusTone(lead.status)}>{lead.status.replace("_", " ")}</StatusBadge>,
+                <StatusBadge tone={getStatusTone(lead.status)}>
+                  {lead.status.replace("_", " ")}
+                </StatusBadge>,
                 lead.assignedStaffName || "Unassigned",
                 formatDate(lead.nextFollowUpDate),
                 formatDate(lead.createdAt),
                 <div className="flex items-center justify-center gap-2">
                   {area === "admin" ? (
                     <Link
-                      to="/dashboard/admin/leads/$leadId"
-                      params={{ leadId: lead.id }}
+                      to={buildPath("/dashboard/admin/leads/:leadId", {
+                        params: { leadId: lead.id },
+                      })}
                       className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
                     >
                       View
                     </Link>
                   ) : (
                     <Link
-                      to="/dashboard/staff/leads/$leadId"
-                      params={{ leadId: lead.id }}
+                      to={buildPath("/dashboard/staff/leads/:leadId", {
+                        params: { leadId: lead.id },
+                      })}
                       className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
                     >
                       View
@@ -271,7 +316,9 @@ export function LeadListPage({ area }: { area: "admin" | "staff" }) {
                           await deleteLeadMutation.mutateAsync(lead.id);
                           toast.success("Lead deleted.");
                         } catch (error) {
-                          toast.error(error instanceof Error ? error.message : "Unable to delete the lead.");
+                          toast.error(
+                            error instanceof Error ? error.message : "Unable to delete the lead.",
+                          );
                         }
                       }}
                     >
@@ -315,12 +362,14 @@ export function LeadListPage({ area }: { area: "admin" | "staff" }) {
                   toast.success("Lead created.");
                   setShowCreateForm(false);
                   if (area === "admin") {
-                    navigate({ to: "/dashboard/admin/leads/$leadId", params: { leadId: lead.id } });
+                    navigate("/dashboard/admin/leads/:leadId", { params: { leadId: lead.id } });
                   } else {
-                    navigate({ to: "/dashboard/staff/leads/$leadId", params: { leadId: lead.id } });
+                    navigate("/dashboard/staff/leads/:leadId", { params: { leadId: lead.id } });
                   }
                 } catch (error) {
-                  toast.error(error instanceof Error ? error.message : "Unable to create the lead.");
+                  toast.error(
+                    error instanceof Error ? error.message : "Unable to create the lead.",
+                  );
                 }
               }}
               isSubmitting={upsertLeadMutation.isPending}
@@ -332,14 +381,8 @@ export function LeadListPage({ area }: { area: "admin" | "staff" }) {
   );
 }
 
-export function LeadDetailPage({
-  area,
-  leadId,
-}: {
-  area: "admin" | "staff";
-  leadId: string;
-}) {
-  const navigate = useNavigate();
+export function LeadDetailPage({ area, leadId }: { area: "admin" | "staff"; leadId: string }) {
+  const navigate = useAppNavigate();
   const { data: currentUser } = useCurrentUser();
   const access = useDashboardAccess();
   const leadQuery = useLead(leadId, access.canReadLeads);
@@ -355,7 +398,8 @@ export function LeadDetailPage({
   const [form, setForm] = useState<UpsertLeadInput | null>(null);
   const detailBasePath =
     area === "admin" ? APP_ROUTES.dashboardAdminLeads : APP_ROUTES.dashboardStaffLeads;
-  const clientBasePath = area === "admin" ? APP_ROUTES.dashboardAdminClients : APP_ROUTES.dashboardStaffClients;
+  const clientBasePath =
+    area === "admin" ? APP_ROUTES.dashboardAdminClients : APP_ROUTES.dashboardStaffClients;
 
   useEffect(() => {
     if (leadQuery.data?.lead) {
@@ -384,7 +428,11 @@ export function LeadDetailPage({
     <div className="space-y-6">
       <Panel
         title={lead.fullName}
-        subtitle={isAdmin ? "Update lead details, assignment, status, and conversion from this page." : "You can update the assigned lead status, follow-up date, and internal notes."}
+        subtitle={
+          isAdmin
+            ? "Update lead details, assignment, status, and conversion from this page."
+            : "You can update the assigned lead status, follow-up date, and internal notes."
+        }
         action={
           <div className="flex flex-wrap gap-3">
             <button
@@ -404,9 +452,11 @@ export function LeadDetailPage({
                   try {
                     const result = await convertLeadMutation.mutateAsync({ id: lead.id, notes });
                     toast.success(`Lead converted to client ${result.client.name}.`);
-                    navigate({ to: clientBasePath });
+                    navigate(clientBasePath);
                   } catch (error) {
-                    toast.error(error instanceof Error ? error.message : "Unable to convert the lead.");
+                    toast.error(
+                      error instanceof Error ? error.message : "Unable to convert the lead.",
+                    );
                   }
                 }}
               >
@@ -425,9 +475,11 @@ export function LeadDetailPage({
                   try {
                     await deleteLeadMutation.mutateAsync(lead.id);
                     toast.success("Lead deleted.");
-                    navigate({ to: detailBasePath });
+                    navigate(detailBasePath);
                   } catch (error) {
-                    toast.error(error instanceof Error ? error.message : "Unable to delete the lead.");
+                    toast.error(
+                      error instanceof Error ? error.message : "Unable to delete the lead.",
+                    );
                   }
                 }}
               >
@@ -454,18 +506,26 @@ export function LeadDetailPage({
         />
       </Panel>
 
-      <Panel title="Lead History" subtitle="Conversion and update history remains attached to the lead record.">
+      <Panel
+        title="Lead History"
+        subtitle="Conversion and update history remains attached to the lead record."
+      >
         {history.length === 0 ? (
           <EmptyHint message="No history events recorded yet." />
         ) : (
           <div className="space-y-3">
             {history.map((event) => (
-              <div key={event.id} className="rounded-[20px] border border-slate-200 bg-slate-50 px-5 py-4">
+              <div
+                key={event.id}
+                className="rounded-[20px] border border-slate-200 bg-slate-50 px-5 py-4"
+              >
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="font-semibold text-slate-900">{event.description}</p>
                     <p className="mt-1 text-sm text-slate-500">
-                      {event.actorType === "user" ? event.actorName || currentUser?.name || "Internal user" : "System"}
+                      {event.actorType === "user"
+                        ? event.actorName || currentUser?.name || "Internal user"
+                        : "System"}
                     </p>
                   </div>
                   <Badge variant="light">{new Date(event.createdAt).toLocaleString()}</Badge>
@@ -505,11 +565,31 @@ function LeadForm({
       }}
     >
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <TextField label="Full Name" value={form.fullName} onChange={(fullName) => onChange({ ...form, fullName })} />
-        <TextField label="Phone" value={form.phone} onChange={(phone) => onChange({ ...form, phone })} />
-        <TextField label="Email" value={form.email} onChange={(email) => onChange({ ...form, email })} />
-        <TextField label="Interested Country" value={form.interestedCountry} onChange={(interestedCountry) => onChange({ ...form, interestedCountry })} />
-        <TextField label="Interested Service" value={form.interestedService} onChange={(interestedService) => onChange({ ...form, interestedService })} />
+        <TextField
+          label="Full Name"
+          value={form.fullName}
+          onChange={(fullName) => onChange({ ...form, fullName })}
+        />
+        <TextField
+          label="Phone"
+          value={form.phone}
+          onChange={(phone) => onChange({ ...form, phone })}
+        />
+        <TextField
+          label="Email"
+          value={form.email}
+          onChange={(email) => onChange({ ...form, email })}
+        />
+        <TextField
+          label="Interested Country"
+          value={form.interestedCountry}
+          onChange={(interestedCountry) => onChange({ ...form, interestedCountry })}
+        />
+        <TextField
+          label="Interested Service"
+          value={form.interestedService}
+          onChange={(interestedService) => onChange({ ...form, interestedService })}
+        />
         <SelectField
           label="Status"
           value={form.status}
@@ -549,11 +629,23 @@ function LeadForm({
         />
       </div>
 
-      <TextAreaField label="Message / Comments" value={form.message} onChange={(message) => onChange({ ...form, message })} />
-      <TextAreaField label="Internal Notes" value={form.internalNotes} onChange={(internalNotes) => onChange({ ...form, internalNotes })} />
+      <TextAreaField
+        label="Message / Comments"
+        value={form.message}
+        onChange={(message) => onChange({ ...form, message })}
+      />
+      <TextAreaField
+        label="Internal Notes"
+        value={form.internalNotes}
+        onChange={(internalNotes) => onChange({ ...form, internalNotes })}
+      />
 
       <div className="flex justify-end">
-        <button type="submit" className="btn-gold min-w-[160px] justify-center" disabled={isSubmitting}>
+        <button
+          type="submit"
+          className="btn-gold min-w-[160px] justify-center"
+          disabled={isSubmitting}
+        >
           {isSubmitting ? "Saving..." : "Save Lead"}
         </button>
       </div>
@@ -574,7 +666,9 @@ function TextField({
 }) {
   return (
     <label className="space-y-2">
-      <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{label}</span>
+      <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+        {label}
+      </span>
       <input
         type={type}
         value={value}
@@ -596,7 +690,9 @@ function TextAreaField({
 }) {
   return (
     <label className="space-y-2">
-      <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{label}</span>
+      <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+        {label}
+      </span>
       <textarea
         rows={5}
         value={value}
@@ -622,7 +718,9 @@ function SelectField({
 }) {
   return (
     <label className="space-y-2">
-      <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{label}</span>
+      <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+        {label}
+      </span>
       <select
         value={value}
         disabled={disabled}

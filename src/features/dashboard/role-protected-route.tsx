@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from "@tanstack/react-router";
+import { useLocation } from "react-router-dom";
 import type { ReactNode } from "react";
 import { useEffect } from "react";
 import { SpinnerTwo } from "@/components/ui/spinner";
@@ -10,6 +10,7 @@ import {
   getDefaultInternalDashboardRoute,
   type DashboardArea,
 } from "@/features/dashboard/access-control";
+import { useAppNavigate } from "@/lib/router";
 
 export function RoleProtectedRoute({
   area,
@@ -18,7 +19,7 @@ export function RoleProtectedRoute({
   area: DashboardArea;
   children: ReactNode;
 }) {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const location = useLocation();
   const currentUserQuery = useCurrentUser();
   const currentClientQuery = useCurrentClient();
@@ -38,14 +39,13 @@ export function RoleProtectedRoute({
       }
 
       if (currentUser) {
-        navigate({ to: getDefaultInternalDashboardRoute(currentUser), replace: true });
+        navigate(getDefaultInternalDashboardRoute(currentUser), { replace: true });
         return;
       }
 
-      navigate({
-        to: APP_ROUTES.auth,
-        search: { mode: "client", redirect: location.pathname },
+      navigate(APP_ROUTES.auth, {
         replace: true,
+        search: { mode: "client", redirect: location.pathname },
       });
       return;
     }
@@ -55,19 +55,18 @@ export function RoleProtectedRoute({
     }
 
     if (currentClient) {
-      navigate({ to: APP_ROUTES.dashboardClient, replace: true });
+      navigate(APP_ROUTES.dashboardClient, { replace: true });
       return;
     }
 
     if (currentUser) {
-      navigate({ to: getDefaultInternalDashboardRoute(currentUser), replace: true });
+      navigate(getDefaultInternalDashboardRoute(currentUser), { replace: true });
       return;
     }
 
-    navigate({
-      to: APP_ROUTES.auth,
-      search: { redirect: location.pathname, mode: "staff" },
+    navigate(APP_ROUTES.auth, {
       replace: true,
+      search: { redirect: location.pathname, mode: "staff" },
     });
   }, [area, currentClient, currentUser, isLoading, location.pathname, navigate]);
 

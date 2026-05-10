@@ -1,13 +1,5 @@
-import { useLocation } from "@tanstack/react-router";
-import {
-  Facebook,
-  Instagram,
-  Linkedin,
-  Mail,
-  MapPin,
-  Phone,
-  Twitter,
-} from "lucide-react";
+import { useLocation } from "react-router-dom";
+import { Facebook, Instagram, Linkedin, Mail, MapPin, Phone, Twitter } from "lucide-react";
 import { BrandLogo } from "@/components/BrandLogo";
 import { STATIC_FOOTER_CONTENT } from "@/content/landing-static";
 import { Reveal } from "@/components/reveal";
@@ -115,7 +107,10 @@ export function Footer({ branding, contactDetails, workingHours }: FooterProps) 
             <ul className="mt-6 space-y-3 text-[15px] text-white/78">
               {STATIC_FOOTER_CONTENT.quickLinks.map((link) => (
                 <li key={link.label}>
-                  <a href={resolveSectionHref(link.href, isHome)} className="transition-colors hover:text-primary">
+                  <a
+                    href={resolveSectionHref(link.href, isHome)}
+                    className="transition-colors hover:text-primary"
+                  >
                     {link.label}
                   </a>
                 </li>
@@ -127,21 +122,29 @@ export function Footer({ branding, contactDetails, workingHours }: FooterProps) 
             <h3 className="font-display text-[1.8rem] font-extrabold">{workingHours.title}</h3>
             <div className="mt-6 space-y-4">
               {visibleHours.map((item) => (
-                <div key={item.id} className="flex items-start justify-between gap-4 border-b border-white/10 pb-4 text-[15px]">
+                <div
+                  key={item.id}
+                  className="flex items-start justify-between gap-4 border-b border-white/10 pb-4 text-[15px]"
+                >
                   <span className="text-white/82">{item.day}</span>
                   <span className="text-right text-white">{item.time}</span>
                 </div>
               ))}
             </div>
           </Reveal>
-
         </div>
 
         <div className="footer-bottom-bar flex flex-col gap-4 px-20 py-6 text-[14px] md:flex-row md:items-center md:justify-between">
-          <p>Copyright {new Date().getFullYear()} {branding.companyName}.</p>
+          <p>
+            Copyright {new Date().getFullYear()} {branding.companyName}.
+          </p>
           <div className="flex items-center gap-6">
             {STATIC_FOOTER_CONTENT.bottomLinks.map((link) => (
-              <a key={link.label} href={resolveSectionHref(link.href, isHome)} className="transition-colors hover:text-white">
+              <a
+                key={link.label}
+                href={resolveSectionHref(link.href, isHome)}
+                className="transition-colors hover:text-white"
+              >
                 {link.label}
               </a>
             ))}

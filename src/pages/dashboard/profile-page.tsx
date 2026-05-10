@@ -1,6 +1,5 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { CalendarDays, Mail, MapPin, Phone, ShieldCheck, UserRound } from "lucide-react";
 import { useEffect } from "react";
+import { CalendarDays, Mail, MapPin, Phone, ShieldCheck, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { APP_ROUTES } from "@/config/routes";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -17,10 +16,7 @@ import {
   getUserAvatarUrl,
   getUserInitials,
 } from "@/features/dashboard/profile-utils";
-
-export const Route = createFileRoute("/dashboard/profile")({
-  component: DashboardProfileRedirect,
-});
+import { useAppNavigate } from "@/lib/router";
 
 export function DashboardProfilePage() {
   const currentUserQuery = useCurrentUser();
@@ -155,8 +151,8 @@ export function DashboardProfilePage() {
   );
 }
 
-function DashboardProfileRedirect() {
-  const navigate = useNavigate();
+export function DashboardProfileRedirect() {
+  const navigate = useAppNavigate();
   const { data: currentUser, isLoading } = useCurrentUser();
 
   useEffect(() => {
@@ -165,14 +161,19 @@ function DashboardProfileRedirect() {
     }
 
     if (!currentUser) {
-      navigate({ to: APP_ROUTES.auth, search: { redirect: APP_ROUTES.dashboardProfile, mode: "staff" }, replace: true });
+      navigate(APP_ROUTES.auth, {
+        replace: true,
+        search: { redirect: APP_ROUTES.dashboardProfile, mode: "staff" },
+      });
       return;
     }
 
-    navigate({
-      to: currentUser.role === "admin" ? APP_ROUTES.dashboardAdminProfile : APP_ROUTES.dashboardStaffProfile,
-      replace: true,
-    });
+    navigate(
+      currentUser.role === "admin"
+        ? APP_ROUTES.dashboardAdminProfile
+        : APP_ROUTES.dashboardStaffProfile,
+      { replace: true },
+    );
   }, [currentUser, isLoading, navigate]);
 
   return null;
@@ -203,7 +204,9 @@ function ProfileSection({
                 <Icon className="h-4 w-4 text-gold" />
                 {item.label}
               </div>
-              <p className={`mt-3 text-sm text-slate-800 ${item.mono ? "break-all font-mono" : ""}`}>
+              <p
+                className={`mt-3 text-sm text-slate-800 ${item.mono ? "break-all font-mono" : ""}`}
+              >
                 {item.value}
               </p>
             </div>

@@ -1,19 +1,17 @@
 import * as React from "react";
-import { Link } from "@tanstack/react-router";
+import { Link } from "react-router-dom";
 import { Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Client as ClientRecord } from "@/features/clients/clients.schemas";
 
-const STATUS_STYLES: Record<
-  ClientRecord["status"],
-  React.ComponentProps<typeof Badge>["variant"]
-> = {
-  active: "success",
-  inactive: "warning",
-  completed: "dark",
-  rejected: "destructive",
-};
+const STATUS_STYLES: Record<ClientRecord["status"], React.ComponentProps<typeof Badge>["variant"]> =
+  {
+    active: "success",
+    inactive: "warning",
+    completed: "dark",
+    rejected: "destructive",
+  };
 
 function ModuleCard({
   title,

@@ -1,5 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useDeferredValue, useEffect, useState } from "react";
+import { useEffect, useState, useDeferredValue } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { APP_ROUTES } from "@/config/routes";
@@ -36,10 +35,7 @@ import {
   useUpdateInternalUser,
 } from "@/features/internal-users/use-users";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
-
-export const Route = createFileRoute("/dashboard/users")({
-  component: DashboardUsersRedirect,
-});
+import { useAppNavigate } from "@/lib/router";
 
 const STAFF_PERMISSION_OPTIONS: Permission[] = [
   "leads.read",
@@ -162,7 +158,10 @@ export function DashboardUsersPage() {
                   <thead className="bg-slate-900 text-slate-100">
                     <tr>
                       {["Name", "Email", "Role", "Permissions", "Actions"].map((heading) => (
-                        <th key={heading} className="px-5 py-4 text-center font-display font-semibold">
+                        <th
+                          key={heading}
+                          className="px-5 py-4 text-center font-display font-semibold"
+                        >
                           {heading}
                         </th>
                       ))}
@@ -172,7 +171,9 @@ export function DashboardUsersPage() {
                     {users.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="px-5 py-14 text-center text-slate-500">
-                          {deferredSearch ? "No matching internal users found." : "No internal users found."}
+                          {deferredSearch
+                            ? "No matching internal users found."
+                            : "No internal users found."}
                         </td>
                       </tr>
                     ) : (
@@ -417,16 +418,16 @@ export function DashboardUsersPage() {
                     disabled={createUserMutation.isPending || updateUserMutation.isPending}
                     className="btn-gold min-w-[170px] justify-center"
                   >
-                    {createUserMutation.isPending || updateUserMutation.isPending
-                      ? (
-                        <>
-                          <SpinnerTwo size="sm" className="mr-1" />
-                          Saving...
-                        </>
-                      )
-                      : editingUser
-                        ? "Update User"
-                        : "Create User"}
+                    {createUserMutation.isPending || updateUserMutation.isPending ? (
+                      <>
+                        <SpinnerTwo size="sm" className="mr-1" />
+                        Saving...
+                      </>
+                    ) : editingUser ? (
+                      "Update User"
+                    ) : (
+                      "Create User"
+                    )}
                   </button>
                 </div>
               </form>
@@ -438,8 +439,8 @@ export function DashboardUsersPage() {
   );
 }
 
-function DashboardUsersRedirect() {
-  const navigate = useNavigate();
+export function DashboardUsersRedirect() {
+  const navigate = useAppNavigate();
   const { data: currentUser, isLoading } = useCurrentUser();
 
   useEffect(() => {
@@ -448,16 +449,19 @@ function DashboardUsersRedirect() {
     }
 
     if (!currentUser) {
-      navigate({ to: APP_ROUTES.auth, search: { redirect: APP_ROUTES.dashboardUsers, mode: "staff" }, replace: true });
+      navigate(APP_ROUTES.auth, {
+        replace: true,
+        search: { redirect: APP_ROUTES.dashboardUsers, mode: "staff" },
+      });
       return;
     }
 
     if (currentUser.role !== "admin") {
-      navigate({ to: getDefaultInternalDashboardRoute(currentUser), replace: true });
+      navigate(getDefaultInternalDashboardRoute(currentUser), { replace: true });
       return;
     }
 
-    navigate({ to: APP_ROUTES.dashboardAdminUsers, replace: true });
+    navigate(APP_ROUTES.dashboardAdminUsers, { replace: true });
   }, [currentUser, isLoading, navigate]);
 
   return null;

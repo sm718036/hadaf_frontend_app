@@ -1,10 +1,11 @@
-import { Link, useLocation } from "@tanstack/react-router";
+import { Link, useLocation } from "react-router-dom";
 import { Menu } from "lucide-react";
 import { BrandLogo } from "@/components/BrandLogo";
 import { APP_ROUTES } from "@/config/routes";
 import { STATIC_HEADER_LINKS } from "@/content/landing-static";
 import type { SiteContent } from "@/features/site-content/site-content.schemas";
 import { resolveSectionHref } from "@/lib/content-assets";
+import { buildPath } from "@/lib/router";
 
 type HeaderProps = {
   branding: SiteContent["branding"];
@@ -56,8 +57,7 @@ export function Header({ branding, contactDetails }: HeaderProps) {
           </ul>
           <div className="flex items-center gap-3">
             <Link
-              to={APP_ROUTES.auth}
-              search={{ redirect: undefined, mode: "client" }}
+              to={buildPath(APP_ROUTES.auth, { search: { mode: "client" } })}
               className="hidden text-sm font-semibold text-dark hover:text-gold md:inline-flex"
             >
               Login

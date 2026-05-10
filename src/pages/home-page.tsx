@@ -1,4 +1,3 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
 import { Offers } from "@/components/Offers";
@@ -13,11 +12,7 @@ import { Footer } from "@/components/Footer";
 import { PublicPageLoader } from "@/components/PublicPageLoader";
 import { useSiteContent } from "@/features/site-content/use-site-content";
 
-export const Route = createFileRoute("/")({
-  component: Index,
-});
-
-function Index() {
+export function HomePage() {
   const { data: content, isPending, error } = useSiteContent();
 
   if (isPending) {
@@ -28,9 +23,12 @@ function Index() {
     return (
       <main className="flex min-h-screen items-center justify-center bg-background px-6">
         <div className="max-w-md text-center">
-          <h1 className="text-3xl font-display font-extrabold text-foreground">Content unavailable</h1>
+          <h1 className="text-3xl font-display font-extrabold text-foreground">
+            Content unavailable
+          </h1>
           <p className="mt-3 text-sm text-muted-foreground">
-            The frontend is running client-side only and could not load site content from the backend API.
+            The frontend is running client-side only and could not load site content from the
+            backend API.
           </p>
         </div>
       </main>
@@ -50,7 +48,9 @@ function Index() {
       <Faq content={content.faq} />
       <Contact
         content={content.contact}
-        serviceOptions={content.services.items.filter((item) => item.isVisible).map((item) => item.title)}
+        serviceOptions={content.services.items
+          .filter((item) => item.isVisible)
+          .map((item) => item.title)}
       />
       <Footer
         branding={content.branding}

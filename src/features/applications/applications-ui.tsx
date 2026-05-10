@@ -1,5 +1,5 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
@@ -22,11 +22,23 @@ import {
 import { useClients } from "@/features/clients/use-clients";
 import { useDashboardAccess } from "@/features/dashboard/dashboard-context";
 import { DataTable, StatusBadge } from "@/features/dashboard/dashboard-layout";
-import { EmptyHint, PaginationControls, Panel, TableToolbar } from "@/features/dashboard/dashboard-ui";
+import {
+  EmptyHint,
+  PaginationControls,
+  Panel,
+  TableToolbar,
+} from "@/features/dashboard/dashboard-ui";
 import { useInternalUsers } from "@/features/internal-users/use-users";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
+import { buildPath, useAppNavigate } from "@/lib/router";
 
-const APPLICATION_STATUS_OPTIONS = ["active", "paused", "approved", "rejected", "completed"] as const;
+const APPLICATION_STATUS_OPTIONS = [
+  "active",
+  "paused",
+  "approved",
+  "rejected",
+  "completed",
+] as const;
 const PRIORITY_OPTIONS = ["low", "medium", "high", "urgent"] as const;
 
 function formatDate(value: string | null) {
@@ -50,14 +62,19 @@ function getStatusTone(status: Application["status"]): "neutral" | "warning" | "
   return "info";
 }
 
-function getPriorityTone(priority: Application["priority"]): "neutral" | "warning" | "info" | "success" {
+function getPriorityTone(
+  priority: Application["priority"],
+): "neutral" | "warning" | "info" | "success" {
   if (priority === "urgent") return "warning";
   if (priority === "high") return "info";
   if (priority === "low") return "success";
   return "neutral";
 }
 
-function createEmptyApplicationForm(clientId = "", assignedStaffUserId: string | null = null): UpsertApplicationInput {
+function createEmptyApplicationForm(
+  clientId = "",
+  assignedStaffUserId: string | null = null,
+): UpsertApplicationInput {
   return {
     clientId,
     targetCountry: "",
@@ -97,7 +114,7 @@ export function ApplicationListPage({
   area: "admin" | "staff";
   clientId?: string;
 }) {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const access = useDashboardAccess();
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
@@ -151,12 +168,20 @@ export function ApplicationListPage({
   }, [deferredSearch, country, stage, status, staffId, dateFrom, dateTo, clientId]);
 
   const detailRoute =
-    area === "admin" ? "/dashboard/admin/applications/$applicationId" : "/dashboard/staff/applications/$applicationId";
+    area === "admin"
+      ? "/dashboard/admin/applications/:applicationId"
+      : "/dashboard/staff/applications/:applicationId";
 
   return (
     <div className="space-y-6">
       <Panel
-        title={clientId ? "Client Applications" : area === "admin" ? "Application Pipeline" : "Assigned Applications"}
+        title={
+          clientId
+            ? "Client Applications"
+            : area === "admin"
+              ? "Application Pipeline"
+              : "Assigned Applications"
+        }
         subtitle={
           clientId
             ? "Applications linked to this client profile."
@@ -169,7 +194,12 @@ export function ApplicationListPage({
             type="button"
             className="btn-gold"
             onClick={() => {
-              setForm(createEmptyApplicationForm(clientId, area === "staff" ? access.currentUser.id : null));
+              setForm(
+                createEmptyApplicationForm(
+                  clientId,
+                  area === "staff" ? access.currentUser.id : null,
+                ),
+              );
               setIsCreateOpen(true);
             }}
           >
@@ -185,8 +215,17 @@ export function ApplicationListPage({
         />
 
         <div className="mb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-6">
-          <input value={country} onChange={(event) => setCountry(event.target.value)} placeholder="Target country" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none" />
-          <select value={stage} onChange={(event) => setStage(event.target.value)} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none">
+          <input
+            value={country}
+            onChange={(event) => setCountry(event.target.value)}
+            placeholder="Target country"
+            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none"
+          />
+          <select
+            value={stage}
+            onChange={(event) => setStage(event.target.value)}
+            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none"
+          >
             <option value="">All stages</option>
             {APPLICATION_STAGES.map((option) => (
               <option key={option} value={option}>
@@ -194,7 +233,11 @@ export function ApplicationListPage({
               </option>
             ))}
           </select>
-          <select value={status} onChange={(event) => setStatus(event.target.value)} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none">
+          <select
+            value={status}
+            onChange={(event) => setStatus(event.target.value)}
+            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none"
+          >
             <option value="">All statuses</option>
             {APPLICATION_STATUS_OPTIONS.map((option) => (
               <option key={option} value={option}>
@@ -203,7 +246,11 @@ export function ApplicationListPage({
             ))}
           </select>
           {area === "admin" ? (
-            <select value={staffId} onChange={(event) => setStaffId(event.target.value)} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none">
+            <select
+              value={staffId}
+              onChange={(event) => setStaffId(event.target.value)}
+              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none"
+            >
               <option value="">All counselors</option>
               {staffUsers.map((user) => (
                 <option key={user.id} value={user.id}>
@@ -212,7 +259,9 @@ export function ApplicationListPage({
               ))}
             </select>
           ) : (
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">Assigned to you</div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+              Assigned to you
+            </div>
           )}
           <DateRangePicker
             value={{ startDate: dateFrom, endDate: dateTo }}
@@ -233,7 +282,16 @@ export function ApplicationListPage({
         ) : (
           <>
             <DataTable
-              columns={["Application", "Client", "Counselor", "Stage", "Status", "Progress", "Deadline", "Action"]}
+              columns={[
+                "Application",
+                "Client",
+                "Counselor",
+                "Stage",
+                "Status",
+                "Progress",
+                "Deadline",
+                "Action",
+              ]}
               rows={(applicationsQuery.data?.items ?? []).map((application) => [
                 <div className="text-left">
                   <p className="font-semibold text-slate-900">{application.targetCountry}</p>
@@ -241,28 +299,42 @@ export function ApplicationListPage({
                 </div>,
                 <div className="text-left">
                   <p className="font-semibold text-slate-900">{application.clientName}</p>
-                  <p className="text-xs text-slate-500">{application.clientEmail || application.clientPhone || "No contact info"}</p>
+                  <p className="text-xs text-slate-500">
+                    {application.clientEmail || application.clientPhone || "No contact info"}
+                  </p>
                 </div>,
                 application.assignedStaffName || "Unassigned",
-                <div className="max-w-[220px] text-left text-xs font-medium text-slate-700">{application.currentStage}</div>,
+                <div className="max-w-[220px] text-left text-xs font-medium text-slate-700">
+                  {application.currentStage}
+                </div>,
                 <div className="flex flex-col items-center gap-2">
-                  <StatusBadge tone={getStatusTone(application.status)}>{application.status}</StatusBadge>
-                  <StatusBadge tone={getPriorityTone(application.priority)}>{application.priority}</StatusBadge>
+                  <StatusBadge tone={getStatusTone(application.status)}>
+                    {application.status}
+                  </StatusBadge>
+                  <StatusBadge tone={getPriorityTone(application.priority)}>
+                    {application.priority}
+                  </StatusBadge>
                 </div>,
                 <div className="min-w-[120px]">
-                  <div className="text-sm font-semibold text-slate-900">{application.progressPercent}%</div>
+                  <div className="text-sm font-semibold text-slate-900">
+                    {application.progressPercent}%
+                  </div>
                   <div className="mt-2 h-2 rounded-full bg-slate-100">
-                    <div className="h-2 rounded-full bg-gold" style={{ width: `${application.progressPercent}%` }} />
+                    <div
+                      className="h-2 rounded-full bg-gold"
+                      style={{ width: `${application.progressPercent}%` }}
+                    />
                   </div>
                 </div>,
                 <div className="text-center">
                   <div>{formatDate(application.deadline)}</div>
-                  {application.isOverdue ? <div className="mt-1 text-xs font-semibold text-destructive">Overdue</div> : null}
+                  {application.isOverdue ? (
+                    <div className="mt-1 text-xs font-semibold text-destructive">Overdue</div>
+                  ) : null}
                 </div>,
                 <div className="flex items-center justify-center gap-2">
                   <Link
-                    to={detailRoute}
-                    params={{ applicationId: application.id }}
+                    to={buildPath(detailRoute, { params: { applicationId: application.id } })}
                     className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
                   >
                     View
@@ -280,7 +352,11 @@ export function ApplicationListPage({
                           await deleteApplicationMutation.mutateAsync(application.id);
                           toast.success("Application deleted.");
                         } catch (error) {
-                          toast.error(error instanceof Error ? error.message : "Unable to delete the application.");
+                          toast.error(
+                            error instanceof Error
+                              ? error.message
+                              : "Unable to delete the application.",
+                          );
                         }
                       }}
                     >
@@ -289,7 +365,9 @@ export function ApplicationListPage({
                   ) : null}
                 </div>,
               ])}
-              emptyMessage={deferredSearch ? "No matching applications found." : "No applications found yet."}
+              emptyMessage={
+                deferredSearch ? "No matching applications found." : "No applications found yet."
+              }
             />
             <PaginationControls
               page={page}
@@ -304,15 +382,24 @@ export function ApplicationListPage({
         {isCreateOpen ? (
           <div className="mt-6 rounded-[24px] border border-slate-200 bg-slate-50 p-5">
             <div className="mb-4 flex items-center justify-between gap-4">
-              <h3 className="text-xl font-display font-extrabold text-slate-950">Create Application</h3>
-              <button type="button" className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700" onClick={() => setIsCreateOpen(false)}>
+              <h3 className="text-xl font-display font-extrabold text-slate-950">
+                Create Application
+              </h3>
+              <button
+                type="button"
+                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700"
+                onClick={() => setIsCreateOpen(false)}
+              >
                 Cancel
               </button>
             </div>
             <ApplicationForm
               form={form}
               onChange={setForm}
-              clients={(clientsQuery.data?.items ?? []).map((client) => ({ id: client.id, name: client.fullName }))}
+              clients={(clientsQuery.data?.items ?? []).map((client) => ({
+                id: client.id,
+                name: client.fullName,
+              }))}
               staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
               area={area}
               onSubmit={async () => {
@@ -320,9 +407,11 @@ export function ApplicationListPage({
                   const application = await upsertApplicationMutation.mutateAsync(form);
                   toast.success("Application created.");
                   setIsCreateOpen(false);
-                  navigate({ to: detailRoute, params: { applicationId: application.id } });
+                  navigate(detailRoute, { params: { applicationId: application.id } });
                 } catch (error) {
-                  toast.error(error instanceof Error ? error.message : "Unable to create the application.");
+                  toast.error(
+                    error instanceof Error ? error.message : "Unable to create the application.",
+                  );
                 }
               }}
               isSubmitting={upsertApplicationMutation.isPending}
@@ -335,8 +424,14 @@ export function ApplicationListPage({
   );
 }
 
-export function ApplicationDetailPage({ area, applicationId }: { area: "admin" | "staff"; applicationId: string }) {
-  const navigate = useNavigate();
+export function ApplicationDetailPage({
+  area,
+  applicationId,
+}: {
+  area: "admin" | "staff";
+  applicationId: string;
+}) {
+  const navigate = useAppNavigate();
   const access = useDashboardAccess();
   const applicationQuery = useApplication(applicationId, access.canReadApplications);
   const upsertApplicationMutation = useUpsertApplication();
@@ -367,7 +462,10 @@ export function ApplicationDetailPage({ area, applicationId }: { area: "admin" |
     [staffUsersQuery.data],
   );
 
-  const baseRoute = area === "admin" ? APP_ROUTES.dashboardAdminApplications : APP_ROUTES.dashboardStaffApplications;
+  const baseRoute =
+    area === "admin"
+      ? APP_ROUTES.dashboardAdminApplications
+      : APP_ROUTES.dashboardStaffApplications;
 
   if (applicationQuery.isLoading || !form) {
     return <EmptyHint message="Loading application..." loading />;
@@ -387,7 +485,11 @@ export function ApplicationDetailPage({ area, applicationId }: { area: "admin" |
         action={
           <div className="flex flex-wrap gap-3">
             <Badge variant="dark">{application.targetCountry}</Badge>
-            <button type="button" className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700" onClick={() => navigate({ to: baseRoute })}>
+            <button
+              type="button"
+              className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700"
+              onClick={() => navigate(baseRoute)}
+            >
               Back to Applications
             </button>
             <button
@@ -396,10 +498,16 @@ export function ApplicationDetailPage({ area, applicationId }: { area: "admin" |
               disabled={moveStageMutation.isPending}
               onClick={async () => {
                 try {
-                  await moveStageMutation.mutateAsync({ id: application.id, direction: "previous", note: "Moved to previous stage." });
+                  await moveStageMutation.mutateAsync({
+                    id: application.id,
+                    direction: "previous",
+                    note: "Moved to previous stage.",
+                  });
                   toast.success("Application moved to previous stage.");
                 } catch (error) {
-                  toast.error(error instanceof Error ? error.message : "Unable to move the application.");
+                  toast.error(
+                    error instanceof Error ? error.message : "Unable to move the application.",
+                  );
                 }
               }}
             >
@@ -411,10 +519,16 @@ export function ApplicationDetailPage({ area, applicationId }: { area: "admin" |
               disabled={moveStageMutation.isPending}
               onClick={async () => {
                 try {
-                  await moveStageMutation.mutateAsync({ id: application.id, direction: "next", note: "Moved to next stage." });
+                  await moveStageMutation.mutateAsync({
+                    id: application.id,
+                    direction: "next",
+                    note: "Moved to next stage.",
+                  });
                   toast.success("Application moved to next stage.");
                 } catch (error) {
-                  toast.error(error instanceof Error ? error.message : "Unable to move the application.");
+                  toast.error(
+                    error instanceof Error ? error.message : "Unable to move the application.",
+                  );
                 }
               }}
             >
@@ -432,9 +546,11 @@ export function ApplicationDetailPage({ area, applicationId }: { area: "admin" |
                   try {
                     await deleteApplicationMutation.mutateAsync(application.id);
                     toast.success("Application deleted.");
-                    navigate({ to: baseRoute });
+                    navigate(baseRoute);
                   } catch (error) {
-                    toast.error(error instanceof Error ? error.message : "Unable to delete the application.");
+                    toast.error(
+                      error instanceof Error ? error.message : "Unable to delete the application.",
+                    );
                   }
                 }}
               >
@@ -449,7 +565,10 @@ export function ApplicationDetailPage({ area, applicationId }: { area: "admin" |
           <ApplicationForm
             form={form}
             onChange={setForm}
-            clients={(clientsQuery.data?.items ?? []).map((client) => ({ id: client.id, name: client.fullName }))}
+            clients={(clientsQuery.data?.items ?? []).map((client) => ({
+              id: client.id,
+              name: client.fullName,
+            }))}
             staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
             area={area}
             onSubmit={async () => {
@@ -457,7 +576,9 @@ export function ApplicationDetailPage({ area, applicationId }: { area: "admin" |
                 await upsertApplicationMutation.mutateAsync(form);
                 toast.success("Application updated.");
               } catch (error) {
-                toast.error(error instanceof Error ? error.message : "Unable to update the application.");
+                toast.error(
+                  error instanceof Error ? error.message : "Unable to update the application.",
+                );
               }
             }}
             isSubmitting={upsertApplicationMutation.isPending}
@@ -494,7 +615,10 @@ export function ClientApplicationPage() {
             <EmptyHint message="No applications have been created for your account yet." />
           ) : (
             items.map((item) => (
-              <div key={item.application.id} className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+              <div
+                key={item.application.id}
+                className="rounded-[24px] border border-slate-200 bg-slate-50 p-5"
+              >
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
                     <h3 className="text-xl font-display font-extrabold text-slate-950">
@@ -502,12 +626,18 @@ export function ClientApplicationPage() {
                     </h3>
                     <p className="mt-1 text-sm text-slate-500">
                       {item.application.serviceType}
-                      {item.application.universityProgram ? ` · ${item.application.universityProgram}` : ""}
+                      {item.application.universityProgram
+                        ? ` · ${item.application.universityProgram}`
+                        : ""}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <StatusBadge tone={getStatusTone(item.application.status)}>{item.application.status}</StatusBadge>
-                    <StatusBadge tone={getPriorityTone(item.application.priority)}>{item.application.priority}</StatusBadge>
+                    <StatusBadge tone={getStatusTone(item.application.status)}>
+                      {item.application.status}
+                    </StatusBadge>
+                    <StatusBadge tone={getPriorityTone(item.application.priority)}>
+                      {item.application.priority}
+                    </StatusBadge>
                   </div>
                 </div>
                 <div className="mt-5">
@@ -525,7 +655,13 @@ export function ClientApplicationPage() {
   );
 }
 
-export function ClientApplicationsTab({ area, clientId }: { area: "admin" | "staff"; clientId: string }) {
+export function ClientApplicationsTab({
+  area,
+  clientId,
+}: {
+  area: "admin" | "staff";
+  clientId: string;
+}) {
   const applicationsQuery = useApplications({
     enabled: true,
     page: 1,
@@ -535,7 +671,9 @@ export function ClientApplicationsTab({ area, clientId }: { area: "admin" | "sta
   });
 
   const detailRoute =
-    area === "admin" ? "/dashboard/admin/applications/$applicationId" : "/dashboard/staff/applications/$applicationId";
+    area === "admin"
+      ? "/dashboard/admin/applications/:applicationId"
+      : "/dashboard/staff/applications/:applicationId";
 
   if (applicationsQuery.isLoading) {
     return <EmptyHint message="Loading client applications..." loading />;
@@ -553,7 +691,10 @@ export function ClientApplicationsTab({ area, clientId }: { area: "admin" | "sta
         <EmptyHint message="No applications are linked to this client yet." />
       ) : (
         items.map((application) => (
-          <div key={application.id} className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+          <div
+            key={application.id}
+            className="rounded-[24px] border border-slate-200 bg-slate-50 p-5"
+          >
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <h3 className="text-lg font-display font-extrabold text-slate-950">
@@ -565,10 +706,11 @@ export function ClientApplicationsTab({ area, clientId }: { area: "admin" | "sta
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <StatusBadge tone={getStatusTone(application.status)}>{application.status}</StatusBadge>
+                <StatusBadge tone={getStatusTone(application.status)}>
+                  {application.status}
+                </StatusBadge>
                 <Link
-                  to={detailRoute}
-                  params={{ applicationId: application.id }}
+                  to={buildPath(detailRoute, { params: { applicationId: application.id } })}
                   className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
                 >
                   Open
@@ -598,20 +740,35 @@ function ApplicationPipeline({
     <div className="rounded-[24px] border border-slate-200 bg-white p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Pipeline Progress</div>
-          <div className="mt-2 text-lg font-semibold text-slate-900">{application.currentStage}</div>
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+            Pipeline Progress
+          </div>
+          <div className="mt-2 text-lg font-semibold text-slate-900">
+            {application.currentStage}
+          </div>
         </div>
         <div className="text-right">
-          <div className="text-2xl font-display font-extrabold text-slate-950">{application.progressPercent}%</div>
-          <div className="text-xs text-slate-500">{application.isOverdue ? "Deadline overdue" : `Deadline: ${formatDate(application.deadline)}`}</div>
+          <div className="text-2xl font-display font-extrabold text-slate-950">
+            {application.progressPercent}%
+          </div>
+          <div className="text-xs text-slate-500">
+            {application.isOverdue
+              ? "Deadline overdue"
+              : `Deadline: ${formatDate(application.deadline)}`}
+          </div>
         </div>
       </div>
 
       <div className="mt-4 h-2 rounded-full bg-slate-100">
-        <div className="h-2 rounded-full bg-gold transition-all" style={{ width: `${application.progressPercent}%` }} />
+        <div
+          className="h-2 rounded-full bg-gold transition-all"
+          style={{ width: `${application.progressPercent}%` }}
+        />
       </div>
 
-      <div className={`mt-5 grid gap-3 ${compact ? "md:grid-cols-2 xl:grid-cols-3" : "md:grid-cols-3 xl:grid-cols-4"}`}>
+      <div
+        className={`mt-5 grid gap-3 ${compact ? "md:grid-cols-2 xl:grid-cols-3" : "md:grid-cols-3 xl:grid-cols-4"}`}
+      >
         {APPLICATION_STAGES.map((stage, index) => {
           const state =
             index < currentIndex ? "done" : index === currentIndex ? "current" : "upcoming";
@@ -643,7 +800,9 @@ function ApplicationHistory({ history }: { history: ApplicationStageHistory[] })
   return (
     <div className="rounded-[24px] border border-slate-200 bg-white p-5">
       <div className="mb-4">
-        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Stage History</div>
+        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+          Stage History
+        </div>
         <h3 className="mt-2 text-xl font-display font-extrabold text-slate-950">Timeline</h3>
       </div>
 
@@ -652,7 +811,10 @@ function ApplicationHistory({ history }: { history: ApplicationStageHistory[] })
       ) : (
         <div className="space-y-4">
           {history.map((entry) => (
-            <div key={entry.id} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+            <div
+              key={entry.id}
+              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4"
+            >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <div className="text-sm font-semibold text-slate-900">
@@ -664,7 +826,9 @@ function ApplicationHistory({ history }: { history: ApplicationStageHistory[] })
                 </div>
                 <StatusBadge tone="info">Stage update</StatusBadge>
               </div>
-              {entry.note ? <p className="mt-3 text-sm leading-6 text-slate-600">{entry.note}</p> : null}
+              {entry.note ? (
+                <p className="mt-3 text-sm leading-6 text-slate-600">{entry.note}</p>
+              ) : null}
             </div>
           ))}
         </div>
@@ -708,14 +872,28 @@ function ApplicationForm({
           onChange={(clientId) => onChange({ ...form, clientId })}
           options={clients.map((client) => ({ value: client.id, label: client.name }))}
         />
-        <TextField label="Target Country" value={form.targetCountry} onChange={(targetCountry) => onChange({ ...form, targetCountry })} />
-        <TextField label="Service Type" value={form.serviceType} onChange={(serviceType) => onChange({ ...form, serviceType })} />
-        <TextField label="University / Program" value={form.universityProgram} onChange={(universityProgram) => onChange({ ...form, universityProgram })} />
+        <TextField
+          label="Target Country"
+          value={form.targetCountry}
+          onChange={(targetCountry) => onChange({ ...form, targetCountry })}
+        />
+        <TextField
+          label="Service Type"
+          value={form.serviceType}
+          onChange={(serviceType) => onChange({ ...form, serviceType })}
+        />
+        <TextField
+          label="University / Program"
+          value={form.universityProgram}
+          onChange={(universityProgram) => onChange({ ...form, universityProgram })}
+        />
         <SelectField
           label="Assigned Counselor"
           value={form.assignedStaffUserId ?? ""}
           disabled={area !== "admin"}
-          onChange={(assignedStaffUserId) => onChange({ ...form, assignedStaffUserId: assignedStaffUserId || null })}
+          onChange={(assignedStaffUserId) =>
+            onChange({ ...form, assignedStaffUserId: assignedStaffUserId || null })
+          }
           options={[
             { value: "", label: area === "admin" ? "Unassigned" : "Assigned to me" },
             ...staffUsers.map((user) => ({ value: user.id, label: user.name })),
@@ -724,25 +902,43 @@ function ApplicationForm({
         <SelectField
           label="Current Stage"
           value={form.currentStage}
-          onChange={(currentStage) => onChange({ ...form, currentStage: currentStage as UpsertApplicationInput["currentStage"] })}
+          onChange={(currentStage) =>
+            onChange({
+              ...form,
+              currentStage: currentStage as UpsertApplicationInput["currentStage"],
+            })
+          }
           options={APPLICATION_STAGES.map((stage) => ({ value: stage, label: stage }))}
         />
         <SelectField
           label="Status"
           value={form.status}
-          onChange={(status) => onChange({ ...form, status: status as UpsertApplicationInput["status"] })}
+          onChange={(status) =>
+            onChange({ ...form, status: status as UpsertApplicationInput["status"] })
+          }
           options={APPLICATION_STATUS_OPTIONS.map((status) => ({ value: status, label: status }))}
         />
         <SelectField
           label="Priority"
           value={form.priority}
-          onChange={(priority) => onChange({ ...form, priority: priority as UpsertApplicationInput["priority"] })}
+          onChange={(priority) =>
+            onChange({ ...form, priority: priority as UpsertApplicationInput["priority"] })
+          }
           options={PRIORITY_OPTIONS.map((priority) => ({ value: priority, label: priority }))}
         />
-        <TextField label="Deadline" type="date" value={form.deadline} onChange={(deadline) => onChange({ ...form, deadline })} />
+        <TextField
+          label="Deadline"
+          type="date"
+          value={form.deadline}
+          onChange={(deadline) => onChange({ ...form, deadline })}
+        />
       </div>
 
-      <TextAreaField label="Notes" value={form.notes} onChange={(notes) => onChange({ ...form, notes })} />
+      <TextAreaField
+        label="Notes"
+        value={form.notes}
+        onChange={(notes) => onChange({ ...form, notes })}
+      />
       <TextAreaField
         label="History Note"
         value={form.historyNote ?? ""}
@@ -750,7 +946,11 @@ function ApplicationForm({
       />
 
       <div className="flex justify-end">
-        <button type="submit" className="btn-gold min-w-[180px] justify-center" disabled={isSubmitting}>
+        <button
+          type="submit"
+          className="btn-gold min-w-[180px] justify-center"
+          disabled={isSubmitting}
+        >
           {isSubmitting ? "Saving..." : "Save Application"}
         </button>
       </div>
@@ -771,7 +971,9 @@ function TextField({
 }) {
   return (
     <label className="space-y-2">
-      <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{label}</span>
+      <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+        {label}
+      </span>
       <input
         type={type}
         value={value}
@@ -793,7 +995,9 @@ function TextAreaField({
 }) {
   return (
     <label className="space-y-2">
-      <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{label}</span>
+      <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+        {label}
+      </span>
       <textarea
         rows={4}
         value={value}
@@ -819,7 +1023,9 @@ function SelectField({
 }) {
   return (
     <label className="space-y-2">
-      <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{label}</span>
+      <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+        {label}
+      </span>
       <select
         value={value}
         disabled={disabled}
