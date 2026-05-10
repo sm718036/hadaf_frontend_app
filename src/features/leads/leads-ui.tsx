@@ -3,6 +3,14 @@ import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { SelectMenu } from "@/components/ui/select-menu";
 import { APP_ROUTES } from "@/config/routes";
 import { useCurrentUser } from "@/features/auth/use-auth";
 import { useDashboardAccess } from "@/features/dashboard/dashboard-context";
@@ -126,7 +134,7 @@ export function LeadListPage({ area }: { area: "admin" | "staff" }) {
   const [staffId, setStaffId] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [form, setForm] = useState<UpsertLeadInput>(buildEmptyLeadForm());
   const leadsQuery = useLeads({
     enabled: access.canReadLeads,
@@ -181,7 +189,7 @@ export function LeadListPage({ area }: { area: "admin" | "staff" }) {
               className="btn-gold"
               onClick={() => {
                 setForm(buildEmptyLeadForm());
-                setShowCreateForm(true);
+                setIsCreateOpen(true);
               }}
             >
               Create Lead
@@ -197,18 +205,18 @@ export function LeadListPage({ area }: { area: "admin" | "staff" }) {
         />
 
         <div className="mb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-6">
-          <select
+          <SelectMenu
             value={status}
-            onChange={(event) => setStatus(event.target.value)}
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none"
-          >
-            <option value="">All statuses</option>
-            {LEAD_STATUS_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option.replace("_", " ")}
-              </option>
-            ))}
-          </select>
+            onValueChange={setStatus}
+            className="h-auto bg-slate-50 py-3"
+            options={[
+              { value: "", label: "All statuses" },
+              ...LEAD_STATUS_OPTIONS.map((option) => ({
+                value: option,
+                label: option.replace("_", " "),
+              })),
+            ]}
+          />
           <input
             value={country}
             onChange={(event) => setCountry(event.target.value)}
@@ -222,18 +230,15 @@ export function LeadListPage({ area }: { area: "admin" | "staff" }) {
             className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none"
           />
           {area === "admin" ? (
-            <select
+            <SelectMenu
               value={staffId}
-              onChange={(event) => setStaffId(event.target.value)}
-              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none"
-            >
-              <option value="">All staff</option>
-              {staffUsers.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name}
-                </option>
-              ))}
-            </select>
+              onValueChange={setStaffId}
+              className="h-auto bg-slate-50 py-3"
+              options={[
+                { value: "", label: "All staff" },
+                ...staffUsers.map((user) => ({ value: user.id, label: user.name })),
+              ]}
+            />
           ) : (
             <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
               Assigned to you
@@ -339,43 +344,43 @@ export function LeadListPage({ area }: { area: "admin" | "staff" }) {
           </>
         )}
 
-        {showCreateForm ? (
-          <div className="mt-6 rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-            <div className="mb-4 flex items-center justify-between gap-4">
-              <h3 className="text-xl font-display font-extrabold text-slate-950">Create Lead</h3>
-              <button
-                type="button"
-                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700"
-                onClick={() => setShowCreateForm(false)}
-              >
-                Cancel
-              </button>
-            </div>
-            <LeadForm
-              form={form}
-              onChange={setForm}
-              staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
-              mode="admin"
-              onSubmit={async () => {
-                try {
-                  const lead = await submitLeadWithDuplicateOverride(upsertLeadMutation, form);
-                  toast.success("Lead created.");
-                  setShowCreateForm(false);
-                  if (area === "admin") {
-                    navigate("/dashboard/admin/leads/:leadId", { params: { leadId: lead.id } });
-                  } else {
-                    navigate("/dashboard/staff/leads/:leadId", { params: { leadId: lead.id } });
+        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+          <DialogContent className="max-w-4xl overflow-y-auto border-slate-200 p-0 sm:max-h-[90vh]">
+            <DialogHeader className="border-b border-slate-200 px-6 py-5">
+              <DialogTitle className="font-display text-2xl font-extrabold text-slate-950">
+                Create Lead
+              </DialogTitle>
+              <DialogDescription>
+                Add a new lead record without leaving the list view.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="px-6 py-6">
+              <LeadForm
+                form={form}
+                onChange={setForm}
+                staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
+                mode="admin"
+                onSubmit={async () => {
+                  try {
+                    const lead = await submitLeadWithDuplicateOverride(upsertLeadMutation, form);
+                    toast.success("Lead created.");
+                    setIsCreateOpen(false);
+                    if (area === "admin") {
+                      navigate("/dashboard/admin/leads/:leadId", { params: { leadId: lead.id } });
+                    } else {
+                      navigate("/dashboard/staff/leads/:leadId", { params: { leadId: lead.id } });
+                    }
+                  } catch (error) {
+                    toast.error(
+                      error instanceof Error ? error.message : "Unable to create the lead.",
+                    );
                   }
-                } catch (error) {
-                  toast.error(
-                    error instanceof Error ? error.message : "Unable to create the lead.",
-                  );
-                }
-              }}
-              isSubmitting={upsertLeadMutation.isPending}
-            />
-          </div>
-        ) : null}
+                }}
+                isSubmitting={upsertLeadMutation.isPending}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
       </Panel>
     </div>
   );
@@ -396,6 +401,7 @@ export function LeadDetailPage({ area, leadId }: { area: "admin" | "staff"; lead
     search: "",
   });
   const [form, setForm] = useState<UpsertLeadInput | null>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const detailBasePath =
     area === "admin" ? APP_ROUTES.dashboardAdminLeads : APP_ROUTES.dashboardStaffLeads;
   const clientBasePath =
@@ -438,9 +444,19 @@ export function LeadDetailPage({ area, leadId }: { area: "admin" | "staff"; lead
             <button
               type="button"
               className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700"
-              onClick={() => navigate({ to: detailBasePath })}
+              onClick={() => navigate(detailBasePath)}
             >
               Back to Leads
+            </button>
+            <button
+              type="button"
+              className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700"
+              onClick={() => {
+                setForm(mapLeadToForm(lead));
+                setIsEditOpen(true);
+              }}
+            >
+              Edit Lead
             </button>
             {isAdmin && !lead.convertedClientId ? (
               <button
@@ -489,22 +505,39 @@ export function LeadDetailPage({ area, leadId }: { area: "admin" | "staff"; lead
           </div>
         }
       >
-        <LeadForm
-          form={form}
-          onChange={setForm}
-          staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
-          mode={isAdmin ? "admin" : "staff"}
-          onSubmit={async () => {
-            try {
-              await submitLeadWithDuplicateOverride(upsertLeadMutation, form);
-              toast.success("Lead updated.");
-            } catch (error) {
-              toast.error(error instanceof Error ? error.message : "Unable to update the lead.");
-            }
-          }}
-          isSubmitting={upsertLeadMutation.isPending}
-        />
+        <LeadOverview lead={lead} />
       </Panel>
+
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="max-w-4xl overflow-y-auto border-slate-200 p-0 sm:max-h-[90vh]">
+          <DialogHeader className="border-b border-slate-200 px-6 py-5">
+            <DialogTitle className="font-display text-2xl font-extrabold text-slate-950">
+              Edit Lead
+            </DialogTitle>
+            <DialogDescription>
+              Update lead details, assignment, status, and follow-up planning.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="px-6 py-6">
+            <LeadForm
+              form={form}
+              onChange={setForm}
+              staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
+              mode={isAdmin ? "admin" : "staff"}
+              onSubmit={async () => {
+                try {
+                  await submitLeadWithDuplicateOverride(upsertLeadMutation, form);
+                  toast.success("Lead updated.");
+                  setIsEditOpen(false);
+                } catch (error) {
+                  toast.error(error instanceof Error ? error.message : "Unable to update the lead.");
+                }
+              }}
+              isSubmitting={upsertLeadMutation.isPending}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Panel
         title="Lead History"
@@ -535,6 +568,26 @@ export function LeadDetailPage({ area, leadId }: { area: "admin" | "staff"; lead
           </div>
         )}
       </Panel>
+    </div>
+  );
+}
+
+function LeadOverview({ lead }: { lead: Lead }) {
+  return (
+    <div className="space-y-5">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <ReadOnlyField label="Full Name" value={lead.fullName} />
+        <ReadOnlyField label="Phone" value={lead.phone || "—"} />
+        <ReadOnlyField label="Email" value={lead.email || "—"} />
+        <ReadOnlyField label="Interested Country" value={lead.interestedCountry || "—"} />
+        <ReadOnlyField label="Interested Service" value={lead.interestedService || "—"} />
+        <ReadOnlyField label="Status" value={lead.status.replace("_", " ")} />
+        <ReadOnlyField label="Source" value={lead.source.replace("_", " ")} />
+        <ReadOnlyField label="Assigned Staff" value={lead.assignedStaffName || "Unassigned"} />
+        <ReadOnlyField label="Next Follow-up" value={formatDate(lead.nextFollowUpDate)} />
+      </div>
+      <ReadOnlyTextBlock label="Message / Comments" value={lead.message || "No message added."} />
+      <ReadOnlyTextBlock label="Internal Notes" value={lead.internalNotes || "No internal notes added."} />
     </div>
   );
 }
@@ -721,18 +774,34 @@ function SelectField({
       <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
         {label}
       </span>
-      <select
+      <SelectMenu
         value={value}
         disabled={disabled}
-        onChange={(event) => onChange(event.target.value)}
-        className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-slate-300 disabled:bg-slate-100"
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+        onValueChange={onChange}
+        options={options}
+      />
     </label>
+  );
+}
+
+function ReadOnlyField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-4">
+      <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+        {label}
+      </div>
+      <div className="mt-2 text-sm font-semibold text-slate-800">{value}</div>
+    </div>
+  );
+}
+
+function ReadOnlyTextBlock({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-5 py-5">
+      <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+        {label}
+      </div>
+      <p className="mt-3 text-sm leading-7 text-slate-600">{value}</p>
+    </div>
   );
 }

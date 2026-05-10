@@ -12,19 +12,28 @@ type NavigateOptions = BuildPathOptions & {
 };
 
 export function buildPath(path: string, options?: BuildPathOptions) {
-  const pathname = options?.params ? generatePath(path, options.params) : path;
+  const pathname = options?.params
+    ? generatePath(
+        path,
+        Object.fromEntries(
+          Object.entries(options.params).map(([key, value]) => [key, String(value)]),
+        ),
+      )
+    : path;
 
   if (!options?.search) {
     return pathname;
   }
 
-  const searchEntries = Object.entries(options.search).flatMap(([key, value]) => {
-    if (value === null || value === undefined || value === "") {
-      return [];
-    }
+  const searchEntries: Array<[string, string]> = Object.entries(options.search).flatMap(
+    ([key, value]) => {
+      if (value === null || value === undefined || value === "") {
+        return [];
+      }
 
-    return [[key, String(value)]];
-  });
+      return [[key, String(value)]];
+    },
+  );
 
   const search = createSearchParams(searchEntries).toString();
 

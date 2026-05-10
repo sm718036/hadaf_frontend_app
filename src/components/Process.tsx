@@ -13,12 +13,12 @@ export function Process() {
   const content = STATIC_PROCESS_CONTENT;
 
   return (
-    <section className="overflow-hidden bg-white py-24">
-      <div className="site-shell grid items-stretch !gap-20 lg:grid-cols-[0.92fr_1.58fr] lg:gap-0">
+    <section className="overflow-hidden bg-white py-20 sm:py-24">
+      <div className="site-shell grid items-stretch gap-12 lg:grid-cols-[0.92fr_1.58fr] lg:gap-0">
         <Reveal className="relative z-10 bg-white pb-8 lg:pr-0">
           <div className="max-w-[430px]">
             <p className="section-label mb-5">{content.eyebrow}</p>
-            <h2 className="max-w-[420px] text-[2.6rem] font-extrabold leading-[1.15] text-foreground">
+            <h2 className="max-w-[420px] text-[clamp(2rem,7vw,2.6rem)] font-extrabold leading-[1.15] text-foreground">
               {content.title}
             </h2>
             <p className="mt-6 max-w-[390px] text-[15px] leading-8 text-muted-foreground">
@@ -43,7 +43,7 @@ export function Process() {
         </Reveal>
 
         <Reveal className="relative flex flex-col lg:ml-[-40px]" delay={140}>
-          <div className="relative flex-1 overflow-hidden">
+          <div className="relative min-h-[280px] flex-1 overflow-hidden sm:min-h-[360px]">
             <img
               src={resolveContentImage(content.mainImage.src)}
               alt={content.mainImage.alt}
@@ -55,7 +55,7 @@ export function Process() {
             />
           </div>
 
-          <div className="relative z-10 -mt-16 ml-auto flex w-full items-stretch overflow-hidden border-[3px] border-primary/20 bg-dark shadow-[0_16px_40px_rgba(17,24,39,0.18)]">
+          <div className="relative z-10 -mt-10 ml-auto flex w-full items-stretch overflow-hidden border-[3px] border-primary/20 bg-dark shadow-[0_16px_40px_rgba(17,24,39,0.18)] sm:-mt-16">
             <div className="hidden w-[150px] shrink-0 md:block">
               <img
                 src={resolveContentImage(content.panelImage.src)}
@@ -68,7 +68,7 @@ export function Process() {
               />
             </div>
 
-            <div className="flex items-center px-7 py-7 md:px-8">
+            <div className="flex items-center px-5 py-5 sm:px-7 sm:py-7 md:px-8">
               <p className="max-w-[520px] text-[1.05rem] font-medium leading-8 text-white/88 md:text-[1.15rem]">
                 {content.panelText}
               </p>

@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { SelectMenu } from "@/components/ui/select-menu";
 import { useCurrentUser } from "@/features/auth/use-auth";
 import { getDefaultInternalDashboardRoute } from "@/features/dashboard/access-control";
 import { useDashboardAccess } from "@/features/dashboard/dashboard-context";
@@ -1968,18 +1969,15 @@ function SelectField({
       <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
         {label}
       </label>
-      <select
-        value={value}
-        disabled={disabled}
-        onChange={(event) => onChange(event.target.value)}
-        className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none disabled:bg-slate-100"
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+      <div className="mt-2">
+        <SelectMenu
+          value={value}
+          disabled={disabled}
+          onValueChange={onChange}
+          className="h-auto bg-slate-50 py-3"
+          options={options}
+        />
+      </div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { BrandLogo } from "@/components/BrandLogo";
 import { APP_ROUTES } from "@/config/routes";
 import { STATIC_HEADER_LINKS } from "@/content/landing-static";
@@ -14,6 +15,7 @@ type HeaderProps = {
 
 export function Header({ branding, contactDetails }: HeaderProps) {
   const location = useLocation();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isHome = location.pathname === "/";
   const visibleDetails = contactDetails.filter((detail) => detail.isVisible);
   const address = visibleDetails.find((detail) => detail.icon === "map-pin");
@@ -33,7 +35,7 @@ export function Header({ branding, contactDetails }: HeaderProps) {
         </div>
       </div>
       <nav className="bg-white/95 backdrop-blur">
-        <div className="site-shell flex items-center justify-between py-4">
+        <div className="site-shell flex items-center justify-between gap-3 py-4">
           <BrandLogo
             brandName={branding.companyName}
             companyNameVisible={branding.companyNameVisible}
@@ -64,15 +66,56 @@ export function Header({ branding, contactDetails }: HeaderProps) {
             </Link>
             <a
               href={resolveSectionHref("#contact", isHome)}
-              className="btn-gold !px-5 !py-3 text-sm"
+              className="btn-gold hidden !px-5 !py-3 text-sm sm:inline-flex"
             >
               Book a Free Consultation
             </a>
-            <button className="lg:hidden">
-              <Menu className="text-dark" />
+            <button
+              type="button"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border text-dark lg:hidden"
+              aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={isMobileMenuOpen}
+              onClick={() => setIsMobileMenuOpen((current) => !current)}
+            >
+              {isMobileMenuOpen ? <X className="text-dark" /> : <Menu className="text-dark" />}
             </button>
           </div>
         </div>
+        {isMobileMenuOpen ? (
+          <div className="border-t border-border/70 bg-white lg:hidden">
+            <div className="site-shell py-4">
+              <ul className="flex flex-col gap-4 font-medium text-dark">
+                {STATIC_HEADER_LINKS.map((link) => (
+                  <li key={link.label}>
+                    <a
+                      href={resolveSectionHref(link.href, isHome)}
+                      className="block py-1 transition-colors hover:text-gold"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      {link.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-5 flex flex-col gap-3">
+                <Link
+                  to={buildPath(APP_ROUTES.auth, { search: { mode: "client" } })}
+                  className="text-sm font-semibold text-dark hover:text-gold"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Login
+                </Link>
+                <a
+                  href={resolveSectionHref("#contact", isHome)}
+                  className="btn-gold !justify-center text-sm"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Book a Free Consultation
+                </a>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </nav>
     </header>
   );

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
 import { Offers } from "@/components/Offers";
@@ -10,10 +11,16 @@ import { Faq } from "@/components/Faq";
 import { Contact } from "@/components/Contact";
 import { Footer } from "@/components/Footer";
 import { PublicPageLoader } from "@/components/PublicPageLoader";
+import { StructuredData } from "@/components/StructuredData";
 import { useSiteContent } from "@/features/site-content/use-site-content";
+import { applySeoTags, buildHomeStructuredData, getHomeSeoPayload } from "@/lib/seo";
 
 export function HomePage() {
   const { data: content, isPending, error } = useSiteContent();
+
+  useEffect(() => {
+    applySeoTags(getHomeSeoPayload());
+  }, []);
 
   if (isPending) {
     return <PublicPageLoader message="Loading site content..." />;
@@ -36,27 +43,30 @@ export function HomePage() {
   }
 
   return (
-    <main>
-      <Header branding={content.branding} contactDetails={content.contact.details} />
-      <Hero content={content.hero} />
-      <Offers content={content.offers} />
-      <About />
-      <Process />
-      <Services content={content.services} />
-      <Countries content={content.countries} />
-      <Team content={content.team} />
-      <Faq content={content.faq} />
-      <Contact
-        content={content.contact}
-        serviceOptions={content.services.items
-          .filter((item) => item.isVisible)
-          .map((item) => item.title)}
-      />
-      <Footer
-        branding={content.branding}
-        contactDetails={content.contact.details}
-        workingHours={content.workingHours}
-      />
-    </main>
+    <>
+      <StructuredData id="home" data={buildHomeStructuredData(content)} />
+      <main>
+        <Header branding={content.branding} contactDetails={content.contact.details} />
+        <Hero content={content.hero} />
+        <Offers content={content.offers} />
+        <About />
+        <Process />
+        <Services content={content.services} />
+        <Countries content={content.countries} />
+        <Team content={content.team} />
+        <Faq content={content.faq} />
+        <Contact
+          content={content.contact}
+          serviceOptions={content.services.items
+            .filter((item) => item.isVisible)
+            .map((item) => item.title)}
+        />
+        <Footer
+          branding={content.branding}
+          contactDetails={content.contact.details}
+          workingHours={content.workingHours}
+        />
+      </main>
+    </>
   );
 }

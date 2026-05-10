@@ -1,8 +1,9 @@
 import { format, isValid, parseISO, subDays } from "date-fns";
 import { CalendarRange, X } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
-import type { JQueryStatic } from "jquery";
 import { cn } from "@/lib/utils";
+
+type JQueryStatic = typeof import("jquery")["default"];
 
 export type DateRangeValue = {
   startDate: string;

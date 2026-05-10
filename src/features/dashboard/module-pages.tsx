@@ -4,13 +4,29 @@ import { DataTable, StatusBadge } from "@/features/dashboard/dashboard-layout";
 import { Panel } from "@/features/dashboard/dashboard-ui";
 
 export function ModuleOverview({
-  title: _title,
-  description: _description,
+  title,
+  description,
 }: {
   title: string;
   description: string;
 }) {
-  return null;
+  return (
+    <Panel
+      title={title}
+      subtitle={description}
+      action={<StatusBadge tone="success">Portal ready</StatusBadge>}
+    >
+      <DataTable
+        columns={["Focus", "Status"]}
+        rows={[
+          ["Leads, clients, and applications", <Badge variant="success">Active</Badge>],
+          ["Tasks, documents, appointments, messages, payments", <Badge variant="success">Active</Badge>],
+          ["Landing content and user access", <Badge variant="success">Active</Badge>],
+        ]}
+        emptyMessage="No modules available."
+      />
+    </Panel>
+  );
 }
 
 export function PlaceholderModulePage({

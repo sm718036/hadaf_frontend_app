@@ -46,7 +46,7 @@ export function Footer({ branding, contactDetails, workingHours }: FooterProps) 
         <div className="absolute inset-0 bg-dark/92" />
       </div>
 
-      <div className="site-shell relative z-10 pt-14">
+      <div className="site-shell relative z-10 pt-12 sm:pt-14">
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {visibleDetails.map((item) => {
             const Icon = contactIcons[item.icon];
@@ -71,7 +71,7 @@ export function Footer({ branding, contactDetails, workingHours }: FooterProps) 
           })}
         </div>
 
-        <div className="grid gap-10 pb-12 pt-16 md:grid-cols-2 xl:grid-cols-[1.2fr_0.8fr_1fr]">
+        <div className="grid gap-10 pb-12 pt-14 md:grid-cols-2 xl:grid-cols-[1.2fr_0.8fr_1fr] xl:pt-16">
           <Reveal>
             <BrandLogo
               brandName={branding.companyName}
@@ -134,11 +134,11 @@ export function Footer({ branding, contactDetails, workingHours }: FooterProps) 
           </Reveal>
         </div>
 
-        <div className="footer-bottom-bar flex flex-col gap-4 px-20 py-6 text-[14px] md:flex-row md:items-center md:justify-between">
-          <p>
+        <div className="footer-bottom-bar flex flex-col gap-4 py-6 text-[14px] md:flex-row md:items-center md:justify-between">
+          <p className="text-center md:text-left">
             Copyright {new Date().getFullYear()} {branding.companyName}.
           </p>
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center justify-center gap-4 md:justify-end md:gap-6">
             {STATIC_FOOTER_CONTENT.bottomLinks.map((link) => (
               <a
                 key={link.label}

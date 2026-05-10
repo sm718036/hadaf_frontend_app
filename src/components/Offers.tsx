@@ -1,11 +1,6 @@
 import { ArrowLeft, ArrowRight, ArrowUpRight } from "lucide-react";
 import { useEffect, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import type { SiteContent } from "@/features/site-content/site-content.schemas";
 import { resolveContentImage } from "@/lib/content-assets";
 
@@ -82,12 +77,12 @@ export function Offers({ content }: OffersProps) {
               </div>
             </div>
 
-            <div className="flex flex-col px-6 pb-6 pt-8 md:px-9 md:pb-8 md:pt-9">
-              <div className="pr-10">
+            <div className="flex flex-col px-5 pb-6 pt-8 sm:px-6 md:px-9 md:pb-8 md:pt-9">
+              <div className="pr-0 sm:pr-10">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">
                   {content.eyebrow}
                 </p>
-                <DialogTitle className="mt-4 font-display text-[2.45rem] font-extrabold leading-[1.05] text-foreground sm:text-[3rem]">
+                <DialogTitle className="mt-4 font-display text-[clamp(2rem,7vw,3rem)] font-extrabold leading-[1.05] text-foreground">
                   {activeItem.title}
                 </DialogTitle>
                 <DialogDescription className="mt-5 text-[1rem] leading-8 text-muted-foreground">
@@ -118,7 +113,7 @@ export function Offers({ content }: OffersProps) {
                 </a>
 
                 {hasMultipleOffers ? (
-                  <div className="flex items-center justify-between gap-3 sm:justify-end">
+                  <div className="flex flex-wrap items-center justify-between gap-3 sm:justify-end">
                     <button
                       type="button"
                       onClick={() =>
@@ -139,7 +134,9 @@ export function Offers({ content }: OffersProps) {
                           type="button"
                           onClick={() => setActiveIndex(index)}
                           className={`h-2.5 rounded-full transition-all ${
-                            index === activeIndex ? "w-7 bg-primary" : "w-2.5 bg-dark/18 hover:bg-dark/35"
+                            index === activeIndex
+                              ? "w-7 bg-primary"
+                              : "w-2.5 bg-dark/18 hover:bg-dark/35"
                           }`}
                           aria-label={`Show flyer ${index + 1}`}
                         />

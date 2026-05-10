@@ -60,4 +60,56 @@ export const queryKeys = {
   siteContent: {
     public: ["site-content", "public"] as const,
   },
+  operations: {
+    all: ["operations"] as const,
+    tasksList: (params: {
+      page: number;
+      pageSize: number;
+      search: string;
+      status: string;
+      clientId: string;
+      applicationId: string;
+      staffId: string;
+    }) => ["operations", "tasks", params] as const,
+    documentsList: (params: {
+      page: number;
+      pageSize: number;
+      search: string;
+      status: string;
+      clientId: string;
+      applicationId: string;
+      staffId: string;
+    }) => ["operations", "documents", params] as const,
+    appointmentsList: (params: {
+      page: number;
+      pageSize: number;
+      search: string;
+      status: string;
+      clientId: string;
+      applicationId: string;
+      staffId: string;
+    }) => ["operations", "appointments", params] as const,
+    paymentsList: (params: {
+      page: number;
+      pageSize: number;
+      search: string;
+      status: string;
+      clientId: string;
+      applicationId: string;
+      staffId: string;
+    }) => ["operations", "payments", params] as const,
+    messagesList: (params: {
+      page: number;
+      pageSize: number;
+      search: string;
+      status: string;
+      clientId: string;
+      applicationId: string;
+      staffId: string;
+    }) => ["operations", "messages", params] as const,
+    ownDocuments: ["operations", "documents", "own"] as const,
+    ownAppointments: ["operations", "appointments", "own"] as const,
+    ownPayments: ["operations", "payments", "own"] as const,
+    ownMessages: ["operations", "messages", "own"] as const,
+  },
 } as const;

@@ -13,16 +13,14 @@ export function Team({ content }: TeamProps) {
   }
 
   return (
-    <section id="team" className="bg-white py-24">
+    <section id="team" className="bg-white py-20 sm:py-24">
       <div className="site-shell">
         <Reveal className="mx-auto max-w-[760px] text-center">
           <p className="section-label mb-5">{content.eyebrow}</p>
-          <h2 className="text-[2.55rem] font-extrabold leading-[1.2] text-foreground">
+          <h2 className="text-[clamp(2rem,7vw,2.55rem)] font-extrabold leading-[1.2] text-foreground">
             {content.title}
           </h2>
-          <p className="mt-6 text-[15px] leading-8 text-muted-foreground">
-            {content.description}
-          </p>
+          <p className="mt-6 text-[15px] leading-8 text-muted-foreground">{content.description}</p>
         </Reveal>
 
         <div className="mt-12 grid gap-8 md:grid-cols-2 xl:grid-cols-3">

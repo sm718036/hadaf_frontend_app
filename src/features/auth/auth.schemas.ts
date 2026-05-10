@@ -17,6 +17,7 @@ const permissionSchema = z.enum([
   "messages.read",
   "messages.write",
   "payments.read",
+  "payments.write",
   "site_content.read",
   "site_content.write",
   "users.read",

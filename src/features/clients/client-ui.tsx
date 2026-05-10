@@ -2,6 +2,14 @@ import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { SelectMenu } from "@/components/ui/select-menu";
 import { APP_ROUTES } from "@/config/routes";
 import { ClientApplicationsTab } from "@/features/applications/applications-ui";
 import { useCurrentClient, useUpdateClientProfile } from "@/features/client-auth/use-client-auth";
@@ -194,18 +202,15 @@ export function ClientListPage({ area }: { area: "admin" | "staff" }) {
         />
 
         <div className="mb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-          <select
+          <SelectMenu
             value={status}
-            onChange={(event) => setStatus(event.target.value)}
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none"
-          >
-            <option value="">All statuses</option>
-            {CLIENT_STATUS_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
+            onValueChange={setStatus}
+            className="h-auto bg-slate-50 py-3"
+            options={[
+              { value: "", label: "All statuses" },
+              ...CLIENT_STATUS_OPTIONS.map((option) => ({ value: option, label: option })),
+            ]}
+          />
           <input
             value={country}
             onChange={(event) => setCountry(event.target.value)}
@@ -225,18 +230,15 @@ export function ClientListPage({ area }: { area: "admin" | "staff" }) {
             className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none"
           />
           {area === "admin" ? (
-            <select
+            <SelectMenu
               value={staffId}
-              onChange={(event) => setStaffId(event.target.value)}
-              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none"
-            >
-              <option value="">All counselors</option>
-              {staffUsers.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name}
-                </option>
-              ))}
-            </select>
+              onValueChange={setStaffId}
+              className="h-auto bg-slate-50 py-3"
+              options={[
+                { value: "", label: "All counselors" },
+                ...staffUsers.map((user) => ({ value: user.id, label: user.name })),
+              ]}
+            />
           ) : (
             <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
               Assigned to you
@@ -321,40 +323,40 @@ export function ClientListPage({ area }: { area: "admin" | "staff" }) {
           </>
         )}
 
-        {isCreateOpen ? (
-          <div className="mt-6 rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-            <div className="mb-4 flex items-center justify-between gap-4">
-              <h3 className="text-xl font-display font-extrabold text-slate-950">Create Client</h3>
-              <button
-                type="button"
-                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700"
-                onClick={() => setIsCreateOpen(false)}
-              >
-                Cancel
-              </button>
+        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+          <DialogContent className="max-w-5xl overflow-y-auto border-slate-200 p-0 sm:max-h-[90vh]">
+            <DialogHeader className="border-b border-slate-200 px-6 py-5">
+              <DialogTitle className="font-display text-2xl font-extrabold text-slate-950">
+                Create Client
+              </DialogTitle>
+              <DialogDescription>
+                Create a new client profile without leaving the list.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="px-6 py-6">
+              <ClientProfileForm
+                form={form}
+                onChange={setForm}
+                staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
+                canAssign
+                showInternalFields
+                onSubmit={async () => {
+                  try {
+                    const client = await upsertClientMutation.mutateAsync(form);
+                    toast.success("Client created.");
+                    setIsCreateOpen(false);
+                    navigate(detailRoute, { params: { clientId: client.id } });
+                  } catch (error) {
+                    toast.error(
+                      error instanceof Error ? error.message : "Unable to create the client.",
+                    );
+                  }
+                }}
+                isSubmitting={upsertClientMutation.isPending}
+              />
             </div>
-            <ClientProfileForm
-              form={form}
-              onChange={setForm}
-              staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
-              canAssign
-              showInternalFields
-              onSubmit={async () => {
-                try {
-                  const client = await upsertClientMutation.mutateAsync(form);
-                  toast.success("Client created.");
-                  setIsCreateOpen(false);
-                  navigate(detailRoute, { params: { clientId: client.id } });
-                } catch (error) {
-                  toast.error(
-                    error instanceof Error ? error.message : "Unable to create the client.",
-                  );
-                }
-              }}
-              isSubmitting={upsertClientMutation.isPending}
-            />
-          </div>
-        ) : null}
+          </DialogContent>
+        </Dialog>
       </Panel>
     </div>
   );
@@ -379,6 +381,7 @@ export function ClientDetailPage({
   });
   const [activeTab, setActiveTab] = useState<(typeof CLIENT_TABS)[number]>("Overview");
   const [form, setForm] = useState<UpsertClientInput | null>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
 
   useEffect(() => {
     if (clientQuery.data?.client) {
@@ -418,6 +421,16 @@ export function ClientDetailPage({
               onClick={() => navigate(baseRoute)}
             >
               Back to Clients
+            </button>
+            <button
+              type="button"
+              className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700"
+              onClick={() => {
+                setForm(mapClientToForm(client));
+                setIsEditOpen(true);
+              }}
+            >
+              Edit Profile
             </button>
             {area === "admin" ? (
               <button
@@ -461,24 +474,7 @@ export function ClientDetailPage({
         </div>
 
         {activeTab === "Overview" ? (
-          <ClientProfileForm
-            form={form}
-            onChange={setForm}
-            staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
-            canAssign={area === "admin"}
-            showInternalFields
-            onSubmit={async () => {
-              try {
-                await upsertClientMutation.mutateAsync(form);
-                toast.success("Client profile updated.");
-              } catch (error) {
-                toast.error(
-                  error instanceof Error ? error.message : "Unable to update the client.",
-                );
-              }
-            }}
-            isSubmitting={upsertClientMutation.isPending}
-          />
+          <ClientProfileOverview client={client} />
         ) : activeTab === "Applications" ? (
           <ClientApplicationsTab area={area} clientId={client.id} />
         ) : activeTab === "Notes" ? (
@@ -491,6 +487,40 @@ export function ClientDetailPage({
           />
         )}
       </Panel>
+
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="max-w-5xl overflow-y-auto border-slate-200 p-0 sm:max-h-[90vh]">
+          <DialogHeader className="border-b border-slate-200 px-6 py-5">
+            <DialogTitle className="font-display text-2xl font-extrabold text-slate-950">
+              Edit Client Profile
+            </DialogTitle>
+            <DialogDescription>
+              Update the client profile, assignment, and application status.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="px-6 py-6">
+            <ClientProfileForm
+              form={form}
+              onChange={setForm}
+              staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
+              canAssign={area === "admin"}
+              showInternalFields
+              onSubmit={async () => {
+                try {
+                  await upsertClientMutation.mutateAsync(form);
+                  toast.success("Client profile updated.");
+                  setIsEditOpen(false);
+                } catch (error) {
+                  toast.error(
+                    error instanceof Error ? error.message : "Unable to update the client.",
+                  );
+                }
+              }}
+              isSubmitting={upsertClientMutation.isPending}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -498,6 +528,7 @@ export function ClientDetailPage({
 export function ClientSelfProfilePage() {
   const { data: client } = useCurrentClient();
   const updateProfileMutation = useUpdateClientProfile();
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const [form, setForm] = useState({
     fullName: "",
     email: "",
@@ -535,74 +566,26 @@ export function ClientSelfProfilePage() {
       <Panel
         title="My Profile"
         subtitle="You can update your personal information here. Program-specific assignment and internal notes remain managed by Hadaf staff."
+        action={
+          <button type="button" className="btn-gold" onClick={() => setIsEditOpen(true)}>
+            Edit Profile
+          </button>
+        }
       >
-        <form
-          className="space-y-5"
-          onSubmit={async (event) => {
-            event.preventDefault();
-
-            try {
-              await updateProfileMutation.mutateAsync(form);
-              toast.success("Profile updated.");
-            } catch (error) {
-              toast.error(
-                error instanceof Error ? error.message : "Unable to update your profile.",
-              );
-            }
-          }}
-        >
+        <div className="space-y-5">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <TextField
-              label="Full Name"
-              value={form.fullName}
-              onChange={(fullName) => setForm((current) => ({ ...current, fullName }))}
-            />
-            <TextField
-              label="Email"
-              value={form.email}
-              onChange={(email) => setForm((current) => ({ ...current, email }))}
-            />
-            <TextField
-              label="Phone"
-              value={form.phone}
-              onChange={(phone) => setForm((current) => ({ ...current, phone }))}
-            />
-            <TextField
-              label="CNIC / National ID"
-              value={form.cnic}
-              onChange={(cnic) => setForm((current) => ({ ...current, cnic }))}
-            />
-            <TextField
-              label="Passport Number"
-              value={form.passportNumber}
-              onChange={(passportNumber) => setForm((current) => ({ ...current, passportNumber }))}
-            />
-            <TextField
-              label="Date of Birth"
-              type="date"
-              value={form.dateOfBirth}
-              onChange={(dateOfBirth) => setForm((current) => ({ ...current, dateOfBirth }))}
-            />
-            <TextField
-              label="Country of Residence"
-              value={form.countryOfResidence}
-              onChange={(countryOfResidence) =>
-                setForm((current) => ({ ...current, countryOfResidence }))
-              }
-            />
-            <TextField
-              label="Emergency Contact"
-              value={form.emergencyContact}
-              onChange={(emergencyContact) =>
-                setForm((current) => ({ ...current, emergencyContact }))
-              }
-            />
+            <ReadOnlyField label="Full Name" value={form.fullName} />
+            <ReadOnlyField label="Email" value={form.email || "—"} />
+            <ReadOnlyField label="Phone" value={form.phone || "—"} />
+            <ReadOnlyField label="CNIC / National ID" value={form.cnic || "—"} />
+            <ReadOnlyField label="Passport Number" value={form.passportNumber || "—"} />
+            <ReadOnlyField label="Date of Birth" value={form.dateOfBirth || "—"} />
+            <ReadOnlyField label="Country of Residence" value={form.countryOfResidence || "—"} />
+            <ReadOnlyField label="Emergency Contact" value={form.emergencyContact || "—"} />
           </div>
-          <TextAreaField
-            label="Address"
-            value={form.address}
-            onChange={(address) => setForm((current) => ({ ...current, address }))}
-          />
+          <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-5 py-5 text-sm leading-7 text-slate-600">
+            {form.address || "No address added yet."}
+          </div>
 
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <ReadOnlyField label="Target Country" value={client.targetCountry || "Not assigned"} />
@@ -612,18 +595,137 @@ export function ClientSelfProfilePage() {
               value={client.currentApplicationStatus.replace("_", " ")}
             />
           </div>
-
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              className="btn-gold min-w-[180px] justify-center"
-              disabled={updateProfileMutation.isPending}
-            >
-              {updateProfileMutation.isPending ? "Saving..." : "Update Profile"}
-            </button>
-          </div>
-        </form>
+        </div>
       </Panel>
+
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="max-w-4xl overflow-y-auto border-slate-200 p-0 sm:max-h-[90vh]">
+          <DialogHeader className="border-b border-slate-200 px-6 py-5">
+            <DialogTitle className="font-display text-2xl font-extrabold text-slate-950">
+              Edit My Profile
+            </DialogTitle>
+            <DialogDescription>
+              Update your personal contact and identity details here.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="px-6 py-6">
+            <form
+              className="space-y-5"
+              onSubmit={async (event) => {
+                event.preventDefault();
+
+                try {
+                  await updateProfileMutation.mutateAsync(form);
+                  toast.success("Profile updated.");
+                  setIsEditOpen(false);
+                } catch (error) {
+                  toast.error(
+                    error instanceof Error ? error.message : "Unable to update your profile.",
+                  );
+                }
+              }}
+            >
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <TextField
+                  label="Full Name"
+                  value={form.fullName}
+                  onChange={(fullName) => setForm((current) => ({ ...current, fullName }))}
+                />
+                <TextField
+                  label="Email"
+                  value={form.email}
+                  onChange={(email) => setForm((current) => ({ ...current, email }))}
+                />
+                <TextField
+                  label="Phone"
+                  value={form.phone}
+                  onChange={(phone) => setForm((current) => ({ ...current, phone }))}
+                />
+                <TextField
+                  label="CNIC / National ID"
+                  value={form.cnic}
+                  onChange={(cnic) => setForm((current) => ({ ...current, cnic }))}
+                />
+                <TextField
+                  label="Passport Number"
+                  value={form.passportNumber}
+                  onChange={(passportNumber) =>
+                    setForm((current) => ({ ...current, passportNumber }))
+                  }
+                />
+                <TextField
+                  label="Date of Birth"
+                  type="date"
+                  value={form.dateOfBirth}
+                  onChange={(dateOfBirth) => setForm((current) => ({ ...current, dateOfBirth }))}
+                />
+                <TextField
+                  label="Country of Residence"
+                  value={form.countryOfResidence}
+                  onChange={(countryOfResidence) =>
+                    setForm((current) => ({ ...current, countryOfResidence }))
+                  }
+                />
+                <TextField
+                  label="Emergency Contact"
+                  value={form.emergencyContact}
+                  onChange={(emergencyContact) =>
+                    setForm((current) => ({ ...current, emergencyContact }))
+                  }
+                />
+              </div>
+              <TextAreaField
+                label="Address"
+                value={form.address}
+                onChange={(address) => setForm((current) => ({ ...current, address }))}
+              />
+
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  className="btn-gold min-w-[180px] justify-center"
+                  disabled={updateProfileMutation.isPending}
+                >
+                  {updateProfileMutation.isPending ? "Saving..." : "Update Profile"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function ClientProfileOverview({ client }: { client: Client }) {
+  return (
+    <div className="space-y-5">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <ReadOnlyField label="Full Name" value={client.fullName} />
+        <ReadOnlyField label="Email" value={client.email || "—"} />
+        <ReadOnlyField label="Phone" value={client.phone || "—"} />
+        <ReadOnlyField label="CNIC / National ID" value={client.cnic || "—"} />
+        <ReadOnlyField label="Passport Number" value={client.passportNumber || "—"} />
+        <ReadOnlyField label="Date of Birth" value={formatDate(client.dateOfBirth)} />
+        <ReadOnlyField label="Country of Residence" value={client.countryOfResidence || "—"} />
+        <ReadOnlyField label="Target Country" value={client.targetCountry || "—"} />
+        <ReadOnlyField label="Target Service" value={client.targetService || "—"} />
+        <ReadOnlyField label="Education Level" value={client.educationLevel || "—"} />
+        <ReadOnlyField label="Last Qualification" value={client.lastQualification || "—"} />
+        <ReadOnlyField label="Emergency Contact" value={client.emergencyContact || "—"} />
+        <ReadOnlyField label="Assigned Counselor" value={client.assignedStaffName || "Unassigned"} />
+        <ReadOnlyField label="Client Status" value={client.status} />
+        <ReadOnlyField
+          label="Application Status"
+          value={client.currentApplicationStatus.replace("_", " ")}
+        />
+      </div>
+      <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-5 py-5 text-sm leading-7 text-slate-600">
+        {client.address || "No address added yet."}
+      </div>
+      <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-5 py-5 text-sm leading-7 text-slate-600">
+        {client.internalNotes || "No internal notes added yet."}
+      </div>
     </div>
   );
 }
@@ -844,18 +946,12 @@ function SelectField({
       <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
         {label}
       </span>
-      <select
+      <SelectMenu
         value={value}
         disabled={disabled}
-        onChange={(event) => onChange(event.target.value)}
-        className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-slate-300 disabled:bg-slate-100"
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+        onValueChange={onChange}
+        options={options}
+      />
     </label>
   );
 }

@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { SelectMenu } from "@/components/ui/select-menu";
 import { SpinnerTwo } from "@/components/ui/spinner";
 import { useCurrentUser } from "@/features/auth/use-auth";
 import { getDefaultInternalDashboardRoute } from "@/features/dashboard/access-control";
@@ -353,20 +354,23 @@ export function DashboardUsersPage() {
                   <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
                     Role
                   </label>
-                  <select
-                    value={userForm.role}
-                    onChange={(event) =>
-                      setUserForm({
-                        ...userForm,
-                        role: event.target.value as CreateInternalUserInput["role"],
-                        permissions: event.target.value === "admin" ? [] : userForm.permissions,
-                      })
-                    }
-                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none"
-                  >
-                    <option value="staff">Staff</option>
-                    <option value="admin">Admin</option>
-                  </select>
+                  <div className="mt-2">
+                    <SelectMenu
+                      value={userForm.role}
+                      onValueChange={(value) =>
+                        setUserForm({
+                          ...userForm,
+                          role: value as CreateInternalUserInput["role"],
+                          permissions: value === "admin" ? [] : userForm.permissions,
+                        })
+                      }
+                      className="h-auto bg-slate-50 py-3"
+                      options={[
+                        { value: "staff", label: "Staff" },
+                        { value: "admin", label: "Admin" },
+                      ]}
+                    />
+                  </div>
                 </div>
 
                 {userForm.role === "staff" ? (

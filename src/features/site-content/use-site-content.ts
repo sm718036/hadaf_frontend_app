@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { defaultSiteContent } from "@/content/default-site-content";
 import { queryKeys } from "@/lib/query-keys";
 import { siteContentService } from "./site-content.service";
 
@@ -7,6 +8,7 @@ export function useSiteContent(enabled = true) {
     queryKey: queryKeys.siteContent.public,
     queryFn: ({ signal }) => siteContentService.getPublicContent(signal),
     enabled,
+    initialData: defaultSiteContent,
     staleTime: 10 * 60_000,
     gcTime: 30 * 60_000,
     refetchOnMount: false,

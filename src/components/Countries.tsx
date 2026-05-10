@@ -16,7 +16,7 @@ export function Countries({ content }: CountriesProps) {
   return (
     <section
       id="countries"
-      className="countries-offer-section relative overflow-hidden bg-dark py-24 text-white"
+      className="countries-offer-section relative overflow-hidden bg-dark py-20 text-white sm:py-24"
     >
       <div className="absolute left-1/2 top-0 z-10 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border border-primary/70" />
 
@@ -24,7 +24,7 @@ export function Countries({ content }: CountriesProps) {
         <Reveal className="mb-12 max-w-[760px]">
           <div className="max-w-[620px]">
             <p className="section-label mb-5">{content.eyebrow}</p>
-            <h2 className="text-[2.55rem] font-extrabold leading-[1.16] text-white">
+            <h2 className="text-[clamp(2rem,7vw,2.55rem)] font-extrabold leading-[1.16] text-white">
               {content.title}
             </h2>
             <p className="mt-5 max-w-[720px] text-[15px] leading-8 text-white/70">
@@ -36,9 +36,9 @@ export function Countries({ content }: CountriesProps) {
         <div className="grid items-stretch gap-5 md:grid-cols-2 xl:grid-cols-3">
           {visibleItems.map((country, index) => (
             <Reveal key={country.name} delay={index * 90} className="h-full">
-              <article className="group flex h-full min-h-[560px] flex-col bg-white text-foreground shadow-[0_18px_40px_rgba(10,14,40,0.18)] transition-all duration-300 hover:-translate-y-1 hover:bg-primary">
+              <article className="group flex h-full min-h-[480px] flex-col bg-white text-foreground shadow-[0_18px_40px_rgba(10,14,40,0.18)] transition-all duration-300 hover:-translate-y-1 hover:bg-primary sm:min-h-[560px]">
                 <div className="border-b border-brand-line/70 px-5 pb-6 pt-5 transition-colors duration-300 group-hover:border-dark/18">
-                  <h3 className="flex min-h-[54px] items-center gap-3 text-[1.9rem] font-extrabold leading-tight text-foreground">
+                  <h3 className="flex min-h-[54px] items-center gap-3 text-[1.5rem] font-extrabold leading-tight text-foreground sm:text-[1.9rem]">
                     <div
                       className={`flag-block shrink-0 ${country.flagClassName}`}
                       aria-hidden="true"
@@ -48,7 +48,7 @@ export function Countries({ content }: CountriesProps) {
                 </div>
 
                 <div className="flex flex-1 flex-col px-5 pb-6 pt-6">
-                  <p className="min-h-[96px] text-[15px] leading-8 text-muted-foreground transition-colors duration-300 group-hover:text-dark/78">
+                  <p className="min-h-[72px] text-[15px] leading-7 text-muted-foreground transition-colors duration-300 group-hover:text-dark/78 sm:min-h-[96px] sm:leading-8">
                     {country.description}
                   </p>
 

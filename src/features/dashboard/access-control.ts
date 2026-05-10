@@ -57,6 +57,11 @@ const ADMIN_NAV_ITEMS: DashboardNavItem[] = [
   { label: "Leads", to: APP_ROUTES.dashboardAdminLeads, icon: UsersRound, permission: "leads.read" },
   { label: "Clients", to: APP_ROUTES.dashboardAdminClients, icon: BriefcaseBusiness, permission: "clients.read" },
   { label: "Applications", to: APP_ROUTES.dashboardAdminApplications, icon: FileCheck2, permission: "applications.read" },
+  { label: "Tasks", to: APP_ROUTES.dashboardAdminTasks, icon: FolderKanban, permission: "tasks.read" },
+  { label: "Documents", to: APP_ROUTES.dashboardAdminDocuments, icon: FileJson2, permission: "documents.read" },
+  { label: "Appointments", to: APP_ROUTES.dashboardAdminAppointments, icon: CalendarDays, permission: "appointments.read" },
+  { label: "Messages", to: APP_ROUTES.dashboardAdminMessages, icon: MessageSquareText, permission: "messages.read" },
+  { label: "Payments", to: APP_ROUTES.dashboardAdminPayments, icon: ReceiptText, permission: "payments.read" },
   { label: "Landing CMS", to: APP_ROUTES.dashboardAdminContent, icon: FileJson2, permission: "site_content.read" },
   { label: "User Access", to: APP_ROUTES.dashboardAdminUsers, icon: UserCog, permission: "users.read" },
   { label: "Profile", to: APP_ROUTES.dashboardAdminProfile, icon: SquareUserRound },
@@ -71,6 +76,7 @@ const STAFF_NAV_ITEMS: DashboardNavItem[] = [
   { label: "Documents", to: APP_ROUTES.dashboardStaffDocuments, icon: FileJson2, permission: "documents.read" },
   { label: "Appointments", to: APP_ROUTES.dashboardStaffAppointments, icon: CalendarDays, permission: "appointments.read" },
   { label: "Messages", to: APP_ROUTES.dashboardStaffMessages, icon: MessageSquareText, permission: "messages.read" },
+  { label: "Payments", to: APP_ROUTES.dashboardStaffPayments, icon: ReceiptText, permission: "payments.read" },
   { label: "Profile", to: APP_ROUTES.dashboardStaffProfile, icon: SquareUserRound },
 ];
 

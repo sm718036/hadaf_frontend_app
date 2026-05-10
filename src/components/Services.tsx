@@ -34,11 +34,11 @@ export function Services({ content }: ServicesProps) {
   }
 
   return (
-    <section id="services" className="py-24 bg-mint/30 relative">
+    <section id="services" className="relative bg-mint/30 py-20 sm:py-24">
       <div className="site-shell">
         <Reveal className="mx-auto mb-14 max-w-2xl text-center">
           <p className="section-label mb-3">{content.eyebrow}</p>
-          <h2 className="text-4xl md:text-5xl text-dark">{content.title}</h2>
+          <h2 className="text-[clamp(2rem,7vw,3rem)] text-dark">{content.title}</h2>
           <p className="mt-5 text-[15px] leading-8 text-muted-foreground">{content.description}</p>
         </Reveal>
         <div className="grid gap-7 md:grid-cols-2 xl:grid-cols-4">

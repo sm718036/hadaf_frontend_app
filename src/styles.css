@@ -73,8 +73,12 @@
 }
 
 @layer base {
-  * { border-color: var(--color-border); }
-  html { scroll-behavior: smooth; }
+  * {
+    border-color: var(--color-border);
+  }
+  html {
+    scroll-behavior: smooth;
+  }
   a[href],
   button:not(:disabled),
   summary,
@@ -96,7 +100,11 @@
     color: var(--color-foreground);
     font-family: var(--font-sans);
   }
-  h1, h2, h3, h4, h5 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5 {
     font-family: var(--font-display);
     font-weight: 700;
     letter-spacing: -0.02em;
@@ -108,63 +116,111 @@
     width: 100%;
     max-width: 1380px;
     margin-inline: auto;
-    padding-inline: 1.5rem;
+    padding-inline: 1rem;
   }
 
-  .bg-dark { background-color: var(--dark); }
-  .text-dark { color: var(--dark); }
-  .bg-mint { background-color: var(--mint); }
-  .text-mint { color: var(--mint); }
-  .bg-gold { background-color: var(--primary); }
-  .text-gold { color: var(--primary); }
+  @media (min-width: 640px) {
+    .site-shell {
+      padding-inline: 1.5rem;
+    }
+  }
+
+  .bg-dark {
+    background-color: var(--dark);
+  }
+  .text-dark {
+    color: var(--dark);
+  }
+  .bg-mint {
+    background-color: var(--mint);
+  }
+  .text-mint {
+    color: var(--mint);
+  }
+  .bg-gold {
+    background-color: var(--primary);
+  }
+  .text-gold {
+    color: var(--primary);
+  }
 
   .btn-gold {
-    display: inline-flex; align-items: center; gap: 0.5rem;
-    background: var(--primary); color: var(--dark);
-    padding: 0.85rem 1.6rem; border-radius: 999px;
-    font-weight: 600; font-family: var(--font-display);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--primary);
+    color: var(--dark);
+    padding: 0.85rem 1.6rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-family: var(--font-display);
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 8px 24px -8px color-mix(in oklab, var(--primary) 60%, transparent);
   }
-  .btn-gold:hover { transform: translateY(-2px); filter: brightness(1.05); }
+  .btn-gold:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.05);
+  }
 
   .btn-dark {
-    display: inline-flex; align-items: center; gap: 0.5rem;
-    background: var(--dark); color: white;
-    padding: 0.85rem 1.6rem; border-radius: 999px;
-    font-weight: 600; font-family: var(--font-display);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--dark);
+    color: white;
+    padding: 0.85rem 1.6rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-family: var(--font-display);
     cursor: pointer;
     transition: all 0.3s ease;
   }
-  .btn-dark:hover { transform: translateY(-2px); }
+  .btn-dark:hover {
+    transform: translateY(-2px);
+  }
 
   .btn-ink {
-    display: inline-flex; align-items: center; gap: 0.5rem;
-    background: var(--brand-ink); color: var(--brand-ink-foreground);
-    padding: 0.85rem 1.6rem; border-radius: 999px;
-    font-weight: 600; font-family: var(--font-display);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--brand-ink);
+    color: var(--brand-ink-foreground);
+    padding: 0.85rem 1.6rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-family: var(--font-display);
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 10px 24px -10px color-mix(in oklab, var(--brand-ink) 70%, transparent);
   }
-  .btn-ink:hover { transform: translateY(-2px); filter: brightness(1.06); }
+  .btn-ink:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.06);
+  }
 
   .section-label {
-    display: inline-flex; align-items: center; gap: 0.5rem;
-    color: var(--primary); font-weight: 700;
-    text-transform: uppercase; letter-spacing: 0.15em;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--primary);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
     font-size: 0.8rem;
   }
-  .section-label::before, .section-label::after {
-    content: "✦"; color: var(--primary);
+  .section-label::before,
+  .section-label::after {
+    content: "✦";
+    color: var(--primary);
   }
 
   .clip-angle {
     clip-path: polygon(0 0, 100% 0, 100% 100%, 8% 100%, 0 85%);
   }
 
-  .section-label::before, .section-label::after {
+  .section-label::before,
+  .section-label::after {
     content: "+";
     color: var(--primary);
   }
@@ -251,11 +307,36 @@
     position: absolute;
     inset: 0;
     background:
-      radial-gradient(circle at 14% 12%, rgba(255, 255, 255, 0.06) 0, rgba(255, 255, 255, 0.06) 11%, transparent 11.5%),
-      radial-gradient(circle at 27% 10%, rgba(255, 255, 255, 0.05) 0, rgba(255, 255, 255, 0.05) 9%, transparent 9.5%),
-      radial-gradient(circle at 75% 18%, rgba(255, 255, 255, 0.04) 0, rgba(255, 255, 255, 0.04) 10%, transparent 10.5%),
-      radial-gradient(circle at 92% 72%, rgba(255, 255, 255, 0.04) 0, rgba(255, 255, 255, 0.04) 14%, transparent 14.5%),
-      radial-gradient(circle at 18% 88%, rgba(255, 255, 255, 0.04) 0, rgba(255, 255, 255, 0.04) 12%, transparent 12.5%);
+      radial-gradient(
+        circle at 14% 12%,
+        rgba(255, 255, 255, 0.06) 0,
+        rgba(255, 255, 255, 0.06) 11%,
+        transparent 11.5%
+      ),
+      radial-gradient(
+        circle at 27% 10%,
+        rgba(255, 255, 255, 0.05) 0,
+        rgba(255, 255, 255, 0.05) 9%,
+        transparent 9.5%
+      ),
+      radial-gradient(
+        circle at 75% 18%,
+        rgba(255, 255, 255, 0.04) 0,
+        rgba(255, 255, 255, 0.04) 10%,
+        transparent 10.5%
+      ),
+      radial-gradient(
+        circle at 92% 72%,
+        rgba(255, 255, 255, 0.04) 0,
+        rgba(255, 255, 255, 0.04) 14%,
+        transparent 14.5%
+      ),
+      radial-gradient(
+        circle at 18% 88%,
+        rgba(255, 255, 255, 0.04) 0,
+        rgba(255, 255, 255, 0.04) 12%,
+        transparent 12.5%
+      );
     opacity: 0.9;
     pointer-events: none;
   }
@@ -265,11 +346,11 @@
     position: absolute;
     inset: 0;
     background-image:
-      radial-gradient(ellipse 30% 20% at 12% 15%, rgba(255,255,255,0.05) 0 60%, transparent 61%),
-      radial-gradient(ellipse 22% 16% at 32% 12%, rgba(255,255,255,0.04) 0 60%, transparent 61%),
-      radial-gradient(ellipse 18% 12% at 69% 18%, rgba(255,255,255,0.04) 0 60%, transparent 61%),
-      radial-gradient(ellipse 26% 18% at 84% 73%, rgba(255,255,255,0.04) 0 60%, transparent 61%),
-      radial-gradient(ellipse 40% 24% at 32% 88%, rgba(255,255,255,0.035) 0 60%, transparent 61%);
+      radial-gradient(ellipse 30% 20% at 12% 15%, rgba(255, 255, 255, 0.05) 0 60%, transparent 61%),
+      radial-gradient(ellipse 22% 16% at 32% 12%, rgba(255, 255, 255, 0.04) 0 60%, transparent 61%),
+      radial-gradient(ellipse 18% 12% at 69% 18%, rgba(255, 255, 255, 0.04) 0 60%, transparent 61%),
+      radial-gradient(ellipse 26% 18% at 84% 73%, rgba(255, 255, 255, 0.04) 0 60%, transparent 61%),
+      radial-gradient(ellipse 40% 24% at 32% 88%, rgba(255, 255, 255, 0.035) 0 60%, transparent 61%);
     opacity: 0.7;
     pointer-events: none;
   }
@@ -283,7 +364,12 @@
   }
 
   .flag-germany {
-    background: linear-gradient(to bottom, #111111 0 33.33%, #d4171f 33.33% 66.66%, #f3c12f 66.66% 100%);
+    background: linear-gradient(
+      to bottom,
+      #111111 0 33.33%,
+      #d4171f 33.33% 66.66%,
+      #f3c12f 66.66% 100%
+    );
   }
 
   .flag-europe {
@@ -328,7 +414,12 @@
   }
 
   .flag-argentina {
-    background: linear-gradient(to bottom, #80a9e7 0 33.33%, #ffffff 33.33% 66.66%, #80a9e7 66.66% 100%);
+    background: linear-gradient(
+      to bottom,
+      #80a9e7 0 33.33%,
+      #ffffff 33.33% 66.66%,
+      #80a9e7 66.66% 100%
+    );
   }
 
   .flag-argentina::after {
@@ -352,28 +443,26 @@
       linear-gradient(to bottom right, transparent 47%, #d91f33 47% 53%, transparent 53%),
       linear-gradient(to top right, transparent 47%, #d91f33 47% 53%, transparent 53%),
       linear-gradient(to right, transparent 43%, #d91f33 43% 57%, transparent 57%),
-      linear-gradient(to bottom, transparent 39%, #d91f33 39% 61%, transparent 61%),
-      #2948a6;
+      linear-gradient(to bottom, transparent 39%, #d91f33 39% 61%, transparent 61%), #2948a6;
   }
 
   .flag-united-states {
-    background:
-      linear-gradient(
-        to bottom,
-        #b22234 0 7.69%,
-        #ffffff 7.69% 15.38%,
-        #b22234 15.38% 23.07%,
-        #ffffff 23.07% 30.76%,
-        #b22234 30.76% 38.45%,
-        #ffffff 38.45% 46.14%,
-        #b22234 46.14% 53.83%,
-        #ffffff 53.83% 61.52%,
-        #b22234 61.52% 69.21%,
-        #ffffff 69.21% 76.9%,
-        #b22234 76.9% 84.59%,
-        #ffffff 84.59% 92.28%,
-        #b22234 92.28% 100%
-      );
+    background: linear-gradient(
+      to bottom,
+      #b22234 0 7.69%,
+      #ffffff 7.69% 15.38%,
+      #b22234 15.38% 23.07%,
+      #ffffff 23.07% 30.76%,
+      #b22234 30.76% 38.45%,
+      #ffffff 38.45% 46.14%,
+      #b22234 46.14% 53.83%,
+      #ffffff 53.83% 61.52%,
+      #b22234 61.52% 69.21%,
+      #ffffff 69.21% 76.9%,
+      #b22234 76.9% 84.59%,
+      #ffffff 84.59% 92.28%,
+      #b22234 92.28% 100%
+    );
   }
 
   .flag-united-states::before {
@@ -448,7 +537,7 @@
     inset: 0;
     background:
       linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 30%),
-      radial-gradient(circle at 15% 20%, rgba(255,255,255,0.03), transparent 35%);
+      radial-gradient(circle at 15% 20%, rgba(255, 255, 255, 0.03), transparent 35%);
     pointer-events: none;
   }
 
@@ -547,7 +636,9 @@
     color: var(--muted-foreground);
     font-size: 13px;
     font-weight: 600;
-    transition: background-color 0.2s ease, color 0.2s ease;
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease;
   }
 
   .daterangepicker .ranges li:hover,
@@ -641,7 +732,10 @@
     font-family: var(--font-display);
     font-size: 13px;
     font-weight: 700;
-    transition: transform 0.2s ease, filter 0.2s ease, background-color 0.2s ease;
+    transition:
+      transform 0.2s ease,
+      filter 0.2s ease,
+      background-color 0.2s ease;
   }
 
   .daterangepicker .daterangepicker-action:hover {

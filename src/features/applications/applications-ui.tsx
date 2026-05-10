@@ -3,6 +3,14 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { SelectMenu } from "@/components/ui/select-menu";
 import { APP_ROUTES } from "@/config/routes";
 import type {
   Application,
@@ -221,43 +229,34 @@ export function ApplicationListPage({
             placeholder="Target country"
             className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none"
           />
-          <select
+          <SelectMenu
             value={stage}
-            onChange={(event) => setStage(event.target.value)}
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none"
-          >
-            <option value="">All stages</option>
-            {APPLICATION_STAGES.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-          <select
+            onValueChange={setStage}
+            className="h-auto bg-slate-50 py-3"
+            options={[
+              { value: "", label: "All stages" },
+              ...APPLICATION_STAGES.map((option) => ({ value: option, label: option })),
+            ]}
+          />
+          <SelectMenu
             value={status}
-            onChange={(event) => setStatus(event.target.value)}
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none"
-          >
-            <option value="">All statuses</option>
-            {APPLICATION_STATUS_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
+            onValueChange={setStatus}
+            className="h-auto bg-slate-50 py-3"
+            options={[
+              { value: "", label: "All statuses" },
+              ...APPLICATION_STATUS_OPTIONS.map((option) => ({ value: option, label: option })),
+            ]}
+          />
           {area === "admin" ? (
-            <select
+            <SelectMenu
               value={staffId}
-              onChange={(event) => setStaffId(event.target.value)}
-              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none"
-            >
-              <option value="">All counselors</option>
-              {staffUsers.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name}
-                </option>
-              ))}
-            </select>
+              onValueChange={setStaffId}
+              className="h-auto bg-slate-50 py-3"
+              options={[
+                { value: "", label: "All counselors" },
+                ...staffUsers.map((user) => ({ value: user.id, label: user.name })),
+              ]}
+            />
           ) : (
             <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
               Assigned to you
@@ -379,46 +378,44 @@ export function ApplicationListPage({
           </>
         )}
 
-        {isCreateOpen ? (
-          <div className="mt-6 rounded-[24px] border border-slate-200 bg-slate-50 p-5">
-            <div className="mb-4 flex items-center justify-between gap-4">
-              <h3 className="text-xl font-display font-extrabold text-slate-950">
+        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+          <DialogContent className="max-w-5xl overflow-y-auto border-slate-200 p-0 sm:max-h-[90vh]">
+            <DialogHeader className="border-b border-slate-200 px-6 py-5">
+              <DialogTitle className="font-display text-2xl font-extrabold text-slate-950">
                 Create Application
-              </h3>
-              <button
-                type="button"
-                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700"
-                onClick={() => setIsCreateOpen(false)}
-              >
-                Cancel
-              </button>
+              </DialogTitle>
+              <DialogDescription>
+                Add a new application record without leaving the pipeline view.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="px-6 py-6">
+              <ApplicationForm
+                form={form}
+                onChange={setForm}
+                clients={(clientsQuery.data?.items ?? []).map((client) => ({
+                  id: client.id,
+                  name: client.fullName,
+                }))}
+                staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
+                area={area}
+                onSubmit={async () => {
+                  try {
+                    const application = await upsertApplicationMutation.mutateAsync(form);
+                    toast.success("Application created.");
+                    setIsCreateOpen(false);
+                    navigate(detailRoute, { params: { applicationId: application.id } });
+                  } catch (error) {
+                    toast.error(
+                      error instanceof Error ? error.message : "Unable to create the application.",
+                    );
+                  }
+                }}
+                isSubmitting={upsertApplicationMutation.isPending}
+                lockClient={Boolean(clientId)}
+              />
             </div>
-            <ApplicationForm
-              form={form}
-              onChange={setForm}
-              clients={(clientsQuery.data?.items ?? []).map((client) => ({
-                id: client.id,
-                name: client.fullName,
-              }))}
-              staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
-              area={area}
-              onSubmit={async () => {
-                try {
-                  const application = await upsertApplicationMutation.mutateAsync(form);
-                  toast.success("Application created.");
-                  setIsCreateOpen(false);
-                  navigate(detailRoute, { params: { applicationId: application.id } });
-                } catch (error) {
-                  toast.error(
-                    error instanceof Error ? error.message : "Unable to create the application.",
-                  );
-                }
-              }}
-              isSubmitting={upsertApplicationMutation.isPending}
-              lockClient={Boolean(clientId)}
-            />
-          </div>
-        ) : null}
+          </DialogContent>
+        </Dialog>
       </Panel>
     </div>
   );
@@ -450,6 +447,7 @@ export function ApplicationDetailPage({
     search: "",
   });
   const [form, setForm] = useState<UpsertApplicationInput | null>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
 
   useEffect(() => {
     if (applicationQuery.data?.application) {
@@ -491,6 +489,16 @@ export function ApplicationDetailPage({
               onClick={() => navigate(baseRoute)}
             >
               Back to Applications
+            </button>
+            <button
+              type="button"
+              className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700"
+              onClick={() => {
+                setForm(mapApplicationToForm(application));
+                setIsEditOpen(true);
+              }}
+            >
+              Edit Application
             </button>
             <button
               type="button"
@@ -562,30 +570,47 @@ export function ApplicationDetailPage({
       >
         <div className="space-y-6">
           <ApplicationPipeline application={application} />
-          <ApplicationForm
-            form={form}
-            onChange={setForm}
-            clients={(clientsQuery.data?.items ?? []).map((client) => ({
-              id: client.id,
-              name: client.fullName,
-            }))}
-            staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
-            area={area}
-            onSubmit={async () => {
-              try {
-                await upsertApplicationMutation.mutateAsync(form);
-                toast.success("Application updated.");
-              } catch (error) {
-                toast.error(
-                  error instanceof Error ? error.message : "Unable to update the application.",
-                );
-              }
-            }}
-            isSubmitting={upsertApplicationMutation.isPending}
-          />
+          <ApplicationOverview application={application} />
           <ApplicationHistory history={history} />
         </div>
       </Panel>
+
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="max-w-5xl overflow-y-auto border-slate-200 p-0 sm:max-h-[90vh]">
+          <DialogHeader className="border-b border-slate-200 px-6 py-5">
+            <DialogTitle className="font-display text-2xl font-extrabold text-slate-950">
+              Edit Application
+            </DialogTitle>
+            <DialogDescription>
+              Update application details, assignment, and filing progress.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="px-6 py-6">
+            <ApplicationForm
+              form={form}
+              onChange={setForm}
+              clients={(clientsQuery.data?.items ?? []).map((client) => ({
+                id: client.id,
+                name: client.fullName,
+              }))}
+              staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
+              area={area}
+              onSubmit={async () => {
+                try {
+                  await upsertApplicationMutation.mutateAsync(form);
+                  toast.success("Application updated.");
+                  setIsEditOpen(false);
+                } catch (error) {
+                  toast.error(
+                    error instanceof Error ? error.message : "Unable to update the application.",
+                  );
+                }
+              }}
+              isSubmitting={upsertApplicationMutation.isPending}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -837,6 +862,36 @@ function ApplicationHistory({ history }: { history: ApplicationStageHistory[] })
   );
 }
 
+function ApplicationOverview({ application }: { application: Application }) {
+  return (
+    <div className="rounded-[24px] border border-slate-200 bg-white p-5">
+      <div className="mb-4">
+        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+          Application Details
+        </div>
+        <h3 className="mt-2 text-xl font-display font-extrabold text-slate-950">Overview</h3>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <ReadOnlyField label="Client" value={application.clientName} />
+        <ReadOnlyField label="Email" value={application.clientEmail || "—"} />
+        <ReadOnlyField label="Phone" value={application.clientPhone || "—"} />
+        <ReadOnlyField label="Target Country" value={application.targetCountry} />
+        <ReadOnlyField label="Service Type" value={application.serviceType} />
+        <ReadOnlyField label="University / Program" value={application.universityProgram || "—"} />
+        <ReadOnlyField label="Assigned Counselor" value={application.assignedStaffName || "Unassigned"} />
+        <ReadOnlyField label="Stage" value={application.currentStage} />
+        <ReadOnlyField label="Status" value={application.status} />
+        <ReadOnlyField label="Priority" value={application.priority} />
+        <ReadOnlyField label="Deadline" value={formatDate(application.deadline)} />
+        <ReadOnlyField label="Progress" value={`${application.progressPercent}%`} />
+      </div>
+      <div className="mt-4 rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-4 text-sm leading-7 text-slate-600">
+        {application.notes || "No notes added yet."}
+      </div>
+    </div>
+  );
+}
+
 function ApplicationForm({
   form,
   onChange,
@@ -1026,18 +1081,23 @@ function SelectField({
       <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
         {label}
       </span>
-      <select
+      <SelectMenu
         value={value}
         disabled={disabled}
-        onChange={(event) => onChange(event.target.value)}
-        className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-slate-300 disabled:bg-slate-100"
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+        onValueChange={onChange}
+        options={options}
+      />
     </label>
+  );
+}
+
+function ReadOnlyField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-4">
+      <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+        {label}
+      </div>
+      <div className="mt-2 text-sm font-semibold text-slate-800">{value}</div>
+    </div>
   );
 }

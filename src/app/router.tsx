@@ -1,5 +1,5 @@
-import { useEffect } from "react";
 import { Link, Navigate, Outlet, Route, Routes, useLocation, useParams } from "react-router-dom";
+import { SeoHead } from "@/components/SeoHead";
 import { APP_ROUTES } from "@/config/routes";
 import { HomePage } from "@/pages/home-page";
 import { AuthPage } from "@/pages/auth-page";
@@ -18,7 +18,6 @@ import { DashboardProvider, getDashboardAccess } from "@/features/dashboard/dash
 import {
   ClientOverviewPage,
   ModuleOverview,
-  PlaceholderModulePage,
 } from "@/features/dashboard/module-pages";
 import {
   DashboardLayout,
@@ -37,12 +36,28 @@ import {
   ApplicationListPage,
   ClientApplicationPage,
 } from "@/features/applications/applications-ui";
+import {
+  AdminOrStaffAppointmentsPage,
+  AdminOrStaffDocumentsPage,
+  AdminOrStaffMessagesPage,
+  AdminOrStaffPaymentsPage,
+  ClientPortalAppointmentsPage,
+  ClientPortalDocumentsPage,
+  ClientPortalMessagesPage,
+  ClientPortalPaymentsPage,
+  TaskListPage,
+} from "@/features/operations/operations-ui";
 
 const ADMIN_PAGE_TITLES: Record<string, string> = {
   [APP_ROUTES.dashboardAdmin]: "Overview",
   [APP_ROUTES.dashboardAdminLeads]: "Lead Management",
   [APP_ROUTES.dashboardAdminClients]: "Clients",
   [APP_ROUTES.dashboardAdminApplications]: "Applications",
+  [APP_ROUTES.dashboardAdminTasks]: "Tasks",
+  [APP_ROUTES.dashboardAdminDocuments]: "Documents",
+  [APP_ROUTES.dashboardAdminAppointments]: "Appointments",
+  [APP_ROUTES.dashboardAdminMessages]: "Messages",
+  [APP_ROUTES.dashboardAdminPayments]: "Payments",
   [APP_ROUTES.dashboardAdminContent]: "Landing CMS",
   [APP_ROUTES.dashboardAdminUsers]: "User Access",
   [APP_ROUTES.dashboardAdminProfile]: "My Profile",
@@ -58,6 +73,7 @@ const STAFF_PAGE_TITLES: Record<string, string> = {
   [APP_ROUTES.dashboardStaffDocuments]: "Documents",
   [APP_ROUTES.dashboardStaffAppointments]: "Appointments",
   [APP_ROUTES.dashboardStaffMessages]: "Messages",
+  [APP_ROUTES.dashboardStaffPayments]: "Payments",
 };
 
 const CLIENT_PAGE_TITLES: Record<string, string> = {
@@ -82,26 +98,6 @@ function NotFoundPage() {
       </div>
     </div>
   );
-}
-
-function AppDocumentTitle() {
-  const location = useLocation();
-
-  useEffect(() => {
-    if (location.pathname === APP_ROUTES.auth) {
-      document.title = "Sign In - Hadaf";
-      return;
-    }
-
-    if (location.pathname.startsWith(APP_ROUTES.dashboard)) {
-      document.title = "Dashboard Hadaf";
-      return;
-    }
-
-    document.title = "Hadaf Consultants | Global Visa and Immigration Guidance";
-  }, [location.pathname]);
-
-  return null;
 }
 
 function DashboardIndexRedirect() {
@@ -344,7 +340,7 @@ function ProtectedClientLayout() {
 export function AppRouter() {
   return (
     <>
-      <AppDocumentTitle />
+      <SeoHead />
       <Routes>
         <Route path={APP_ROUTES.home} element={<HomePage />} />
         <Route path={APP_ROUTES.auth} element={<AuthPage />} />
@@ -364,6 +360,11 @@ export function AppRouter() {
           <Route path="clients/:clientId" element={<AdminClientDetailRoute />} />
           <Route path="applications" element={<ApplicationListPage area="admin" />} />
           <Route path="applications/:applicationId" element={<AdminApplicationDetailRoute />} />
+          <Route path="tasks" element={<TaskListPage area="admin" />} />
+          <Route path="documents" element={<AdminOrStaffDocumentsPage area="admin" />} />
+          <Route path="appointments" element={<AdminOrStaffAppointmentsPage area="admin" />} />
+          <Route path="messages" element={<AdminOrStaffMessagesPage area="admin" />} />
+          <Route path="payments" element={<AdminOrStaffPaymentsPage area="admin" />} />
           <Route path="content" element={<DashboardContentPage />} />
           <Route path="users" element={<DashboardUsersPage />} />
         </Route>
@@ -377,92 +378,21 @@ export function AppRouter() {
           <Route path="clients/:clientId" element={<StaffClientDetailRoute />} />
           <Route path="applications" element={<ApplicationListPage area="staff" />} />
           <Route path="applications/:applicationId" element={<StaffApplicationDetailRoute />} />
-          <Route
-            path="tasks"
-            element={
-              <PlaceholderModulePage
-                title="Tasks"
-                description="This route is prepared for counselor tasks assigned to the logged-in staff account."
-                resourceLabel="Assigned tasks"
-              />
-            }
-          />
-          <Route
-            path="documents"
-            element={
-              <PlaceholderModulePage
-                title="Documents"
-                description="This route is prepared for staff document review limited to assigned records."
-                resourceLabel="Assigned documents"
-              />
-            }
-          />
-          <Route
-            path="appointments"
-            element={
-              <PlaceholderModulePage
-                title="Appointments"
-                description="This route is prepared for staff appointments tied to assigned leads and clients."
-                resourceLabel="Assigned appointments"
-              />
-            }
-          />
-          <Route
-            path="messages"
-            element={
-              <PlaceholderModulePage
-                title="Messages"
-                description="This route is prepared for staff messaging scoped to assigned conversations."
-                resourceLabel="Assigned messages"
-              />
-            }
-          />
+          <Route path="tasks" element={<TaskListPage area="staff" />} />
+          <Route path="documents" element={<AdminOrStaffDocumentsPage area="staff" />} />
+          <Route path="appointments" element={<AdminOrStaffAppointmentsPage area="staff" />} />
+          <Route path="messages" element={<AdminOrStaffMessagesPage area="staff" />} />
+          <Route path="payments" element={<AdminOrStaffPaymentsPage area="staff" />} />
         </Route>
 
         <Route path={APP_ROUTES.dashboardClient} element={<ProtectedClientLayout />}>
           <Route index element={<ClientDashboardOverview />} />
           <Route path="profile" element={<ClientSelfProfilePage />} />
           <Route path="application" element={<ClientApplicationPage />} />
-          <Route
-            path="documents"
-            element={
-              <PlaceholderModulePage
-                title="Documents"
-                description="This route is reserved for the logged-in client’s own documents."
-                resourceLabel="Own documents"
-              />
-            }
-          />
-          <Route
-            path="appointments"
-            element={
-              <PlaceholderModulePage
-                title="Appointments"
-                description="This route is reserved for the logged-in client’s own appointments."
-                resourceLabel="Own appointments"
-              />
-            }
-          />
-          <Route
-            path="payments"
-            element={
-              <PlaceholderModulePage
-                title="Payments"
-                description="This route is reserved for the logged-in client’s own payment records."
-                resourceLabel="Own payments"
-              />
-            }
-          />
-          <Route
-            path="messages"
-            element={
-              <PlaceholderModulePage
-                title="Messages"
-                description="This route is reserved for the logged-in client’s own conversations."
-                resourceLabel="Own messages"
-              />
-            }
-          />
+          <Route path="documents" element={<ClientPortalDocumentsPage />} />
+          <Route path="appointments" element={<ClientPortalAppointmentsPage />} />
+          <Route path="payments" element={<ClientPortalPaymentsPage />} />
+          <Route path="messages" element={<ClientPortalMessagesPage />} />
         </Route>
 
         <Route path="*" element={<NotFoundPage />} />

@@ -9,6 +9,16 @@ export type DashboardAccess = {
   canWriteClients: boolean;
   canReadApplications: boolean;
   canWriteApplications: boolean;
+  canReadTasks: boolean;
+  canWriteTasks: boolean;
+  canReadDocuments: boolean;
+  canWriteDocuments: boolean;
+  canReadAppointments: boolean;
+  canWriteAppointments: boolean;
+  canReadMessages: boolean;
+  canWriteMessages: boolean;
+  canReadPayments: boolean;
+  canWritePayments: boolean;
   canReadSiteContent: boolean;
   canWriteSiteContent: boolean;
   canReadUsers: boolean;
@@ -29,6 +39,25 @@ export function getDashboardAccess(currentUser: SessionUser): DashboardAccess {
       currentUser.role === "admin" || currentUser.permissions.includes("applications.read"),
     canWriteApplications:
       currentUser.role === "admin" || currentUser.permissions.includes("applications.write"),
+    canReadTasks: currentUser.role === "admin" || currentUser.permissions.includes("tasks.read"),
+    canWriteTasks:
+      currentUser.role === "admin" || currentUser.permissions.includes("tasks.write"),
+    canReadDocuments:
+      currentUser.role === "admin" || currentUser.permissions.includes("documents.read"),
+    canWriteDocuments:
+      currentUser.role === "admin" || currentUser.permissions.includes("documents.write"),
+    canReadAppointments:
+      currentUser.role === "admin" || currentUser.permissions.includes("appointments.read"),
+    canWriteAppointments:
+      currentUser.role === "admin" || currentUser.permissions.includes("appointments.write"),
+    canReadMessages:
+      currentUser.role === "admin" || currentUser.permissions.includes("messages.read"),
+    canWriteMessages:
+      currentUser.role === "admin" || currentUser.permissions.includes("messages.write"),
+    canReadPayments:
+      currentUser.role === "admin" || currentUser.permissions.includes("payments.read"),
+    canWritePayments:
+      currentUser.role === "admin" || currentUser.permissions.includes("payments.write"),
     canReadSiteContent:
       currentUser.role === "admin" ||
       currentUser.permissions.includes("site_content.read") ||
