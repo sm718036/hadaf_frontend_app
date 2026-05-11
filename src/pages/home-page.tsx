@@ -57,6 +57,9 @@ export function HomePage() {
         <Faq content={content.faq} />
         <Contact
           content={content.contact}
+          countryOptions={content.countries.items
+            .filter((item) => item.isVisible)
+            .map((item) => item.name)}
           serviceOptions={content.services.items
             .filter((item) => item.isVisible)
             .map((item) => item.title)}

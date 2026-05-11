@@ -175,6 +175,17 @@ export function LeadListPage({ area }: { area: "admin" | "staff" }) {
 
   return (
     <div className="space-y-6">
+      {leadsQuery.data ? (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
+          <SummaryCard label="Total Leads" value={String(leadsQuery.data.summary.total)} />
+          <SummaryCard label="New" value={String(leadsQuery.data.summary.new)} />
+          <SummaryCard label="Contacted" value={String(leadsQuery.data.summary.contacted)} />
+          <SummaryCard label="Qualified" value={String(leadsQuery.data.summary.qualified)} />
+          <SummaryCard label="Converted" value={String(leadsQuery.data.summary.converted)} />
+          <SummaryCard label="Lost" value={String(leadsQuery.data.summary.lost)} />
+        </div>
+      ) : null}
+
       <Panel
         title={area === "admin" ? "Lead Management" : "Assigned Leads"}
         subtitle={
@@ -588,6 +599,15 @@ function LeadOverview({ lead }: { lead: Lead }) {
       </div>
       <ReadOnlyTextBlock label="Message / Comments" value={lead.message || "No message added."} />
       <ReadOnlyTextBlock label="Internal Notes" value={lead.internalNotes || "No internal notes added."} />
+    </div>
+  );
+}
+
+function SummaryCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-[24px] border border-slate-200 bg-white px-5 py-5">
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</p>
+      <p className="mt-3 font-display text-3xl font-extrabold text-slate-950">{value}</p>
     </div>
   );
 }

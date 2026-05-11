@@ -11,6 +11,7 @@ import { resolveContentImage } from "@/lib/content-assets";
 type ContactProps = {
   content: SiteContent["contact"];
   serviceOptions: string[];
+  countryOptions: string[];
 };
 
 const contactIcons = {
@@ -19,12 +20,13 @@ const contactIcons = {
   "map-pin": MapPin,
 } as const;
 
-export function Contact({ content, serviceOptions }: ContactProps) {
+export function Contact({ content, serviceOptions, countryOptions }: ContactProps) {
   const submitLeadMutation = useSubmitPublicLead();
   const [form, setForm] = useState({
     fullName: "",
     phone: "",
     email: "",
+    interestedCountry: "",
     interestedService: "",
     message: "",
   });
@@ -53,11 +55,22 @@ export function Contact({ content, serviceOptions }: ContactProps) {
                 event.preventDefault();
 
                 try {
+                  if (!form.fullName.trim()) {
+                    toast.error("Your name is required.");
+                    return;
+                  }
+
+                  if (!form.phone.trim() && !form.email.trim()) {
+                    toast.error("Provide at least a phone number or email address.");
+                    return;
+                  }
+
                   await submitLeadMutation.mutateAsync({
                     fullName: form.fullName,
                     phone: form.phone,
                     email: form.email,
-                    interestedCountry: "",
+                    interestedCountry:
+                      form.interestedCountry === "Select Country" ? "" : form.interestedCountry,
                     interestedService:
                       form.interestedService === STATIC_CONTACT_FORM.placeholders.selectDefault
                         ? ""
@@ -70,6 +83,7 @@ export function Contact({ content, serviceOptions }: ContactProps) {
                     fullName: "",
                     phone: "",
                     email: "",
+                    interestedCountry: "",
                     interestedService: "",
                     message: "",
                   });
@@ -108,6 +122,18 @@ export function Contact({ content, serviceOptions }: ContactProps) {
                   placeholder={STATIC_CONTACT_FORM.placeholders.email}
                   className="h-[52px] w-full border border-border bg-white px-5 text-[14px] text-foreground placeholder:text-muted-foreground transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15"
                 />
+                <SelectMenu
+                  value={form.interestedCountry}
+                  onValueChange={(interestedCountry) =>
+                    setForm((current) => ({ ...current, interestedCountry }))
+                  }
+                  placeholder="Select Country"
+                  className="h-[52px] border-border px-5 text-[14px] text-foreground focus:border-primary"
+                  options={countryOptions.map((option) => ({ value: option, label: option }))}
+                />
+              </div>
+
+              <div className="grid gap-5 sm:grid-cols-2">
                 <SelectMenu
                   value={form.interestedService}
                   onValueChange={(interestedService) =>

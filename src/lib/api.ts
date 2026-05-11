@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 export const API_BASE_URL =
   import.meta.env.VITE_API_URL?.replace(/\/$/, "") || "http://localhost:4000";
 
@@ -38,24 +40,84 @@ async function parseApiResponse<T>(response: Response) {
 }
 
 export async function apiRequest<T>(path: string, options: ApiRequestOptions = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    method: options.method || "GET",
-    credentials: "include",
-    signal: options.signal,
-    headers: options.body ? { "Content-Type": "application/json" } : undefined,
-    body: options.body ? JSON.stringify(options.body) : undefined,
+  const requestId = crypto.randomUUID();
+  const startedAt = Date.now();
+  const method = options.method || "GET";
+
+  logger.debug("api.request.started", {
+    requestId,
+    method,
+    path,
+    hasBody: Boolean(options.body),
   });
 
-  return parseApiResponse<T>(response);
+  try {
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+      method,
+      credentials: "include",
+      signal: options.signal,
+      headers: options.body ? { "Content-Type": "application/json" } : undefined,
+      body: options.body ? JSON.stringify(options.body) : undefined,
+    });
+
+    const payload = await parseApiResponse<T>(response);
+    logger.info("api.request.completed", {
+      requestId,
+      method,
+      path,
+      status: response.status,
+      durationMs: Date.now() - startedAt,
+    });
+    return payload;
+  } catch (error) {
+    logger.error("api.request.failed", {
+      requestId,
+      method,
+      path,
+      durationMs: Date.now() - startedAt,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    throw error;
+  }
 }
 
 export async function apiFormRequest<T>(path: string, options: ApiFormRequestOptions) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    method: options.method || "POST",
-    credentials: "include",
-    signal: options.signal,
-    body: options.formData,
+  const requestId = crypto.randomUUID();
+  const startedAt = Date.now();
+  const method = options.method || "POST";
+
+  logger.debug("api.form_request.started", {
+    requestId,
+    method,
+    path,
+    formKeys: Array.from(options.formData.keys()),
   });
 
-  return parseApiResponse<T>(response);
+  try {
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+      method,
+      credentials: "include",
+      signal: options.signal,
+      body: options.formData,
+    });
+
+    const payload = await parseApiResponse<T>(response);
+    logger.info("api.form_request.completed", {
+      requestId,
+      method,
+      path,
+      status: response.status,
+      durationMs: Date.now() - startedAt,
+    });
+    return payload;
+  } catch (error) {
+    logger.error("api.form_request.failed", {
+      requestId,
+      method,
+      path,
+      durationMs: Date.now() - startedAt,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    throw error;
+  }
 }
