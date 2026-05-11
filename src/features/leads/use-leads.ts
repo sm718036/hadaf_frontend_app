@@ -44,6 +44,7 @@ export function useLead(id: string, enabled = true) {
     queryFn: ({ signal }) => leadsService.getById(id, signal),
     enabled,
     staleTime: 30_000,
+    placeholderData: (previousData) => previousData,
   });
 }
 

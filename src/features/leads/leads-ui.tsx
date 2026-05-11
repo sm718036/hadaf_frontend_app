@@ -17,10 +17,12 @@ import { useDashboardAccess } from "@/features/dashboard/dashboard-context";
 import { DataTable, StatusBadge } from "@/features/dashboard/dashboard-layout";
 import {
   EmptyHint,
+  LoadingOverlay,
   PaginationControls,
   Panel,
   TableToolbar,
 } from "@/features/dashboard/dashboard-ui";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { Lead, LeadStatus, LeadSource, UpsertLeadInput } from "@/features/leads/leads.schemas";
 import {
   useConvertLead,
@@ -429,22 +431,21 @@ export function LeadDetailPage({ area, leadId }: { area: "admin" | "staff"; lead
     [staffUsersQuery.data],
   );
 
-  if (leadQuery.isLoading || !form) {
-    return <EmptyHint message="Loading lead details..." loading />;
-  }
-
   if (leadQuery.isError || !leadQuery.data) {
     return <EmptyHint message="Unable to load lead details." tone="error" />;
   }
 
-  const lead = leadQuery.data.lead;
-  const history = leadQuery.data.history;
+  const lead = leadQuery.data?.lead;
+  const history = leadQuery.data?.history ?? [];
   const isAdmin = area === "admin";
+  const isBlockingLoad = !lead || !form;
+  const isOverlayVisible = leadQuery.isFetching || isBlockingLoad;
 
   return (
     <div className="space-y-6">
       <Panel
-        title={lead.fullName}
+        className="relative overflow-hidden"
+        title={lead?.fullName ?? "Lead Details"}
         subtitle={
           isAdmin
             ? "Update lead details, assignment, status, and conversion from this page."
@@ -463,13 +464,15 @@ export function LeadDetailPage({ area, leadId }: { area: "admin" | "staff"; lead
               type="button"
               className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700"
               onClick={() => {
-                setForm(mapLeadToForm(lead));
+                if (lead) {
+                  setForm(mapLeadToForm(lead));
+                }
                 setIsEditOpen(true);
               }}
             >
               Edit Lead
             </button>
-            {isAdmin && !lead.convertedClientId ? (
+            {isAdmin && lead && !lead.convertedClientId ? (
               <button
                 type="button"
                 className="btn-gold"
@@ -516,10 +519,22 @@ export function LeadDetailPage({ area, leadId }: { area: "admin" | "staff"; lead
           </div>
         }
       >
-        <LeadOverview lead={lead} />
+        {lead ? (
+          <LeadOverview lead={lead} />
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div key={index} className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+                <Skeleton className="h-3 w-24 rounded-full bg-slate-200" />
+                <Skeleton className="mt-4 h-6 w-3/4 rounded-full bg-slate-200" />
+              </div>
+            ))}
+          </div>
+        )}
+        {isOverlayVisible ? <LoadingOverlay label="Loading lead details..." /> : null}
       </Panel>
 
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+      <Dialog open={isEditOpen && Boolean(form)} onOpenChange={setIsEditOpen}>
         <DialogContent className="max-w-4xl overflow-y-auto border-slate-200 p-0 sm:max-h-[90vh]">
           <DialogHeader className="border-b border-slate-200 px-6 py-5">
             <DialogTitle className="font-display text-2xl font-extrabold text-slate-950">
@@ -531,11 +546,12 @@ export function LeadDetailPage({ area, leadId }: { area: "admin" | "staff"; lead
           </DialogHeader>
           <div className="px-6 py-6">
             <LeadForm
-              form={form}
+              form={form ?? buildEmptyLeadForm()}
               onChange={setForm}
               staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
               mode={isAdmin ? "admin" : "staff"}
               onSubmit={async () => {
+                if (!form) return;
                 try {
                   await submitLeadWithDuplicateOverride(upsertLeadMutation, form);
                   toast.success("Lead updated.");

@@ -10,7 +10,7 @@ import {
   useUploadProfileAvatar,
 } from "@/features/auth/use-auth";
 import { getDefaultInternalDashboardRoute } from "@/features/dashboard/access-control";
-import { EmptyHint } from "@/features/dashboard/dashboard-ui";
+import { EmptyHint, LoadingOverlay } from "@/features/dashboard/dashboard-ui";
 import {
   buildUserProfileData,
   getUserAvatarUrl,
@@ -23,10 +23,6 @@ export function DashboardProfilePage() {
   const uploadAvatarMutation = useUploadProfileAvatar();
   const removeAvatarMutation = useRemoveProfileAvatar();
 
-  if (currentUserQuery.isLoading) {
-    return <EmptyHint message="Loading profile..." loading />;
-  }
-
   if (currentUserQuery.isError || !currentUserQuery.data) {
     return <EmptyHint message="Unable to load the profile." tone="error" />;
   }
@@ -37,7 +33,7 @@ export function DashboardProfilePage() {
   const initials = getUserInitials(currentUser.name);
 
   return (
-    <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm xl:p-8">
+    <section className="relative overflow-hidden rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm xl:p-8">
       <div className="pb-6">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center">
           <Avatar className="h-24 w-24 border border-slate-200 bg-white">
@@ -147,6 +143,7 @@ export function DashboardProfilePage() {
           ]}
         />
       </div>
+      {currentUserQuery.isFetching ? <LoadingOverlay label="Refreshing profile..." /> : null}
     </section>
   );
 }

@@ -1,11 +1,8 @@
+import { lazy, Suspense } from "react";
 import { Link, Navigate, Outlet, Route, Routes, useLocation, useParams } from "react-router-dom";
 import { SeoHead } from "@/components/SeoHead";
+import { SpinnerTwo } from "@/components/ui/spinner";
 import { APP_ROUTES } from "@/config/routes";
-import { HomePage } from "@/pages/home-page";
-import { AuthPage } from "@/pages/auth-page";
-import { DashboardContentPage, DashboardContentRedirect } from "@/pages/dashboard/content-page";
-import { DashboardProfilePage, DashboardProfileRedirect } from "@/pages/dashboard/profile-page";
-import { DashboardUsersPage, DashboardUsersRedirect } from "@/pages/dashboard/users-page";
 import { useCurrentUser } from "@/features/auth/use-auth";
 import { useCurrentClient } from "@/features/client-auth/use-client-auth";
 import {
@@ -15,39 +12,99 @@ import {
   getDefaultInternalDashboardRoute,
 } from "@/features/dashboard/access-control";
 import { DashboardProvider, getDashboardAccess } from "@/features/dashboard/dashboard-context";
-import {
-  ClientOverviewPage,
-  ModuleOverview,
-} from "@/features/dashboard/module-pages";
+import { ClientOverviewPage, ModuleOverview } from "@/features/dashboard/module-pages";
 import {
   DashboardLayout,
   toClientLayoutActor,
   toInternalLayoutActor,
 } from "@/features/dashboard/dashboard-layout";
 import { RoleProtectedRoute } from "@/features/dashboard/role-protected-route";
-import { LeadDetailPage, LeadListPage } from "@/features/leads/leads-ui";
-import {
-  ClientDetailPage,
-  ClientListPage,
-  ClientSelfProfilePage,
-} from "@/features/clients/client-ui";
-import {
-  ApplicationDetailPage,
-  ApplicationListPage,
-  ClientApplicationPage,
-} from "@/features/applications/applications-ui";
-import {
-  AdminOrStaffAppointmentsPage,
-  AdminOrStaffDocumentsPage,
-  AdminOrStaffMessagesPage,
-  AdminOrStaffPaymentsPage,
-  ClientPortalAppointmentsPage,
-  ClientPortalDocumentsPage,
-  MeetingRoomPage,
-  ClientPortalMessagesPage,
-  ClientPortalPaymentsPage,
-  TaskListPage,
-} from "@/features/operations/operations-ui";
+
+const HomePage = lazy(() => import("@/pages/home-page").then((module) => ({ default: module.HomePage })));
+const AuthPage = lazy(() => import("@/pages/auth-page").then((module) => ({ default: module.AuthPage })));
+const DashboardContentPage = lazy(() =>
+  import("@/pages/dashboard/content-page").then((module) => ({ default: module.DashboardContentPage })),
+);
+const DashboardContentRedirect = lazy(() =>
+  import("@/pages/dashboard/content-page").then((module) => ({ default: module.DashboardContentRedirect })),
+);
+const DashboardProfilePage = lazy(() =>
+  import("@/pages/dashboard/profile-page").then((module) => ({ default: module.DashboardProfilePage })),
+);
+const DashboardProfileRedirect = lazy(() =>
+  import("@/pages/dashboard/profile-page").then((module) => ({ default: module.DashboardProfileRedirect })),
+);
+const DashboardUsersPage = lazy(() =>
+  import("@/pages/dashboard/users-page").then((module) => ({ default: module.DashboardUsersPage })),
+);
+const DashboardUsersRedirect = lazy(() =>
+  import("@/pages/dashboard/users-page").then((module) => ({ default: module.DashboardUsersRedirect })),
+);
+const LeadListPage = lazy(() =>
+  import("@/features/leads/leads-ui").then((module) => ({ default: module.LeadListPage })),
+);
+const LeadDetailPage = lazy(() =>
+  import("@/features/leads/leads-ui").then((module) => ({ default: module.LeadDetailPage })),
+);
+const ClientListPage = lazy(() =>
+  import("@/features/clients/client-ui").then((module) => ({ default: module.ClientListPage })),
+);
+const ClientDetailPage = lazy(() =>
+  import("@/features/clients/client-ui").then((module) => ({ default: module.ClientDetailPage })),
+);
+const ClientSelfProfilePage = lazy(() =>
+  import("@/features/clients/client-ui").then((module) => ({ default: module.ClientSelfProfilePage })),
+);
+const ApplicationListPage = lazy(() =>
+  import("@/features/applications/applications-ui").then((module) => ({ default: module.ApplicationListPage })),
+);
+const ApplicationDetailPage = lazy(() =>
+  import("@/features/applications/applications-ui").then((module) => ({ default: module.ApplicationDetailPage })),
+);
+const ClientApplicationPage = lazy(() =>
+  import("@/features/applications/applications-ui").then((module) => ({ default: module.ClientApplicationPage })),
+);
+const TaskListPage = lazy(() =>
+  import("@/features/operations/operations-ui").then((module) => ({ default: module.TaskListPage })),
+);
+const AdminOrStaffDocumentsPage = lazy(() =>
+  import("@/features/operations/operations-ui").then((module) => ({ default: module.AdminOrStaffDocumentsPage })),
+);
+const AdminOrStaffAppointmentsPage = lazy(() =>
+  import("@/features/operations/operations-ui").then((module) => ({ default: module.AdminOrStaffAppointmentsPage })),
+);
+const AdminOrStaffMessagesPage = lazy(() =>
+  import("@/features/operations/operations-ui").then((module) => ({ default: module.AdminOrStaffMessagesPage })),
+);
+const AdminOrStaffPaymentsPage = lazy(() =>
+  import("@/features/operations/operations-ui").then((module) => ({ default: module.AdminOrStaffPaymentsPage })),
+);
+const ClientPortalDocumentsPage = lazy(() =>
+  import("@/features/operations/operations-ui").then((module) => ({ default: module.ClientPortalDocumentsPage })),
+);
+const ClientPortalAppointmentsPage = lazy(() =>
+  import("@/features/operations/operations-ui").then((module) => ({ default: module.ClientPortalAppointmentsPage })),
+);
+const ClientPortalMessagesPage = lazy(() =>
+  import("@/features/operations/operations-ui").then((module) => ({ default: module.ClientPortalMessagesPage })),
+);
+const ClientPortalPaymentsPage = lazy(() =>
+  import("@/features/operations/operations-ui").then((module) => ({ default: module.ClientPortalPaymentsPage })),
+);
+const MeetingRoomPage = lazy(() =>
+  import("@/features/operations/operations-ui").then((module) => ({ default: module.MeetingRoomPage })),
+);
+
+function RouteChunkFallback() {
+  return (
+    <div className="flex min-h-[40vh] items-center justify-center px-4 py-12">
+      <div className="inline-flex items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm">
+        <SpinnerTwo size="sm" />
+        <span>Loading page...</span>
+      </div>
+    </div>
+  );
+}
 
 const ADMIN_PAGE_TITLES: Record<string, string> = {
   [APP_ROUTES.dashboardAdmin]: "Overview",
@@ -353,65 +410,67 @@ export function AppRouter() {
   return (
     <>
       <SeoHead />
-      <Routes>
-        <Route path={APP_ROUTES.home} element={<HomePage />} />
-        <Route path={APP_ROUTES.auth} element={<AuthPage />} />
-        <Route path={APP_ROUTES.clientPortal} element={<ClientPortalRedirect />} />
-        <Route path={APP_ROUTES.dashboard} element={<DashboardIndexRedirect />} />
-        <Route path={APP_ROUTES.dashboardClients} element={<DashboardClientsRedirect />} />
-        <Route path={APP_ROUTES.dashboardContent} element={<DashboardContentRedirect />} />
-        <Route path={APP_ROUTES.dashboardProfile} element={<DashboardProfileRedirect />} />
-        <Route path={APP_ROUTES.dashboardUsers} element={<DashboardUsersRedirect />} />
+      <Suspense fallback={<RouteChunkFallback />}>
+        <Routes>
+          <Route path={APP_ROUTES.home} element={<HomePage />} />
+          <Route path={APP_ROUTES.auth} element={<AuthPage />} />
+          <Route path={APP_ROUTES.clientPortal} element={<ClientPortalRedirect />} />
+          <Route path={APP_ROUTES.dashboard} element={<DashboardIndexRedirect />} />
+          <Route path={APP_ROUTES.dashboardClients} element={<DashboardClientsRedirect />} />
+          <Route path={APP_ROUTES.dashboardContent} element={<DashboardContentRedirect />} />
+          <Route path={APP_ROUTES.dashboardProfile} element={<DashboardProfileRedirect />} />
+          <Route path={APP_ROUTES.dashboardUsers} element={<DashboardUsersRedirect />} />
 
-        <Route path={APP_ROUTES.dashboardAdmin} element={<ProtectedInternalLayout area="admin" />}>
-          <Route index element={<AdminOverviewPage />} />
-          <Route path="profile" element={<DashboardProfilePage />} />
-          <Route path="leads" element={<LeadListPage area="admin" />} />
-          <Route path="leads/:leadId" element={<AdminLeadDetailRoute />} />
-          <Route path="clients" element={<ClientListPage area="admin" />} />
-          <Route path="clients/:clientId" element={<AdminClientDetailRoute />} />
-          <Route path="applications" element={<ApplicationListPage area="admin" />} />
-          <Route path="applications/:applicationId" element={<AdminApplicationDetailRoute />} />
-          <Route path="tasks" element={<TaskListPage area="admin" />} />
-          <Route path="documents" element={<AdminOrStaffDocumentsPage area="admin" />} />
-          <Route path="appointments" element={<AdminOrStaffAppointmentsPage area="admin" />} />
-          <Route path="messages" element={<AdminOrStaffMessagesPage area="admin" />} />
-          <Route path="messages/calls/:meetingId" element={<MeetingRoomPage mode="internal" area="admin" />} />
-          <Route path="payments" element={<AdminOrStaffPaymentsPage area="admin" />} />
-          <Route path="content" element={<DashboardContentPage />} />
-          <Route path="users" element={<DashboardUsersPage />} />
-        </Route>
+          <Route path={APP_ROUTES.dashboardAdmin} element={<ProtectedInternalLayout area="admin" />}>
+            <Route index element={<AdminOverviewPage />} />
+            <Route path="profile" element={<DashboardProfilePage />} />
+            <Route path="leads" element={<LeadListPage area="admin" />} />
+            <Route path="leads/:leadId" element={<AdminLeadDetailRoute />} />
+            <Route path="clients" element={<ClientListPage area="admin" />} />
+            <Route path="clients/:clientId" element={<AdminClientDetailRoute />} />
+            <Route path="applications" element={<ApplicationListPage area="admin" />} />
+            <Route path="applications/:applicationId" element={<AdminApplicationDetailRoute />} />
+            <Route path="tasks" element={<TaskListPage area="admin" />} />
+            <Route path="documents" element={<AdminOrStaffDocumentsPage area="admin" />} />
+            <Route path="appointments" element={<AdminOrStaffAppointmentsPage area="admin" />} />
+            <Route path="messages" element={<AdminOrStaffMessagesPage area="admin" />} />
+            <Route path="messages/calls/:meetingId" element={<MeetingRoomPage mode="internal" area="admin" />} />
+            <Route path="payments" element={<AdminOrStaffPaymentsPage area="admin" />} />
+            <Route path="content" element={<DashboardContentPage />} />
+            <Route path="users" element={<DashboardUsersPage />} />
+          </Route>
 
-        <Route path={APP_ROUTES.dashboardStaff} element={<ProtectedInternalLayout area="staff" />}>
-          <Route index element={<StaffOverviewPage />} />
-          <Route path="profile" element={<DashboardProfilePage />} />
-          <Route path="leads" element={<LeadListPage area="staff" />} />
-          <Route path="leads/:leadId" element={<StaffLeadDetailRoute />} />
-          <Route path="clients" element={<ClientListPage area="staff" />} />
-          <Route path="clients/:clientId" element={<StaffClientDetailRoute />} />
-          <Route path="applications" element={<ApplicationListPage area="staff" />} />
-          <Route path="applications/:applicationId" element={<StaffApplicationDetailRoute />} />
-          <Route path="tasks" element={<TaskListPage area="staff" />} />
-          <Route path="documents" element={<AdminOrStaffDocumentsPage area="staff" />} />
-          <Route path="appointments" element={<AdminOrStaffAppointmentsPage area="staff" />} />
-          <Route path="messages" element={<AdminOrStaffMessagesPage area="staff" />} />
-          <Route path="messages/calls/:meetingId" element={<MeetingRoomPage mode="internal" area="staff" />} />
-          <Route path="payments" element={<AdminOrStaffPaymentsPage area="staff" />} />
-        </Route>
+          <Route path={APP_ROUTES.dashboardStaff} element={<ProtectedInternalLayout area="staff" />}>
+            <Route index element={<StaffOverviewPage />} />
+            <Route path="profile" element={<DashboardProfilePage />} />
+            <Route path="leads" element={<LeadListPage area="staff" />} />
+            <Route path="leads/:leadId" element={<StaffLeadDetailRoute />} />
+            <Route path="clients" element={<ClientListPage area="staff" />} />
+            <Route path="clients/:clientId" element={<StaffClientDetailRoute />} />
+            <Route path="applications" element={<ApplicationListPage area="staff" />} />
+            <Route path="applications/:applicationId" element={<StaffApplicationDetailRoute />} />
+            <Route path="tasks" element={<TaskListPage area="staff" />} />
+            <Route path="documents" element={<AdminOrStaffDocumentsPage area="staff" />} />
+            <Route path="appointments" element={<AdminOrStaffAppointmentsPage area="staff" />} />
+            <Route path="messages" element={<AdminOrStaffMessagesPage area="staff" />} />
+            <Route path="messages/calls/:meetingId" element={<MeetingRoomPage mode="internal" area="staff" />} />
+            <Route path="payments" element={<AdminOrStaffPaymentsPage area="staff" />} />
+          </Route>
 
-        <Route path={APP_ROUTES.dashboardClient} element={<ProtectedClientLayout />}>
-          <Route index element={<ClientDashboardOverview />} />
-          <Route path="profile" element={<ClientSelfProfilePage />} />
-          <Route path="application" element={<ClientApplicationPage />} />
-          <Route path="documents" element={<ClientPortalDocumentsPage />} />
-          <Route path="appointments" element={<ClientPortalAppointmentsPage />} />
-          <Route path="payments" element={<ClientPortalPaymentsPage />} />
-          <Route path="messages" element={<ClientPortalMessagesPage />} />
-          <Route path="messages/calls/:meetingId" element={<MeetingRoomPage mode="client" />} />
-        </Route>
+          <Route path={APP_ROUTES.dashboardClient} element={<ProtectedClientLayout />}>
+            <Route index element={<ClientDashboardOverview />} />
+            <Route path="profile" element={<ClientSelfProfilePage />} />
+            <Route path="application" element={<ClientApplicationPage />} />
+            <Route path="documents" element={<ClientPortalDocumentsPage />} />
+            <Route path="appointments" element={<ClientPortalAppointmentsPage />} />
+            <Route path="payments" element={<ClientPortalPaymentsPage />} />
+            <Route path="messages" element={<ClientPortalMessagesPage />} />
+            <Route path="messages/calls/:meetingId" element={<MeetingRoomPage mode="client" />} />
+          </Route>
 
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Suspense>
     </>
   );
 }

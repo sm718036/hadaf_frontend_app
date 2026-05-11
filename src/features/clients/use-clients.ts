@@ -52,6 +52,7 @@ export function useClient(id: string, enabled = true) {
     queryFn: ({ signal }) => clientsService.getClientDetail(id, signal),
     enabled,
     staleTime: 30_000,
+    placeholderData: (previousData) => previousData,
   });
 }
 

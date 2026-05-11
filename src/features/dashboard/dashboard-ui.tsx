@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SpinnerTwo } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
 import type { Client as ClientRecord } from "@/features/clients/clients.schemas";
 
 const STATUS_STYLES: Record<ClientRecord["status"], React.ComponentProps<typeof Badge>["variant"]> =
@@ -45,14 +47,16 @@ export function Panel({
   subtitle,
   children,
   action,
+  className,
 }: {
   title: string;
   subtitle?: string;
   children: React.ReactNode;
   action?: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm xl:p-6">
+    <section className={cn("rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm xl:p-6", className)}>
       <div className="mb-5 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div>
           <h2 className="text-2xl font-display font-extrabold text-slate-950">{title}</h2>
@@ -62,6 +66,33 @@ export function Panel({
       </div>
       {children}
     </section>
+  );
+}
+
+export function LoadingOverlay({
+  label = "Loading...",
+  blur = true,
+  inset = "rounded-[28px]",
+}: {
+  label?: string;
+  blur?: boolean;
+  inset?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "absolute inset-0 z-20 flex items-center justify-center bg-white/72",
+        blur ? "backdrop-blur-[2px]" : "",
+        inset,
+      )}
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <div className="inline-flex items-center gap-3 rounded-full border border-slate-200 bg-white/92 px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm">
+        <SpinnerTwo size="sm" />
+        <span>{label}</span>
+      </div>
+    </div>
   );
 }
 

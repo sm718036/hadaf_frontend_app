@@ -91,6 +91,7 @@ export function useOwnDocuments(enabled = true) {
     queryFn: ({ signal }) => operationsService.listOwnDocuments(signal),
     enabled,
     staleTime: 30_000,
+    placeholderData: (previousData) => previousData,
   });
 }
 
@@ -100,6 +101,7 @@ export function useOwnAppointments(enabled = true) {
     queryFn: ({ signal }) => operationsService.listOwnAppointments(signal),
     enabled,
     staleTime: 30_000,
+    placeholderData: (previousData) => previousData,
   });
 }
 
@@ -109,6 +111,7 @@ export function useOwnPayments(enabled = true) {
     queryFn: ({ signal }) => operationsService.listOwnPayments(signal),
     enabled,
     staleTime: 30_000,
+    placeholderData: (previousData) => previousData,
   });
 }
 
@@ -118,6 +121,7 @@ export function useOwnMessages(enabled = true) {
     queryFn: ({ signal }) => operationsService.listOwnMessages(signal),
     enabled,
     staleTime: 10_000,
+    placeholderData: (previousData) => previousData,
   });
 }
 
@@ -127,6 +131,7 @@ export function useChatContacts(search: string, enabled = true) {
     queryFn: ({ signal }) => operationsService.listChatContacts(search, signal),
     enabled,
     staleTime: 30_000,
+    placeholderData: (previousData) => previousData,
   });
 }
 
@@ -137,6 +142,7 @@ export function useChatThreads(search: string, enabled = true) {
     enabled,
     staleTime: 5_000,
     refetchInterval: enabled ? 10_000 : false,
+    placeholderData: (previousData) => previousData,
   });
 }
 
@@ -147,6 +153,7 @@ export function useChatConversation(threadId: string, enabled = true) {
     enabled: enabled && Boolean(threadId),
     staleTime: 3_000,
     refetchInterval: enabled && Boolean(threadId) ? 5_000 : false,
+    placeholderData: (previousData) => previousData,
   });
 }
 
@@ -157,6 +164,7 @@ export function useOwnPortalConversation(enabled = true) {
     enabled,
     staleTime: 3_000,
     refetchInterval: enabled ? 5_000 : false,
+    placeholderData: (previousData) => previousData,
   });
 }
 
@@ -167,6 +175,7 @@ export function usePortalMeetings(enabled = true) {
     enabled,
     staleTime: 10_000,
     refetchInterval: enabled ? 15_000 : false,
+    placeholderData: (previousData) => previousData,
   });
 }
 
@@ -177,6 +186,7 @@ export function useOwnPortalMeetings(enabled = true) {
     enabled,
     staleTime: 10_000,
     refetchInterval: enabled ? 15_000 : false,
+    placeholderData: (previousData) => previousData,
   });
 }
 
@@ -186,6 +196,7 @@ export function useMeetingDetail(meetingId: string, enabled = true) {
     queryFn: ({ signal }) => operationsService.getMeetingDetail(meetingId, signal),
     enabled: enabled && Boolean(meetingId),
     staleTime: 10_000,
+    placeholderData: (previousData) => previousData,
   });
 }
 
@@ -195,6 +206,7 @@ export function useOwnMeetingDetail(meetingId: string, enabled = true) {
     queryFn: ({ signal }) => operationsService.getOwnMeetingDetail(meetingId, signal),
     enabled: enabled && Boolean(meetingId),
     staleTime: 10_000,
+    placeholderData: (previousData) => previousData,
   });
 }
 

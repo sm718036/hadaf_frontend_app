@@ -32,6 +32,7 @@ import { useDashboardAccess } from "@/features/dashboard/dashboard-context";
 import { DataTable, StatusBadge } from "@/features/dashboard/dashboard-layout";
 import {
   EmptyHint,
+  LoadingOverlay,
   PaginationControls,
   Panel,
   TableToolbar,
@@ -39,6 +40,7 @@ import {
 import { useInternalUsers } from "@/features/internal-users/use-users";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { buildPath, useAppNavigate } from "@/lib/router";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const APPLICATION_STATUS_OPTIONS = [
   "active",
@@ -465,20 +467,20 @@ export function ApplicationDetailPage({
       ? APP_ROUTES.dashboardAdminApplications
       : APP_ROUTES.dashboardStaffApplications;
 
-  if (applicationQuery.isLoading || !form) {
-    return <EmptyHint message="Loading application..." loading />;
-  }
-
   if (applicationQuery.isError || !applicationQuery.data) {
     return <EmptyHint message="Unable to load the application." tone="error" />;
   }
 
-  const { application, history } = applicationQuery.data;
+  const application = applicationQuery.data?.application;
+  const history = applicationQuery.data?.history ?? [];
+  const isBlockingLoad = !application || !form;
+  const isOverlayVisible = applicationQuery.isFetching || isBlockingLoad;
 
   return (
     <div className="space-y-6">
       <Panel
-        title={`${application.clientName} Application`}
+        className="relative overflow-hidden"
+        title={application ? `${application.clientName} Application` : "Application Details"}
         subtitle="Manage application details, move stages, and review complete stage history."
         action={
           <div className="flex flex-wrap gap-3">
@@ -494,7 +496,9 @@ export function ApplicationDetailPage({
               type="button"
               className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700"
               onClick={() => {
-                setForm(mapApplicationToForm(application));
+                if (application) {
+                  setForm(mapApplicationToForm(application));
+                }
                 setIsEditOpen(true);
               }}
             >
@@ -505,6 +509,7 @@ export function ApplicationDetailPage({
               className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-60"
               disabled={moveStageMutation.isPending}
               onClick={async () => {
+                if (!application) return;
                 try {
                   await moveStageMutation.mutateAsync({
                     id: application.id,
@@ -526,6 +531,7 @@ export function ApplicationDetailPage({
               className="btn-gold"
               disabled={moveStageMutation.isPending}
               onClick={async () => {
+                if (!application) return;
                 try {
                   await moveStageMutation.mutateAsync({
                     id: application.id,
@@ -542,7 +548,7 @@ export function ApplicationDetailPage({
             >
               Next Stage
             </button>
-            {area === "admin" ? (
+            {area === "admin" && application ? (
               <button
                 type="button"
                 className="rounded-xl border border-destructive/20 px-4 py-2 text-sm font-semibold text-destructive"
@@ -568,14 +574,29 @@ export function ApplicationDetailPage({
           </div>
         }
       >
-        <div className="space-y-6">
-          <ApplicationPipeline application={application} />
-          <ApplicationOverview application={application} />
-          <ApplicationHistory history={history} />
-        </div>
+        {application ? (
+          <div className="space-y-6">
+            <ApplicationPipeline application={application} />
+            <ApplicationOverview application={application} />
+            <ApplicationHistory history={history} />
+          </div>
+        ) : (
+          <div className="space-y-5">
+            <Skeleton className="h-28 rounded-[24px] bg-slate-200" />
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, index) => (
+                <div key={index} className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+                  <Skeleton className="h-3 w-24 rounded-full bg-slate-200" />
+                  <Skeleton className="mt-4 h-6 w-3/4 rounded-full bg-slate-200" />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {isOverlayVisible ? <LoadingOverlay label="Loading application..." /> : null}
       </Panel>
 
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+      <Dialog open={isEditOpen && Boolean(form)} onOpenChange={setIsEditOpen}>
         <DialogContent className="max-w-5xl overflow-y-auto border-slate-200 p-0 sm:max-h-[90vh]">
           <DialogHeader className="border-b border-slate-200 px-6 py-5">
             <DialogTitle className="font-display text-2xl font-extrabold text-slate-950">
@@ -587,7 +608,7 @@ export function ApplicationDetailPage({
           </DialogHeader>
           <div className="px-6 py-6">
             <ApplicationForm
-              form={form}
+              form={form ?? createEmptyApplicationForm()}
               onChange={setForm}
               clients={(clientsQuery.data?.items ?? []).map((client) => ({
                 id: client.id,
@@ -596,6 +617,7 @@ export function ApplicationDetailPage({
               staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
               area={area}
               onSubmit={async () => {
+                if (!form) return;
                 try {
                   await upsertApplicationMutation.mutateAsync(form);
                   toast.success("Application updated.");
@@ -618,10 +640,6 @@ export function ApplicationDetailPage({
 export function ClientApplicationPage() {
   const applicationsQuery = useOwnApplications(true);
 
-  if (applicationsQuery.isLoading) {
-    return <EmptyHint message="Loading your application progress..." loading />;
-  }
-
   if (applicationsQuery.isError) {
     return <EmptyHint message="Unable to load your applications." tone="error" />;
   }
@@ -631,6 +649,7 @@ export function ClientApplicationPage() {
   return (
     <div className="space-y-6">
       <Panel
+        className="relative overflow-hidden"
         title="My Applications"
         subtitle="Track your application pipeline, current stage, deadlines, and stage-by-stage history."
         action={<StatusBadge tone="success">Own progress only</StatusBadge>}
@@ -675,6 +694,9 @@ export function ClientApplicationPage() {
             ))
           )}
         </div>
+        {applicationsQuery.isFetching && items.length > 0 ? (
+          <LoadingOverlay label="Refreshing application progress..." />
+        ) : null}
       </Panel>
     </div>
   );
@@ -700,10 +722,6 @@ export function ClientApplicationsTab({
       ? "/dashboard/admin/applications/:applicationId"
       : "/dashboard/staff/applications/:applicationId";
 
-  if (applicationsQuery.isLoading) {
-    return <EmptyHint message="Loading client applications..." loading />;
-  }
-
   if (applicationsQuery.isError) {
     return <EmptyHint message="Unable to load the client applications." tone="error" />;
   }
@@ -711,7 +729,7 @@ export function ClientApplicationsTab({
   const items = applicationsQuery.data?.items ?? [];
 
   return (
-    <div className="space-y-4">
+    <div className="relative space-y-4">
       {items.length === 0 ? (
         <EmptyHint message="No applications are linked to this client yet." />
       ) : (
@@ -748,6 +766,9 @@ export function ClientApplicationsTab({
           </div>
         ))
       )}
+      {applicationsQuery.isFetching && items.length > 0 ? (
+        <LoadingOverlay label="Refreshing client applications..." inset="rounded-[24px]" />
+      ) : null}
     </div>
   );
 }

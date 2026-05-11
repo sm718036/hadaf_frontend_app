@@ -46,6 +46,7 @@ export function useApplication(id: string, enabled = true) {
     queryFn: ({ signal }) => applicationsService.getById(id, signal),
     enabled,
     staleTime: 30_000,
+    placeholderData: (previousData) => previousData,
   });
 }
 
@@ -55,6 +56,7 @@ export function useOwnApplications(enabled = true) {
     queryFn: ({ signal }) => applicationsService.listOwn(signal),
     enabled,
     staleTime: 30_000,
+    placeholderData: (previousData) => previousData,
   });
 }
 

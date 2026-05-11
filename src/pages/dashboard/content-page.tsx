@@ -100,21 +100,21 @@ export function DashboardContentPage() {
     }
   };
 
-  if (siteContentQuery.isLoading || !draft) {
-    return (
-      <Panel title="Hybrid Landing CMS" subtitle="Loading the reduced landing data model.">
-        <EmptyHint message="Loading landing content..." loading />
-      </Panel>
-    );
-  }
-
-  if (siteContentQuery.isError) {
+  if (siteContentQuery.isError && !draft) {
     return (
       <Panel
         title="Hybrid Landing CMS"
         subtitle="The frontend owns layout and styling. The backend only stores business content."
       >
         <EmptyHint message="Unable to load landing content." tone="error" />
+      </Panel>
+    );
+  }
+
+  if (!draft) {
+    return (
+      <Panel title="Hybrid Landing CMS" subtitle="Loading the reduced landing data model.">
+        <EmptyHint message="Loading landing content..." loading />
       </Panel>
     );
   }
@@ -829,6 +829,7 @@ export function DashboardContentPage() {
   return (
     <>
       <Panel
+        className="relative overflow-hidden"
         title="Hybrid Landing CMS"
         subtitle="Landing content is grouped into modules. Open a dialog to add, update, hide, or manage a section."
         action={

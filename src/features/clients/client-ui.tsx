@@ -24,6 +24,7 @@ import { useDashboardAccess } from "@/features/dashboard/dashboard-context";
 import { DataTable, StatusBadge } from "@/features/dashboard/dashboard-layout";
 import {
   EmptyHint,
+  LoadingOverlay,
   PaginationControls,
   Panel,
   TableToolbar,
@@ -31,6 +32,7 @@ import {
 import { useInternalUsers } from "@/features/internal-users/use-users";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { buildPath, useAppNavigate } from "@/lib/router";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const CLIENT_STATUS_OPTIONS = ["active", "inactive", "completed", "rejected"] as const;
 const APPLICATION_STATUS_OPTIONS = [
@@ -397,20 +399,19 @@ export function ClientDetailPage({
   const baseRoute =
     area === "admin" ? APP_ROUTES.dashboardAdminClients : APP_ROUTES.dashboardStaffClients;
 
-  if (clientQuery.isLoading || !form) {
-    return <EmptyHint message="Loading client profile..." loading />;
-  }
-
   if (clientQuery.isError || !clientQuery.data) {
     return <EmptyHint message="Unable to load the client profile." tone="error" />;
   }
 
-  const client = clientQuery.data.client;
+  const client = clientQuery.data?.client;
+  const isBlockingLoad = !client || !form;
+  const isOverlayVisible = clientQuery.isFetching || isBlockingLoad;
 
   return (
     <div className="space-y-6">
       <Panel
-        title={client.fullName}
+        className="relative overflow-hidden"
+        title={client?.fullName ?? "Client Profile"}
         subtitle="Manage the client profile, counselor assignment, and current application state."
         action={
           <div className="flex flex-wrap gap-3">
@@ -426,13 +427,15 @@ export function ClientDetailPage({
               type="button"
               className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700"
               onClick={() => {
-                setForm(mapClientToForm(client));
+                if (client) {
+                  setForm(mapClientToForm(client));
+                }
                 setIsEditOpen(true);
               }}
             >
               Edit Profile
             </button>
-            {area === "admin" ? (
+            {area === "admin" && client ? (
               <button
                 type="button"
                 className="rounded-xl border border-destructive/20 px-4 py-2 text-sm font-semibold text-destructive"
@@ -473,7 +476,7 @@ export function ClientDetailPage({
           ))}
         </div>
 
-        {activeTab === "Overview" ? (
+        {client ? activeTab === "Overview" ? (
           <ClientProfileOverview client={client} />
         ) : activeTab === "Applications" ? (
           <ClientApplicationsTab area={area} clientId={client.id} />
@@ -485,10 +488,20 @@ export function ClientDetailPage({
           <EmptyHint
             message={`${activeTab} is structured for this client profile and can be connected to its dedicated module data when those resources are implemented.`}
           />
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+                <Skeleton className="h-3 w-28 rounded-full bg-slate-200" />
+                <Skeleton className="mt-4 h-6 w-3/4 rounded-full bg-slate-200" />
+              </div>
+            ))}
+          </div>
         )}
+        {isOverlayVisible ? <LoadingOverlay label="Loading client profile..." /> : null}
       </Panel>
 
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+      <Dialog open={isEditOpen && Boolean(form)} onOpenChange={setIsEditOpen}>
         <DialogContent className="max-w-5xl overflow-y-auto border-slate-200 p-0 sm:max-h-[90vh]">
           <DialogHeader className="border-b border-slate-200 px-6 py-5">
             <DialogTitle className="font-display text-2xl font-extrabold text-slate-950">
@@ -500,12 +513,13 @@ export function ClientDetailPage({
           </DialogHeader>
           <div className="px-6 py-6">
             <ClientProfileForm
-              form={form}
+              form={form ?? createEmptyClientForm()}
               onChange={setForm}
               staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
               canAssign={area === "admin"}
               showInternalFields
               onSubmit={async () => {
+                if (!form) return;
                 try {
                   await upsertClientMutation.mutateAsync(form);
                   toast.success("Client profile updated.");
