@@ -43,6 +43,7 @@ import {
   AdminOrStaffPaymentsPage,
   ClientPortalAppointmentsPage,
   ClientPortalDocumentsPage,
+  MeetingRoomPage,
   ClientPortalMessagesPage,
   ClientPortalPaymentsPage,
   TaskListPage,
@@ -57,6 +58,7 @@ const ADMIN_PAGE_TITLES: Record<string, string> = {
   [APP_ROUTES.dashboardAdminDocuments]: "Documents",
   [APP_ROUTES.dashboardAdminAppointments]: "Appointments",
   [APP_ROUTES.dashboardAdminMessages]: "Messages",
+  [APP_ROUTES.dashboardAdminMessageCall]: "Video Call",
   [APP_ROUTES.dashboardAdminPayments]: "Payments",
   [APP_ROUTES.dashboardAdminContent]: "Landing CMS",
   [APP_ROUTES.dashboardAdminUsers]: "User Access",
@@ -73,6 +75,7 @@ const STAFF_PAGE_TITLES: Record<string, string> = {
   [APP_ROUTES.dashboardStaffDocuments]: "Documents",
   [APP_ROUTES.dashboardStaffAppointments]: "Appointments",
   [APP_ROUTES.dashboardStaffMessages]: "Messages",
+  [APP_ROUTES.dashboardStaffMessageCall]: "Video Call",
   [APP_ROUTES.dashboardStaffPayments]: "Payments",
 };
 
@@ -84,6 +87,7 @@ const CLIENT_PAGE_TITLES: Record<string, string> = {
   [APP_ROUTES.dashboardClientAppointments]: "Appointments",
   [APP_ROUTES.dashboardClientPayments]: "Payments",
   [APP_ROUTES.dashboardClientMessages]: "Messages",
+  [APP_ROUTES.dashboardClientMessageCall]: "Video Call",
 };
 
 function NotFoundPage() {
@@ -225,6 +229,8 @@ function AdminDashboardLayout() {
       ? "Client Details"
       : location.pathname.startsWith(`${APP_ROUTES.dashboardAdminApplications}/`)
         ? "Application Details"
+        : location.pathname.startsWith("/dashboard/admin/messages/calls/")
+          ? "Video Call"
         : ADMIN_PAGE_TITLES[location.pathname] || "Admin Dashboard";
 
   return (
@@ -255,6 +261,8 @@ function StaffDashboardLayout() {
       ? "Client Details"
       : location.pathname.startsWith(`${APP_ROUTES.dashboardStaffApplications}/`)
         ? "Application Details"
+        : location.pathname.startsWith("/dashboard/staff/messages/calls/")
+          ? "Video Call"
         : STAFF_PAGE_TITLES[location.pathname] || "Staff Dashboard";
 
   return (
@@ -284,7 +292,11 @@ function ClientDashboardLayout() {
       area="client"
       actor={toClientLayoutActor(currentClient)}
       navItems={CLIENT_NAV_ITEMS}
-      pageTitle={CLIENT_PAGE_TITLES[location.pathname] || "Client Dashboard"}
+      pageTitle={
+        location.pathname.startsWith("/dashboard/client/messages/calls/")
+          ? "Video Call"
+          : CLIENT_PAGE_TITLES[location.pathname] || "Client Dashboard"
+      }
     >
       <Outlet />
     </DashboardLayout>
@@ -364,6 +376,7 @@ export function AppRouter() {
           <Route path="documents" element={<AdminOrStaffDocumentsPage area="admin" />} />
           <Route path="appointments" element={<AdminOrStaffAppointmentsPage area="admin" />} />
           <Route path="messages" element={<AdminOrStaffMessagesPage area="admin" />} />
+          <Route path="messages/calls/:meetingId" element={<MeetingRoomPage mode="internal" area="admin" />} />
           <Route path="payments" element={<AdminOrStaffPaymentsPage area="admin" />} />
           <Route path="content" element={<DashboardContentPage />} />
           <Route path="users" element={<DashboardUsersPage />} />
@@ -382,6 +395,7 @@ export function AppRouter() {
           <Route path="documents" element={<AdminOrStaffDocumentsPage area="staff" />} />
           <Route path="appointments" element={<AdminOrStaffAppointmentsPage area="staff" />} />
           <Route path="messages" element={<AdminOrStaffMessagesPage area="staff" />} />
+          <Route path="messages/calls/:meetingId" element={<MeetingRoomPage mode="internal" area="staff" />} />
           <Route path="payments" element={<AdminOrStaffPaymentsPage area="staff" />} />
         </Route>
 
@@ -393,6 +407,7 @@ export function AppRouter() {
           <Route path="appointments" element={<ClientPortalAppointmentsPage />} />
           <Route path="payments" element={<ClientPortalPaymentsPage />} />
           <Route path="messages" element={<ClientPortalMessagesPage />} />
+          <Route path="messages/calls/:meetingId" element={<MeetingRoomPage mode="client" />} />
         </Route>
 
         <Route path="*" element={<NotFoundPage />} />

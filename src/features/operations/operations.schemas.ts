@@ -16,6 +16,9 @@ export const APPOINTMENT_STATUSES = [
   "rescheduled",
 ] as const;
 export const PAYMENT_STATUSES = ["pending", "partial", "paid", "overdue", "cancelled"] as const;
+export const CHAT_CONTACT_TYPES = ["app_user", "client"] as const;
+export const MEETING_STATUSES = ["scheduled", "completed", "cancelled"] as const;
+export const MEETING_TYPES = ["video_call", "phone_call", "in_person", "other"] as const;
 
 export type TaskStatus = (typeof TASK_STATUSES)[number];
 export type TaskPriority = (typeof TASK_PRIORITIES)[number];
@@ -23,6 +26,9 @@ export type DocumentStatus = (typeof DOCUMENT_STATUSES)[number];
 export type AppointmentType = (typeof APPOINTMENT_TYPES)[number];
 export type AppointmentStatus = (typeof APPOINTMENT_STATUSES)[number];
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
+export type ChatContactType = (typeof CHAT_CONTACT_TYPES)[number];
+export type MeetingStatus = (typeof MEETING_STATUSES)[number];
+export type MeetingType = (typeof MEETING_TYPES)[number];
 
 export type Task = {
   id: string;
@@ -122,6 +128,57 @@ export type MessageRecord = {
   createdAt: string;
 };
 
+export type ChatContact = {
+  type: ChatContactType;
+  id: string;
+  name: string;
+  email: string | null;
+  roleLabel: string;
+  subtitle: string | null;
+  avatarUrl: string | null;
+};
+
+export type ChatThreadSummary = {
+  threadId: string;
+  contact: ChatContact;
+  lastMessagePreview: string | null;
+  lastMessageAt: string | null;
+  unreadCount: number;
+};
+
+export type PortalChatMessage = {
+  id: string;
+  threadId: string;
+  senderType: "internal" | "client";
+  senderName: string;
+  senderAppUserId: string | null;
+  senderClientId: string | null;
+  body: string;
+  createdAt: string;
+};
+
+export type PortalConversation = {
+  threadId: string;
+  contact: ChatContact;
+  messages: PortalChatMessage[];
+};
+
+export type PortalMeeting = {
+  id: string;
+  threadId: string;
+  contact: ChatContact;
+  hostAppUserId: string;
+  title: string;
+  notes: string | null;
+  scheduledAt: string;
+  durationMinutes: number;
+  status: MeetingStatus;
+  meetingType: MeetingType;
+  roomName: string;
+  joinPath: string;
+  createdAt: string;
+};
+
 export type OperationsListResponse<T> = {
   items: T[];
   page: number;
@@ -209,6 +266,31 @@ export type CreateClientMessageInput = {
   body: string;
 };
 
+export type OpenThreadInput = {
+  contactType: ChatContactType;
+  contactId: string;
+};
+
+export type CreatePortalMessageInput = {
+  contactType: ChatContactType;
+  contactId: string;
+  body: string;
+};
+
+export type CreateClientPortalMessageInput = {
+  body: string;
+};
+
+export type CreateMeetingInput = {
+  contactType: ChatContactType;
+  contactId: string;
+  title: string;
+  notes: string;
+  scheduledAt: string;
+  durationMinutes: number;
+  meetingType: MeetingType;
+};
+
 export type CreateClientDocumentInput = {
   applicationId: string | null;
   title: string;
@@ -218,4 +300,8 @@ export type CreateClientDocumentInput = {
   fileSize: number | null;
   contentType: string;
   notes: string;
+};
+
+export type UpdateMeetingStatusInput = {
+  status: MeetingStatus;
 };

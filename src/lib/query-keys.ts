@@ -115,5 +115,12 @@ export const queryKeys = {
     ownAppointments: ["operations", "appointments", "own"] as const,
     ownPayments: ["operations", "payments", "own"] as const,
     ownMessages: ["operations", "messages", "own"] as const,
+    chatContacts: (search: string) => ["operations", "chat", "contacts", search] as const,
+    chatThreads: (search: string) => ["operations", "chat", "threads", search] as const,
+    chatConversation: (threadId: string) => ["operations", "chat", "conversation", threadId] as const,
+    ownChatConversation: ["operations", "chat", "conversation", "own"] as const,
+    meetings: ["operations", "chat", "meetings"] as const,
+    meetingDetail: (meetingId: string) => ["operations", "chat", "meeting", meetingId] as const,
+    ownMeetings: ["operations", "chat", "meetings", "own"] as const,
   },
 } as const;
