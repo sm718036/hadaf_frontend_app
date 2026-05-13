@@ -1,5 +1,5 @@
 import { useEffect, useState, useDeferredValue } from "react";
-import { Pencil, Trash2 } from "lucide-react";
+import { CalendarDays, Mail, Pencil, ShieldCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { APP_ROUTES } from "@/config/routes";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -58,6 +58,63 @@ const STAFF_PERMISSION_OPTIONS: Permission[] = [
   "site_content.write",
   "users.read",
   "users.write",
+];
+
+const PERMISSION_GROUPS: Array<{
+  label: string;
+  description: string;
+  permissions: Permission[];
+}> = [
+  {
+    label: "Leads",
+    description: "Access lead records and follow-up workflows.",
+    permissions: ["leads.read", "leads.write"],
+  },
+  {
+    label: "Clients",
+    description: "Manage client profiles and account details.",
+    permissions: ["clients.read", "clients.write"],
+  },
+  {
+    label: "Applications",
+    description: "Work with application progress and stage updates.",
+    permissions: ["applications.read", "applications.write"],
+  },
+  {
+    label: "Tasks",
+    description: "Review and assign operational work items.",
+    permissions: ["tasks.read", "tasks.write"],
+  },
+  {
+    label: "Documents",
+    description: "Open and manage uploaded files.",
+    permissions: ["documents.read", "documents.write"],
+  },
+  {
+    label: "Appointments",
+    description: "Schedule and update appointment records.",
+    permissions: ["appointments.read", "appointments.write"],
+  },
+  {
+    label: "Messages",
+    description: "Use chat threads and conversation tools.",
+    permissions: ["messages.read", "messages.write"],
+  },
+  {
+    label: "Payments",
+    description: "View payment tracking information.",
+    permissions: ["payments.read"],
+  },
+  {
+    label: "Site Content",
+    description: "Review and update website content.",
+    permissions: ["site_content.read", "site_content.write"],
+  },
+  {
+    label: "Users",
+    description: "Access internal user management tools.",
+    permissions: ["users.read", "users.write"],
+  },
 ];
 
 function createEmptyUserForm(): CreateInternalUserInput {
@@ -127,6 +184,17 @@ export function DashboardUsersPage() {
     setUserForm(createEmptyUserForm());
   };
 
+  const togglePermission = (permission: Permission, enabled: boolean) => {
+    const nextPermissions = enabled
+      ? Array.from(new Set([...userForm.permissions, permission]))
+      : userForm.permissions.filter((item) => item !== permission);
+
+    setUserForm({
+      ...userForm,
+      permissions: nextPermissions.filter((item) => STAFF_PERMISSION_OPTIONS.includes(item)),
+    });
+  };
+
   return (
     <>
       <Panel
@@ -158,7 +226,7 @@ export function DashboardUsersPage() {
                 <table className="w-full min-w-[760px] text-sm">
                   <thead className="bg-slate-900 text-slate-100">
                     <tr>
-                      {["Name", "Email", "Role", "Permissions", "Actions"].map((heading) => (
+                      {["Name", "Email", "Verification", "Actions"].map((heading) => (
                         <th
                           key={heading}
                           className="px-5 py-4 text-center font-display font-semibold"
@@ -171,7 +239,7 @@ export function DashboardUsersPage() {
                   <tbody className="divide-y divide-slate-200 bg-white">
                     {users.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-5 py-14 text-center text-slate-500">
+                        <td colSpan={4} className="px-5 py-14 text-center text-slate-500">
                           {deferredSearch
                             ? "No matching internal users found."
                             : "No internal users found."}
@@ -192,36 +260,14 @@ export function DashboardUsersPage() {
                             </div>
                           </td>
                           <td className="px-5 py-4 text-center text-slate-600">
-                            <div className="space-y-2">
-                              <div>{user.email}</div>
-                              <div className="flex justify-center">
-                                <Badge variant={user.emailVerifiedAt ? "success" : "light"}>
-                                  {user.emailVerifiedAt ? "Verified" : "Pending verification"}
-                                </Badge>
-                              </div>
-                            </div>
+                            {user.email}
                           </td>
                           <td className="px-5 py-4 text-center">
                             <div className="flex justify-center">
-                              <Badge variant={user.role === "admin" ? "dark" : "primary"}>
-                                {user.role}
+                              <Badge variant={user.emailVerifiedAt ? "success" : "light"}>
+                                {user.emailVerifiedAt ? "Verified" : "Pending"}
                               </Badge>
                             </div>
-                          </td>
-                          <td className="px-5 py-4 text-center">
-                            {user.role === "admin" ? (
-                              <Badge variant="success">Full access</Badge>
-                            ) : user.permissions.length > 0 ? (
-                              <div className="flex flex-wrap justify-center gap-2">
-                                {user.permissions.map((permission) => (
-                                  <Badge key={permission} variant="light">
-                                    {permission}
-                                  </Badge>
-                                ))}
-                              </div>
-                            ) : (
-                              <span className="text-sm text-slate-400">No permissions</span>
-                            )}
                           </td>
                           <td className="px-5 py-4 text-center">
                             {access.canWriteUsers ? (
@@ -285,11 +331,11 @@ export function DashboardUsersPage() {
           <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto rounded-[28px] border border-slate-200 bg-white p-0">
             <DialogHeader className="border-b border-slate-200 px-6 py-5">
               <DialogTitle className="text-2xl font-display font-extrabold text-slate-950">
-                {editingUser ? "Update User Access" : "Create Internal User"}
+                {editingUser ? "User Details" : "Create Internal User"}
               </DialogTitle>
               <DialogDescription className="text-sm text-slate-500">
                 {editingUser
-                  ? "Update the role and permission set for this internal user."
+                  ? "Review and update this internal user's role and access from one focused dialog."
                   : "Create a new internal admin or staff account and define staff permissions."}
               </DialogDescription>
             </DialogHeader>
@@ -328,6 +374,26 @@ export function DashboardUsersPage() {
                   }
                 }}
               >
+                {editingUser ? (
+                  <div className="grid gap-3 rounded-[24px] border border-slate-200 bg-slate-50 p-4 md:grid-cols-3">
+                    <InfoTile
+                      icon={Mail}
+                      label="Email"
+                      value={editingUser.email}
+                    />
+                    <InfoTile
+                      icon={ShieldCheck}
+                      label="Verification"
+                      value={editingUser.emailVerifiedAt ? "Verified" : "Pending verification"}
+                    />
+                    <InfoTile
+                      icon={CalendarDays}
+                      label="Created"
+                      value={formatUserDate(editingUser.createdAt)}
+                    />
+                  </div>
+                ) : null}
+
                 <div className="grid gap-4 md:grid-cols-2">
                   <Field
                     label="Full Name"
@@ -388,39 +454,57 @@ export function DashboardUsersPage() {
 
                 {userForm.role === "staff" ? (
                   <div>
-                    <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                      Staff Permissions
-                    </label>
+                    <div className="flex items-center justify-between gap-3">
+                      <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                        Staff Permissions
+                      </label>
+                      <span className="text-xs font-medium text-slate-400">
+                        {userForm.permissions.length} selected
+                      </span>
+                    </div>
                     <div className="mt-3 grid gap-3">
-                      {STAFF_PERMISSION_OPTIONS.map((permission) => {
-                        const checked = userForm.permissions.includes(permission);
+                      {PERMISSION_GROUPS.map((group) => (
+                        <div
+                          key={group.label}
+                          className="rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-4"
+                        >
+                          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                              <p className="text-sm font-semibold text-slate-900">{group.label}</p>
+                              <p className="text-xs leading-5 text-slate-500">{group.description}</p>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {group.permissions.map((permission) => {
+                                const checked = userForm.permissions.includes(permission);
+                                const actionLabel = permission.endsWith(".write") ? "Write" : "Read";
 
-                        return (
-                          <label
-                            key={permission}
-                            className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={(event) => {
-                                const permissions = event.target.checked
-                                  ? [...userForm.permissions, permission]
-                                  : userForm.permissions.filter((item) => item !== permission);
-
-                                setUserForm({
-                                  ...userForm,
-                                  permissions,
-                                });
-                              }}
-                            />
-                            <span>{permission}</span>
-                          </label>
-                        );
-                      })}
+                                return (
+                                  <button
+                                    key={permission}
+                                    type="button"
+                                    onClick={() => togglePermission(permission, !checked)}
+                                    className={
+                                      checked
+                                        ? "rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white"
+                                        : "rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-slate-400 hover:text-slate-900"
+                                    }
+                                    aria-pressed={checked}
+                                  >
+                                    {actionLabel}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                ) : null}
+                ) : (
+                  <div className="rounded-[22px] border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-900">
+                    Admin accounts receive full access across all modules.
+                  </div>
+                )}
 
                 <div className="flex flex-wrap justify-end gap-3 pt-2">
                   <button
@@ -482,4 +566,34 @@ export function DashboardUsersRedirect() {
   }, [currentUser, isLoading, navigate]);
 
   return null;
+}
+
+function InfoTile({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof Mail;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-white/80 bg-white px-4 py-3">
+      <div className="flex items-center gap-2 text-slate-400">
+        <Icon className="h-4 w-4" />
+        <span className="text-[11px] font-semibold uppercase tracking-[0.18em]">{label}</span>
+      </div>
+      <p className="mt-2 text-sm font-semibold text-slate-900">{value}</p>
+    </div>
+  );
+}
+
+function formatUserDate(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleDateString();
 }
