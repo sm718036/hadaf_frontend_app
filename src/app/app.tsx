@@ -5,12 +5,22 @@ import { Toaster } from "@/components/ui/sonner";
 import { AppRouter } from "@/app/router";
 import { createAppQueryClient } from "@/lib/query-client";
 
+function getRouterBaseName() {
+  const baseUrl = import.meta.env.BASE_URL?.trim() || "/";
+
+  if (baseUrl === "/") {
+    return undefined;
+  }
+
+  return baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+}
+
 export function App() {
   const [queryClient] = useState(() => createAppQueryClient());
 
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      <BrowserRouter basename={getRouterBaseName()}>
         <AppRouter />
       </BrowserRouter>
       <Toaster richColors position="bottom-right" />
