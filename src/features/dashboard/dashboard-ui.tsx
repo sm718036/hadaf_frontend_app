@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Link } from "react-router-dom";
-import { Pencil, Trash2 } from "lucide-react";
+import { Eye, EyeOff, Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SpinnerTwo } from "@/components/ui/spinner";
@@ -262,19 +262,36 @@ export function Field({
   required?: boolean;
   disabled?: boolean;
 }) {
+  const isPasswordField = type === "password";
+  const [isPasswordVisible, setIsPasswordVisible] = React.useState(false);
+  const inputType = isPasswordField && isPasswordVisible ? "text" : type;
+
   return (
     <div>
       <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
         {label}
       </label>
-      <input
-        type={type}
-        required={required}
-        disabled={disabled}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none disabled:cursor-not-allowed disabled:bg-slate-100"
-      />
+      <div className="relative mt-2">
+        <input
+          type={inputType}
+          required={required}
+          disabled={disabled}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none disabled:cursor-not-allowed disabled:bg-slate-100"
+        />
+        {isPasswordField ? (
+          <button
+            type="button"
+            onClick={() => setIsPasswordVisible((current) => !current)}
+            disabled={disabled}
+            aria-label={isPasswordVisible ? `Hide ${label}` : `Show ${label}`}
+            className="absolute inset-y-0 right-3 inline-flex items-center justify-center text-slate-500 transition hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isPasswordVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }

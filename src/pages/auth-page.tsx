@@ -1,5 +1,5 @@
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowRight, LockKeyhole, Mail, Phone, User2 } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail, Phone, User2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { BrandLogo } from "@/components/BrandLogo";
@@ -492,18 +492,32 @@ function InputField({
   type?: string;
   required?: boolean;
 }) {
+  const isPasswordField = type === "password";
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const inputType = isPasswordField && isPasswordVisible ? "text" : type;
+
   return (
     <div>
       <label className="mb-2 block text-sm font-semibold text-slate-700">{label}</label>
       <div className="group flex items-center border-b border-slate-200 bg-transparent transition focus-within:border-primary">
         <Icon className="h-5 w-5 shrink-0 text-slate-400 transition group-focus-within:text-primary" />
         <input
-          type={type}
+          type={inputType}
           required={required}
           value={value}
           onChange={(event) => onChange(event.target.value)}
           className="w-full bg-transparent px-3 py-3.5 text-sm text-slate-900 outline-none placeholder:text-slate-400"
         />
+        {isPasswordField ? (
+          <button
+            type="button"
+            onClick={() => setIsPasswordVisible((current) => !current)}
+            aria-label={isPasswordVisible ? `Hide ${label}` : `Show ${label}`}
+            className="shrink-0 p-1 text-slate-400 transition hover:text-primary"
+          >
+            {isPasswordVisible ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+          </button>
+        ) : null}
       </div>
     </div>
   );
