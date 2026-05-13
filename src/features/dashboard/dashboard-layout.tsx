@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Bell, ChevronDown, LogOut, Menu, UserCircle2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
+import { BrandLogo } from "@/components/BrandLogo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -31,6 +32,7 @@ import {
   useMarkInternalNotificationRead,
 } from "@/features/notifications/use-notifications";
 import { buildPath, useAppNavigate } from "@/lib/router";
+import { useSiteContent } from "@/features/site-content/use-site-content";
 
 type DashboardLayoutActor = {
   id: string;
@@ -151,22 +153,27 @@ function isNavItemActive(currentPathname: string, itemPath: string) {
 function Sidebar({ area, navItems }: { area: DashboardArea; navItems: DashboardNavItem[] }) {
   const location = useLocation();
   const meta = AREA_META[area];
+  const { data: siteContent } = useSiteContent();
+  const branding = siteContent.branding;
 
   return (
     <aside className="hidden w-[270px] shrink-0 rounded-[28px] bg-dark px-5 py-6 text-white shadow-2xl lg:flex lg:flex-col">
-      <Link to={APP_ROUTES.home} className="flex items-center gap-3 px-2">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gold text-dark font-display text-xl font-extrabold">
-          H
+      <div className="px-2">
+        <BrandLogo
+          href={APP_ROUTES.home}
+          brandName={branding.companyName}
+          companyNameVisible={branding.companyNameVisible}
+          logoSrc={branding.logo.src}
+          logoAlt={branding.logo.alt}
+          logoVisible={branding.logoVisible}
+          imageClassName="h-14 w-auto"
+          imgClassName="brightness-0 invert"
+          priority
+        />
+        <div className="mt-3 text-xs uppercase tracking-[0.28em] text-white/45">
+          {meta.accentLabel}
         </div>
-        <div>
-          <div className="text-2xl font-display font-extrabold text-white">
-            Hadaf<span className="text-gold">.</span>
-          </div>
-          <div className="text-xs uppercase tracking-[0.28em] text-white/45">
-            {meta.accentLabel}
-          </div>
-        </div>
-      </Link>
+      </div>
 
       <nav className="mt-8 space-y-2">
         <p className="px-3 text-xs font-semibold uppercase tracking-[0.3em] text-white/40">

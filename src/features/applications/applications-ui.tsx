@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useAppDialogs } from "@/components/ui/app-dialogs";
 import { SelectMenu } from "@/components/ui/select-menu";
 import { APP_ROUTES } from "@/config/routes";
 import type {
@@ -124,6 +125,7 @@ export function ApplicationListPage({
   area: "admin" | "staff";
   clientId?: string;
 }) {
+  const dialogs = useAppDialogs();
   const navigate = useAppNavigate();
   const access = useDashboardAccess();
   const [page, setPage] = useState(1);
@@ -345,7 +347,14 @@ export function ApplicationListPage({
                       type="button"
                       className="rounded-xl border border-destructive/20 px-3 py-1.5 text-xs font-semibold text-destructive"
                       onClick={async () => {
-                        if (!confirm(`Delete application for ${application.clientName}?`)) {
+                        const confirmed = await dialogs.confirm({
+                          title: "Delete application?",
+                          description: `Delete the application for ${application.clientName}. This action cannot be undone.`,
+                          confirmLabel: "Delete",
+                          tone: "destructive",
+                        });
+
+                        if (!confirmed) {
                           return;
                         }
 
@@ -430,6 +439,7 @@ export function ApplicationDetailPage({
   area: "admin" | "staff";
   applicationId: string;
 }) {
+  const dialogs = useAppDialogs();
   const navigate = useAppNavigate();
   const access = useDashboardAccess();
   const applicationQuery = useApplication(applicationId, access.canReadApplications);
@@ -550,10 +560,17 @@ export function ApplicationDetailPage({
             </button>
             {area === "admin" && application ? (
               <button
-                type="button"
-                className="rounded-xl border border-destructive/20 px-4 py-2 text-sm font-semibold text-destructive"
-                onClick={async () => {
-                  if (!confirm(`Delete the application for ${application.clientName}?`)) {
+              type="button"
+              className="rounded-xl border border-destructive/20 px-4 py-2 text-sm font-semibold text-destructive"
+              onClick={async () => {
+                  const confirmed = await dialogs.confirm({
+                    title: "Delete application?",
+                    description: `Delete the application for ${application.clientName}. This action cannot be undone.`,
+                    confirmLabel: "Delete",
+                    tone: "destructive",
+                  });
+
+                  if (!confirmed) {
                     return;
                   }
 

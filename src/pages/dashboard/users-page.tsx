@@ -1,9 +1,10 @@
 import { useEffect, useState, useDeferredValue } from "react";
-import { CalendarDays, Mail, Pencil, ShieldCheck, Trash2 } from "lucide-react";
+import { CalendarDays, Eye, Mail, Pencil, ShieldCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { APP_ROUTES } from "@/config/routes";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { useAppDialogs } from "@/components/ui/app-dialogs";
 import {
   Dialog,
   DialogContent,
@@ -129,6 +130,7 @@ function createEmptyUserForm(): CreateInternalUserInput {
 }
 
 export function DashboardUsersPage() {
+  const dialogs = useAppDialogs();
   const access = useDashboardAccess();
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
@@ -184,6 +186,8 @@ export function DashboardUsersPage() {
     setUserForm(createEmptyUserForm());
   };
 
+  const isReadOnlyDialog = Boolean(editingUser) && !access.canWriteUsers;
+
   const togglePermission = (permission: Permission, enabled: boolean) => {
     const nextPermissions = enabled
       ? Array.from(new Set([...userForm.permissions, permission]))
@@ -226,7 +230,7 @@ export function DashboardUsersPage() {
                 <table className="w-full min-w-[760px] text-sm">
                   <thead className="bg-slate-900 text-slate-100">
                     <tr>
-                      {["Name", "Email", "Verification", "Actions"].map((heading) => (
+                      {["Avatar", "Name", "Email", "Verification", "Actions"].map((heading) => (
                         <th
                           key={heading}
                           className="px-5 py-4 text-center font-display font-semibold"
@@ -239,7 +243,7 @@ export function DashboardUsersPage() {
                   <tbody className="divide-y divide-slate-200 bg-white">
                     {users.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="px-5 py-14 text-center text-slate-500">
+                        <td colSpan={5} className="px-5 py-14 text-center text-slate-500">
                           {deferredSearch
                             ? "No matching internal users found."
                             : "No internal users found."}
@@ -249,15 +253,17 @@ export function DashboardUsersPage() {
                       users.map((user) => (
                         <tr key={user.id}>
                           <td className="px-5 py-4 text-center">
-                            <div className="flex items-center justify-center gap-3">
+                            <div className="flex justify-center">
                               <Avatar className="h-11 w-11 border border-slate-200 bg-white">
                                 <AvatarImage src={getUserAvatarUrl(user)} alt={user.name} />
                                 <AvatarFallback className="bg-gold text-xs font-bold text-dark">
                                   {getUserInitials(user.name)}
                                 </AvatarFallback>
                               </Avatar>
-                              <span className="font-semibold text-slate-900">{user.name}</span>
                             </div>
+                          </td>
+                          <td className="px-5 py-4 text-center">
+                            <span className="font-semibold text-slate-900">{user.name}</span>
                           </td>
                           <td className="px-5 py-4 text-center text-slate-600">
                             {user.email}
@@ -270,43 +276,58 @@ export function DashboardUsersPage() {
                             </div>
                           </td>
                           <td className="px-5 py-4 text-center">
-                            {access.canWriteUsers ? (
-                              <div className="flex justify-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => openEditDialog(user)}
-                                  className="inline-flex h-10 w-10 items-center justify-center text-slate-600"
-                                  aria-label={`Edit ${user.name}`}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={async () => {
-                                    if (!confirm(`Delete ${user.name}?`)) {
-                                      return;
-                                    }
+                            <div className="flex justify-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => openEditDialog(user)}
+                                className="inline-flex h-10 w-10 items-center justify-center text-slate-600"
+                                aria-label={`View ${user.name}`}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </button>
+                              {access.canWriteUsers ? (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => openEditDialog(user)}
+                                    className="inline-flex h-10 w-10 items-center justify-center text-slate-600"
+                                    aria-label={`Edit ${user.name}`}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      const confirmed = await dialogs.confirm({
+                                        title: "Delete user?",
+                                        description: `Delete ${user.name}. This action cannot be undone.`,
+                                        confirmLabel: "Delete",
+                                        tone: "destructive",
+                                      });
 
-                                    try {
-                                      await deleteUserMutation.mutateAsync(user.id);
-                                      toast.success("Internal user deleted.");
-                                    } catch (error) {
-                                      const message =
-                                        error instanceof Error
-                                          ? error.message
-                                          : "Unable to delete the user.";
-                                      toast.error(message);
-                                    }
-                                  }}
-                                  className="inline-flex h-10 w-10 items-center justify-center text-destructive"
-                                  aria-label={`Delete ${user.name}`}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                              </div>
-                            ) : (
-                              <span className="text-xs font-medium text-slate-400">Read only</span>
-                            )}
+                                      if (!confirmed) {
+                                        return;
+                                      }
+
+                                      try {
+                                        await deleteUserMutation.mutateAsync(user.id);
+                                        toast.success("Internal user deleted.");
+                                      } catch (error) {
+                                        const message =
+                                          error instanceof Error
+                                            ? error.message
+                                            : "Unable to delete the user.";
+                                        toast.error(message);
+                                      }
+                                    }}
+                                    className="inline-flex h-10 w-10 items-center justify-center text-destructive"
+                                    aria-label={`Delete ${user.name}`}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </>
+                              ) : null}
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -326,7 +347,7 @@ export function DashboardUsersPage() {
         )}
       </Panel>
 
-      {access.canWriteUsers ? (
+      {access.canReadUsers ? (
         <Dialog open={isDialogOpen} onOpenChange={(open) => !open && closeDialog()}>
           <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto rounded-[28px] border border-slate-200 bg-white p-0">
             <DialogHeader className="border-b border-slate-200 px-6 py-5">
@@ -400,6 +421,7 @@ export function DashboardUsersPage() {
                     required
                     value={userForm.name}
                     onChange={(value) => setUserForm({ ...userForm, name: value })}
+                    disabled={isReadOnlyDialog}
                   />
                   <Field
                     label="Email"
@@ -407,7 +429,7 @@ export function DashboardUsersPage() {
                     required
                     value={userForm.email}
                     onChange={(value) => setUserForm({ ...userForm, email: value })}
-                    disabled={Boolean(editingUser)}
+                    disabled={Boolean(editingUser) || isReadOnlyDialog}
                   />
                   {!editingUser ? (
                     <>
@@ -443,6 +465,7 @@ export function DashboardUsersPage() {
                           permissions: value === "admin" ? [] : userForm.permissions,
                         })
                       }
+                      disabled={isReadOnlyDialog}
                       className="h-auto bg-slate-50 py-3"
                       options={[
                         { value: "staff", label: "Staff" },
@@ -482,6 +505,7 @@ export function DashboardUsersPage() {
                                   <button
                                     key={permission}
                                     type="button"
+                                    disabled={isReadOnlyDialog}
                                     onClick={() => togglePermission(permission, !checked)}
                                     className={
                                       checked
@@ -512,24 +536,26 @@ export function DashboardUsersPage() {
                     onClick={closeDialog}
                     className="rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                   >
-                    Cancel
+                    {isReadOnlyDialog ? "Close" : "Cancel"}
                   </button>
-                  <button
-                    type="submit"
-                    disabled={createUserMutation.isPending || updateUserMutation.isPending}
-                    className="btn-gold min-w-[170px] justify-center"
-                  >
-                    {createUserMutation.isPending || updateUserMutation.isPending ? (
-                      <>
-                        <SpinnerTwo size="sm" className="mr-1" />
-                        Saving...
-                      </>
-                    ) : editingUser ? (
-                      "Update User"
-                    ) : (
-                      "Create User"
-                    )}
-                  </button>
+                  {!isReadOnlyDialog ? (
+                    <button
+                      type="submit"
+                      disabled={createUserMutation.isPending || updateUserMutation.isPending}
+                      className="btn-gold min-w-[170px] justify-center"
+                    >
+                      {createUserMutation.isPending || updateUserMutation.isPending ? (
+                        <>
+                          <SpinnerTwo size="sm" className="mr-1" />
+                          Saving...
+                        </>
+                      ) : editingUser ? (
+                        "Update User"
+                      ) : (
+                        "Create User"
+                      )}
+                    </button>
+                  ) : null}
                 </div>
               </form>
             </div>

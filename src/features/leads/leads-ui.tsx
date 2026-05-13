@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useAppDialogs } from "@/components/ui/app-dialogs";
 import { SelectMenu } from "@/components/ui/select-menu";
 import { APP_ROUTES } from "@/config/routes";
 import { useCurrentUser } from "@/features/auth/use-auth";
@@ -106,6 +107,7 @@ function mapLeadToForm(lead: Lead): UpsertLeadInput {
 async function submitLeadWithDuplicateOverride(
   mutation: ReturnType<typeof useUpsertLead>,
   input: UpsertLeadInput,
+  confirmDuplicate: (message: string) => Promise<boolean>,
 ) {
   try {
     return await mutation.mutateAsync(input);
@@ -113,7 +115,7 @@ async function submitLeadWithDuplicateOverride(
     const message = error instanceof Error ? error.message : "Unable to save the lead.";
 
     if (message.startsWith("Potential duplicate lead found")) {
-      if (!confirm(`${message}\n\nDo you want to continue and create/update this lead anyway?`)) {
+      if (!(await confirmDuplicate(message))) {
         throw error;
       }
 
@@ -126,6 +128,7 @@ async function submitLeadWithDuplicateOverride(
 
 export function LeadListPage({ area }: { area: "admin" | "staff" }) {
   const navigate = useAppNavigate();
+  const dialogs = useAppDialogs();
   const access = useDashboardAccess();
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
@@ -177,17 +180,6 @@ export function LeadListPage({ area }: { area: "admin" | "staff" }) {
 
   return (
     <div className="space-y-6">
-      {leadsQuery.data ? (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
-          <SummaryCard label="Total Leads" value={String(leadsQuery.data.summary.total)} />
-          <SummaryCard label="New" value={String(leadsQuery.data.summary.new)} />
-          <SummaryCard label="Contacted" value={String(leadsQuery.data.summary.contacted)} />
-          <SummaryCard label="Qualified" value={String(leadsQuery.data.summary.qualified)} />
-          <SummaryCard label="Converted" value={String(leadsQuery.data.summary.converted)} />
-          <SummaryCard label="Lost" value={String(leadsQuery.data.summary.lost)} />
-        </div>
-      ) : null}
-
       <Panel
         title={area === "admin" ? "Lead Management" : "Assigned Leads"}
         subtitle={
@@ -326,11 +318,18 @@ export function LeadListPage({ area }: { area: "admin" | "staff" }) {
                       type="button"
                       className="rounded-xl border border-destructive/20 px-3 py-1.5 text-xs font-semibold text-destructive"
                       onClick={async () => {
-                        if (!confirm(`Delete lead ${lead.fullName}?`)) {
-                          return;
-                        }
-
                         try {
+                          const confirmed = await dialogs.confirm({
+                            title: "Delete lead?",
+                            description: `Delete lead ${lead.fullName}. This action cannot be undone.`,
+                            confirmLabel: "Delete",
+                            tone: "destructive",
+                          });
+
+                          if (!confirmed) {
+                            return;
+                          }
+
                           await deleteLeadMutation.mutateAsync(lead.id);
                           toast.success("Lead deleted.");
                         } catch (error) {
@@ -375,7 +374,16 @@ export function LeadListPage({ area }: { area: "admin" | "staff" }) {
                 mode="admin"
                 onSubmit={async () => {
                   try {
-                    const lead = await submitLeadWithDuplicateOverride(upsertLeadMutation, form);
+                    const lead = await submitLeadWithDuplicateOverride(
+                      upsertLeadMutation,
+                      form,
+                      (message) =>
+                        dialogs.confirm({
+                          title: "Potential duplicate lead",
+                          description: `${message} Continue and save this lead anyway?`,
+                          confirmLabel: "Continue",
+                        }),
+                    );
                     toast.success("Lead created.");
                     setIsCreateOpen(false);
                     if (area === "admin") {
@@ -401,6 +409,7 @@ export function LeadListPage({ area }: { area: "admin" | "staff" }) {
 
 export function LeadDetailPage({ area, leadId }: { area: "admin" | "staff"; leadId: string }) {
   const navigate = useAppNavigate();
+  const dialogs = useAppDialogs();
   const { data: currentUser } = useCurrentUser();
   const access = useDashboardAccess();
   const leadQuery = useLead(leadId, access.canReadLeads);
@@ -474,10 +483,17 @@ export function LeadDetailPage({ area, leadId }: { area: "admin" | "staff"; lead
             </button>
             {isAdmin && lead && !lead.convertedClientId ? (
               <button
-                type="button"
-                className="btn-gold"
-                onClick={async () => {
-                  const notes = prompt("Optional conversion notes:", "") ?? "";
+              type="button"
+              className="btn-gold"
+              onClick={async () => {
+                  const notes =
+                    (await dialogs.prompt({
+                      title: "Convert lead to client",
+                      description: "Add optional conversion notes before continuing.",
+                      label: "Conversion notes",
+                      placeholder: "Optional notes",
+                      confirmLabel: "Convert",
+                    })) ?? "";
 
                   try {
                     const result = await convertLeadMutation.mutateAsync({ id: lead.id, notes });
@@ -495,10 +511,17 @@ export function LeadDetailPage({ area, leadId }: { area: "admin" | "staff"; lead
             ) : null}
             {isAdmin ? (
               <button
-                type="button"
-                className="rounded-xl border border-destructive/20 px-4 py-2 text-sm font-semibold text-destructive"
-                onClick={async () => {
-                  if (!confirm(`Delete lead ${lead.fullName}?`)) {
+              type="button"
+              className="rounded-xl border border-destructive/20 px-4 py-2 text-sm font-semibold text-destructive"
+              onClick={async () => {
+                  const confirmed = await dialogs.confirm({
+                    title: "Delete lead?",
+                    description: `Delete lead ${lead.fullName}. This action cannot be undone.`,
+                    confirmLabel: "Delete",
+                    tone: "destructive",
+                  });
+
+                  if (!confirmed) {
                     return;
                   }
 
@@ -553,7 +576,16 @@ export function LeadDetailPage({ area, leadId }: { area: "admin" | "staff"; lead
               onSubmit={async () => {
                 if (!form) return;
                 try {
-                  await submitLeadWithDuplicateOverride(upsertLeadMutation, form);
+                  await submitLeadWithDuplicateOverride(
+                    upsertLeadMutation,
+                    form,
+                    (message) =>
+                      dialogs.confirm({
+                        title: "Potential duplicate lead",
+                        description: `${message} Continue and save this lead anyway?`,
+                        confirmLabel: "Continue",
+                      }),
+                  );
                   toast.success("Lead updated.");
                   setIsEditOpen(false);
                 } catch (error) {
@@ -615,15 +647,6 @@ function LeadOverview({ lead }: { lead: Lead }) {
       </div>
       <ReadOnlyTextBlock label="Message / Comments" value={lead.message || "No message added."} />
       <ReadOnlyTextBlock label="Internal Notes" value={lead.internalNotes || "No internal notes added."} />
-    </div>
-  );
-}
-
-function SummaryCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-[24px] border border-slate-200 bg-white px-5 py-5">
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</p>
-      <p className="mt-3 font-display text-3xl font-extrabold text-slate-950">{value}</p>
     </div>
   );
 }

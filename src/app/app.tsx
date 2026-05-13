@@ -2,6 +2,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import { BrowserRouter } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
+import { AppDialogsProvider } from "@/components/ui/app-dialogs";
 import { AppRouter } from "@/app/router";
 import { createAppQueryClient } from "@/lib/query-client";
 
@@ -20,9 +21,11 @@ export function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter basename={getRouterBaseName()}>
-        <AppRouter />
-      </BrowserRouter>
+      <AppDialogsProvider>
+        <BrowserRouter basename={getRouterBaseName()}>
+          <AppRouter />
+        </BrowserRouter>
+      </AppDialogsProvider>
       <Toaster richColors position="bottom-right" />
     </QueryClientProvider>
   );

@@ -241,8 +241,8 @@ function AdminOverviewPage() {
 
   return (
     <ModuleOverview
-      title="Administrator Access"
-      description="Admins can access every dashboard area, manage user access, and work with the existing clients and landing CMS modules."
+      title="Admin Dashboard"
+      description="Use this dashboard to work with leads, clients, applications, operations, and website content."
     />
   );
 }
@@ -257,7 +257,7 @@ function StaffOverviewPage() {
   return (
     <ModuleOverview
       title="Counselor Workspace"
-      description="Staff navigation is limited to assigned work areas. Existing client management remains wired through the current clients module, while the rest of the structure is ready for assigned-resource APIs."
+      description="Use this dashboard to work with assigned leads, clients, applications, and daily operations."
     />
   );
 }

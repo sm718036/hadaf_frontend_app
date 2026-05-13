@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useAppDialogs } from "@/components/ui/app-dialogs";
 import { SelectMenu } from "@/components/ui/select-menu";
 import { APP_ROUTES } from "@/config/routes";
 import { ClientApplicationsTab } from "@/features/applications/applications-ui";
@@ -133,6 +134,7 @@ function mapClientToForm(client: Client): UpsertClientInput {
 }
 
 export function ClientListPage({ area }: { area: "admin" | "staff" }) {
+  const dialogs = useAppDialogs();
   const navigate = useAppNavigate();
   const access = useDashboardAccess();
   const [page, setPage] = useState(1);
@@ -297,7 +299,14 @@ export function ClientListPage({ area }: { area: "admin" | "staff" }) {
                       type="button"
                       className="rounded-xl border border-destructive/20 px-3 py-1.5 text-xs font-semibold text-destructive"
                       onClick={async () => {
-                        if (!confirm(`Delete client ${client.fullName}?`)) {
+                        const confirmed = await dialogs.confirm({
+                          title: "Delete client?",
+                          description: `Delete client ${client.fullName}. This action cannot be undone.`,
+                          confirmLabel: "Delete",
+                          tone: "destructive",
+                        });
+
+                        if (!confirmed) {
                           return;
                         }
 
@@ -376,6 +385,7 @@ export function ClientDetailPage({
   area: "admin" | "staff";
   clientId: string;
 }) {
+  const dialogs = useAppDialogs();
   const navigate = useAppNavigate();
   const clientQuery = useClient(clientId, true);
   const upsertClientMutation = useUpsertClient();
@@ -442,10 +452,17 @@ export function ClientDetailPage({
             </button>
             {area === "admin" && client ? (
               <button
-                type="button"
-                className="rounded-xl border border-destructive/20 px-4 py-2 text-sm font-semibold text-destructive"
-                onClick={async () => {
-                  if (!confirm(`Delete client ${client.fullName}?`)) {
+              type="button"
+              className="rounded-xl border border-destructive/20 px-4 py-2 text-sm font-semibold text-destructive"
+              onClick={async () => {
+                  const confirmed = await dialogs.confirm({
+                    title: "Delete client?",
+                    description: `Delete client ${client.fullName}. This action cannot be undone.`,
+                    confirmLabel: "Delete",
+                    tone: "destructive",
+                  });
+
+                  if (!confirmed) {
                     return;
                   }
 
