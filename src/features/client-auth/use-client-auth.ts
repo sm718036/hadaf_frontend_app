@@ -13,6 +13,15 @@ export function useCurrentClient() {
   });
 }
 
+export function useClientSessions() {
+  return useQuery({
+    queryKey: queryKeys.clientAuth.sessions,
+    queryFn: ({ signal }) => clientAuthService.listSessions(signal),
+    retry: false,
+    staleTime: 60_000,
+  });
+}
+
 export function useClientSignIn() {
   const queryClient = useQueryClient();
 
@@ -37,6 +46,19 @@ export function useClientSignOut() {
     mutationFn: clientAuthService.signOut,
     onSuccess: () => {
       queryClient.setQueryData(queryKeys.clientAuth.currentClient, null);
+      queryClient.setQueryData(queryKeys.clientAuth.sessions, []);
+    },
+  });
+}
+
+export function useRevokeClientSession() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: clientAuthService.revokeSession,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.clientAuth.sessions });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.clientAuth.currentClient });
     },
   });
 }

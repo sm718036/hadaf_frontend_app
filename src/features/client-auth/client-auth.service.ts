@@ -37,9 +37,23 @@ export type VerifyClientEmailResult = {
   email: string;
 };
 
+export type ClientAccountSessionRecord = {
+  id: string;
+  ipAddress: string | null;
+  userAgent: string | null;
+  rememberMe: boolean;
+  createdAt: string;
+  lastSeenAt: string;
+  expiresAt: string;
+  revokedAt: string | null;
+  isCurrent: boolean;
+};
+
 export const clientAuthService = {
   getCurrentClient: (signal?: AbortSignal) =>
     apiRequest<ClientSessionUser | null>("/api/client-auth/me", { signal }),
+  listSessions: (signal?: AbortSignal) =>
+    apiRequest<ClientAccountSessionRecord[]>("/api/client-auth/sessions", { signal }),
   updateProfile: (input: {
     fullName: string;
     email: string;
@@ -60,4 +74,8 @@ export const clientAuthService = {
       `/api/client-auth/verify-email?token=${encodeURIComponent(token)}`,
     ),
   signOut: () => apiRequest<{ success: true }>("/api/client-auth/sign-out", { method: "POST" }),
+  revokeSession: (sessionId: string) =>
+    apiRequest<{ success: true }>(`/api/client-auth/sessions/${encodeURIComponent(sessionId)}`, {
+      method: "DELETE",
+    }),
 };

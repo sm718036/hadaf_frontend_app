@@ -13,6 +13,15 @@ export function useCurrentUser() {
   });
 }
 
+export function useUserSessions() {
+  return useQuery({
+    queryKey: queryKeys.auth.sessions,
+    queryFn: ({ signal }) => authService.listSessions(signal),
+    retry: false,
+    staleTime: 60_000,
+  });
+}
+
 export function useBootstrapStatus() {
   return useQuery({
     queryKey: ["auth", "bootstrap-status"],
@@ -51,7 +60,20 @@ export function useSignOut() {
     mutationFn: authService.signOut,
     onSuccess: async () => {
       queryClient.setQueryData(queryKeys.auth.currentUser, null);
+      queryClient.setQueryData(queryKeys.auth.sessions, []);
       await queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
+    },
+  });
+}
+
+export function useRevokeUserSession() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: authService.revokeSession,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.auth.sessions });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.auth.currentUser });
     },
   });
 }

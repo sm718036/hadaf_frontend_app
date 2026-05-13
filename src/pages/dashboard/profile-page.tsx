@@ -6,10 +6,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   useCurrentUser,
+  useRevokeUserSession,
   useRemoveProfileAvatar,
   useUploadProfileAvatar,
+  useUserSessions,
 } from "@/features/auth/use-auth";
-import { getDefaultInternalDashboardRoute } from "@/features/dashboard/access-control";
 import { EmptyHint, LoadingOverlay } from "@/features/dashboard/dashboard-ui";
 import {
   buildUserProfileData,
@@ -20,6 +21,8 @@ import { useAppNavigate } from "@/lib/router";
 
 export function DashboardProfilePage() {
   const currentUserQuery = useCurrentUser();
+  const sessionsQuery = useUserSessions();
+  const revokeSessionMutation = useRevokeUserSession();
   const uploadAvatarMutation = useUploadProfileAvatar();
   const removeAvatarMutation = useRemoveProfileAvatar();
 
@@ -143,6 +146,63 @@ export function DashboardProfilePage() {
           ]}
         />
       </div>
+      <div className="mt-8 border-t border-slate-200 pt-6">
+        <h3 className="text-[2rem] font-display font-extrabold text-slate-950">Active Sessions</h3>
+        <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-500">
+          Review where your account is signed in and revoke sessions you do not recognize.
+        </p>
+        <div className="mt-5 space-y-4">
+          {sessionsQuery.data?.map((session) => (
+            <div
+              key={session.id}
+              className="flex flex-col gap-3 rounded-[24px] border border-slate-200 bg-slate-50 px-5 py-5 lg:flex-row lg:items-start lg:justify-between"
+            >
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant={session.isCurrent ? "dark" : "secondary"}>
+                    {session.isCurrent ? "Current Session" : "Signed In Elsewhere"}
+                  </Badge>
+                  <Badge variant={session.rememberMe ? "primary" : "outline"}>
+                    {session.rememberMe ? "Keep Me Signed In" : "Browser Session"}
+                  </Badge>
+                </div>
+                <p className="text-sm font-semibold text-slate-900">
+                  {describeUserAgent(session.userAgent)}
+                </p>
+                <p className="text-sm text-slate-600">
+                  IP: {session.ipAddress || "Unavailable"} | Last active {formatSessionTime(session.lastSeenAt)}
+                </p>
+                <p className="text-sm text-slate-500">
+                  Signed in {formatSessionTime(session.createdAt)} | Expires {formatSessionTime(session.expiresAt)}
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={revokeSessionMutation.isPending}
+                onClick={async () => {
+                  try {
+                    await revokeSessionMutation.mutateAsync(session.id);
+                    toast.success(
+                      session.isCurrent ? "This session has been signed out." : "Session revoked.",
+                    );
+                  } catch (error) {
+                    toast.error(error instanceof Error ? error.message : "Unable to revoke the session.");
+                  }
+                }}
+                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {session.isCurrent ? "Sign Out This Session" : "Sign Out Other Session"}
+              </button>
+            </div>
+          ))}
+          {sessionsQuery.isLoading ? (
+            <p className="text-sm text-slate-500">Loading active sessions...</p>
+          ) : null}
+          {sessionsQuery.isError ? (
+            <p className="text-sm text-rose-600">Unable to load active sessions.</p>
+          ) : null}
+        </div>
+      </div>
       {currentUserQuery.isFetching ? <LoadingOverlay label="Refreshing profile..." /> : null}
     </section>
   );
@@ -174,6 +234,20 @@ export function DashboardProfileRedirect() {
   }, [currentUser, isLoading, navigate]);
 
   return null;
+}
+
+function describeUserAgent(userAgent: string | null) {
+  return userAgent?.trim() || "Unknown device";
+}
+
+function formatSessionTime(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString();
 }
 
 function ProfileSection({

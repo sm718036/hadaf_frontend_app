@@ -1,9 +1,11 @@
 export const queryKeys = {
   auth: {
     currentUser: ["auth", "current-user"] as const,
+    sessions: ["auth", "sessions"] as const,
   },
   clientAuth: {
     currentClient: ["client-auth", "current-client"] as const,
+    sessions: ["client-auth", "sessions"] as const,
   },
   notifications: {
     internal: ["notifications", "internal"] as const,
