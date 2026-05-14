@@ -2,20 +2,8 @@ import type { ClientSessionUser } from "@/features/client-auth/client-auth.servi
 import { StatusBadge } from "@/features/dashboard/dashboard-layout";
 import { Panel } from "@/features/dashboard/dashboard-ui";
 
-export function ModuleOverview({
-  title,
-  description,
-}: {
-  title: string;
-  description: string;
-}) {
-  return (
-    <Panel
-      title={title}
-      subtitle={description}
-      action={<StatusBadge tone="success">Portal ready</StatusBadge>}
-    />
-  );
+export function ModuleOverview({ title, description }: { title: string; description: string }) {
+  return <Panel title={title} subtitle={description} />;
 }
 
 export function PlaceholderModulePage({
@@ -28,9 +16,14 @@ export function PlaceholderModulePage({
   resourceLabel: string;
 }) {
   return (
-    <Panel title={title} subtitle={description} action={<StatusBadge tone="info">Coming next</StatusBadge>}>
+    <Panel
+      title={title}
+      subtitle={description}
+      action={<StatusBadge tone="info">Coming next</StatusBadge>}
+    >
       <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-5 py-5 text-sm leading-7 text-slate-600">
-        {resourceLabel} is part of the dashboard structure and will appear here once its data flow is connected.
+        {resourceLabel} is part of the dashboard structure and will appear here once its data flow
+        is connected.
       </div>
     </Panel>
   );

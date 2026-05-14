@@ -73,3 +73,15 @@ export function useUpdateClientProfile() {
     },
   });
 }
+
+export function useChangeClientPassword() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: clientAuthService.changePassword,
+    onSuccess: () => {
+      queryClient.setQueryData(queryKeys.clientAuth.currentClient, null);
+      queryClient.setQueryData(queryKeys.clientAuth.sessions, []);
+    },
+  });
+}

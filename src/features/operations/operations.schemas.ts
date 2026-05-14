@@ -9,12 +9,7 @@ export const APPOINTMENT_TYPES = [
   "follow_up",
   "other",
 ] as const;
-export const APPOINTMENT_STATUSES = [
-  "scheduled",
-  "completed",
-  "cancelled",
-  "rescheduled",
-] as const;
+export const APPOINTMENT_STATUSES = ["scheduled", "completed", "cancelled", "rescheduled"] as const;
 export const PAYMENT_STATUSES = ["pending", "partial", "paid", "overdue", "cancelled"] as const;
 export const CHAT_CONTACT_TYPES = ["app_user", "client"] as const;
 export const MEETING_STATUSES = ["scheduled", "completed", "cancelled"] as const;

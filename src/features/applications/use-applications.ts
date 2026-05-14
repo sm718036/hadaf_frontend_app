@@ -82,11 +82,20 @@ export function useMoveApplicationStage() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, direction, note }: { id: string; direction: "next" | "previous"; note?: string }) =>
-      applicationsService.moveStage(id, { direction, note: note ?? "" }),
+    mutationFn: ({
+      id,
+      direction,
+      note,
+    }: {
+      id: string;
+      direction: "next" | "previous";
+      note?: string;
+    }) => applicationsService.moveStage(id, { direction, note: note ?? "" }),
     onSuccess: async (application) => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.applications.all });
-      await queryClient.invalidateQueries({ queryKey: queryKeys.applications.detail(application.id) });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.applications.detail(application.id),
+      });
       await queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
       await queryClient.invalidateQueries({ queryKey: queryKeys.clientAuth.currentClient });
     },

@@ -1,6 +1,12 @@
 import { apiRequest } from "@/lib/api";
 import type { PaginatedResponse } from "@/lib/pagination";
-import type { ConvertLeadInput, Lead, LeadDetail, PublicLeadSubmissionInput, UpsertLeadInput } from "./leads.schemas";
+import type {
+  ConvertLeadInput,
+  Lead,
+  LeadDetail,
+  PublicLeadSubmissionInput,
+  UpsertLeadInput,
+} from "./leads.schemas";
 
 export type LeadListFilters = {
   page: number;
@@ -52,8 +58,10 @@ function buildLeadListQueryString(params: LeadListFilters) {
 export const leadsService = {
   list: (params: LeadListFilters, signal?: AbortSignal) =>
     apiRequest<LeadsListResponse>(`/api/leads?${buildLeadListQueryString(params)}`, { signal }),
-  getById: (id: string, signal?: AbortSignal) => apiRequest<LeadDetail>(`/api/leads/${id}`, { signal }),
-  upsert: (input: UpsertLeadInput) => apiRequest<Lead>("/api/leads", { method: "POST", body: input }),
+  getById: (id: string, signal?: AbortSignal) =>
+    apiRequest<LeadDetail>(`/api/leads/${id}`, { signal }),
+  upsert: (input: UpsertLeadInput) =>
+    apiRequest<Lead>("/api/leads", { method: "POST", body: input }),
   convert: (id: string, input: ConvertLeadInput) =>
     apiRequest<{ lead: Lead; client: { id: string; name: string } }>(`/api/leads/${id}/convert`, {
       method: "POST",

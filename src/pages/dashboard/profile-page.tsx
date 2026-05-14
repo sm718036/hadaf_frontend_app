@@ -1,16 +1,36 @@
-import { useEffect } from "react";
-import { CalendarDays, Mail, MapPin, Phone, ShieldCheck, UserRound } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  CalendarDays,
+  Info,
+  LockKeyhole,
+  Mail,
+  MapPin,
+  Phone,
+  ShieldCheck,
+  UserRound,
+} from "lucide-react";
 import { toast } from "sonner";
 import { APP_ROUTES } from "@/config/routes";
+import {
+  AppTable,
+  AppTableBody,
+  AppTableCell,
+  AppTableHead,
+  AppTableHeading,
+  AppTableRow,
+} from "@/components/ui/app-table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { AppDialog } from "@/components/ui/app-dialog";
 import {
+  useChangePassword,
   useCurrentUser,
   useRevokeUserSession,
   useRemoveProfileAvatar,
   useUploadProfileAvatar,
   useUserSessions,
 } from "@/features/auth/use-auth";
+import { authService } from "@/features/auth/auth.service";
 import { EmptyHint, LoadingOverlay } from "@/features/dashboard/dashboard-ui";
 import {
   buildUserProfileData,
@@ -25,6 +45,15 @@ export function DashboardProfilePage() {
   const revokeSessionMutation = useRevokeUserSession();
   const uploadAvatarMutation = useUploadProfileAvatar();
   const removeAvatarMutation = useRemoveProfileAvatar();
+  const changePasswordMutation = useChangePassword();
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [isResetEmailPending, setIsResetEmailPending] = useState(false);
 
   if (currentUserQuery.isError || !currentUserQuery.data) {
     return <EmptyHint message="Unable to load the profile." tone="error" />;
@@ -34,6 +63,8 @@ export function DashboardProfilePage() {
   const profile = buildUserProfileData(currentUser);
   const avatarUrl = getUserAvatarUrl(currentUser);
   const initials = getUserInitials(currentUser.name);
+  const selectedSession =
+    sessionsQuery.data?.find((session) => session.id === selectedSessionId) ?? null;
 
   return (
     <section className="relative overflow-hidden rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm xl:p-8">
@@ -141,68 +172,225 @@ export function DashboardProfilePage() {
             { label: "Country", value: profile.country, icon: MapPin },
             { label: "City / State", value: profile.cityState, icon: MapPin },
             { label: "Postal Code", value: profile.postalCode, icon: MapPin },
-            { label: "Tax ID", value: profile.taxId, icon: ShieldCheck },
-            { label: "User ID", value: currentUser.id, icon: ShieldCheck, mono: true },
           ]}
         />
+      </div>
+      <div className="mt-8 border-t border-slate-200 pt-6">
+        <h3 className="text-[2rem] font-display font-extrabold text-slate-950">Password</h3>
+        <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-500">
+          Change your password using your current password. All active sessions will be signed out
+          after the change.
+        </p>
+        <div className="mt-5">
+          <button type="button" className="btn-gold" onClick={() => setIsPasswordDialogOpen(true)}>
+            Change Password
+          </button>
+        </div>
       </div>
       <div className="mt-8 border-t border-slate-200 pt-6">
         <h3 className="text-[2rem] font-display font-extrabold text-slate-950">Active Sessions</h3>
         <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-500">
           Review where your account is signed in and revoke sessions you do not recognize.
         </p>
-        <div className="mt-5 space-y-4">
-          {sessionsQuery.data?.map((session) => (
-            <div
-              key={session.id}
-              className="flex flex-col gap-3 rounded-[24px] border border-slate-200 bg-slate-50 px-5 py-5 lg:flex-row lg:items-start lg:justify-between"
-            >
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center gap-2">
+        <AppTable minWidthClass="min-w-[760px]">
+          <AppTableHead>
+            <AppTableRow>
+              {["Session", "Type", "Browser", "IP", "Actions"].map((heading) => (
+                <AppTableHeading key={heading} align="left">
+                  {heading}
+                </AppTableHeading>
+              ))}
+            </AppTableRow>
+          </AppTableHead>
+          <AppTableBody>
+            {sessionsQuery.data?.map((session) => (
+              <AppTableRow key={session.id}>
+                <AppTableCell align="left">
                   <Badge variant={session.isCurrent ? "dark" : "secondary"}>
-                    {session.isCurrent ? "Current Session" : "Signed In Elsewhere"}
+                    {session.isCurrent ? "Current" : "Other"}
                   </Badge>
+                </AppTableCell>
+                <AppTableCell align="left">
                   <Badge variant={session.rememberMe ? "primary" : "outline"}>
-                    {session.rememberMe ? "Keep Me Signed In" : "Browser Session"}
+                    {session.rememberMe ? "Persistent" : "Browser"}
                   </Badge>
-                </div>
-                <p className="text-sm font-semibold text-slate-900">
-                  {describeUserAgent(session.userAgent)}
-                </p>
-                <p className="text-sm text-slate-600">
-                  IP: {session.ipAddress || "Unavailable"} | Last active {formatSessionTime(session.lastSeenAt)}
-                </p>
-                <p className="text-sm text-slate-500">
-                  Signed in {formatSessionTime(session.createdAt)} | Expires {formatSessionTime(session.expiresAt)}
-                </p>
-              </div>
-              <button
-                type="button"
-                disabled={revokeSessionMutation.isPending}
-                onClick={async () => {
-                  try {
-                    await revokeSessionMutation.mutateAsync(session.id);
-                    toast.success(
-                      session.isCurrent ? "This session has been signed out." : "Session revoked.",
-                    );
-                  } catch (error) {
-                    toast.error(error instanceof Error ? error.message : "Unable to revoke the session.");
-                  }
-                }}
-                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {session.isCurrent ? "Sign Out This Session" : "Sign Out Other Session"}
-              </button>
-            </div>
-          ))}
-          {sessionsQuery.isLoading ? (
-            <p className="text-sm text-slate-500">Loading active sessions...</p>
-          ) : null}
-          {sessionsQuery.isError ? (
-            <p className="text-sm text-rose-600">Unable to load active sessions.</p>
-          ) : null}
-        </div>
+                </AppTableCell>
+                <AppTableCell align="left" className="font-medium text-slate-900">
+                  {summarizeUserAgent(session.userAgent)}
+                </AppTableCell>
+                <AppTableCell align="left" className="text-slate-600">
+                  {session.ipAddress || "Unavailable"}
+                </AppTableCell>
+                <AppTableCell align="left">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedSessionId(session.id)}
+                      className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                    >
+                      <Info className="h-4 w-4" />
+                      Details
+                    </button>
+                    <button
+                      type="button"
+                      disabled={revokeSessionMutation.isPending}
+                      onClick={async () => {
+                        try {
+                          await revokeSessionMutation.mutateAsync(session.id);
+                          toast.success(
+                            session.isCurrent
+                              ? "This session has been signed out."
+                              : "Session revoked.",
+                          );
+                        } catch (error) {
+                          toast.error(
+                            error instanceof Error
+                              ? error.message
+                              : "Unable to revoke the session.",
+                          );
+                        }
+                      }}
+                      className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {session.isCurrent ? "Logout" : "Revoke"}
+                    </button>
+                  </div>
+                </AppTableCell>
+              </AppTableRow>
+            ))}
+          </AppTableBody>
+        </AppTable>
+        {sessionsQuery.isLoading ? (
+          <p className="mt-5 px-5 text-sm text-slate-500">Loading active sessions...</p>
+        ) : null}
+        {sessionsQuery.isError ? (
+          <p className="mt-5 px-5 text-sm text-rose-600">Unable to load active sessions.</p>
+        ) : null}
       </div>
+      <AppDialog
+        open={Boolean(selectedSession)}
+        onOpenChange={(open) => !open && setSelectedSessionId(null)}
+        title="Session Details"
+        description="Review more information about this signed-in session."
+        contentClassName="max-h-[90vh] w-[calc(100%-2rem)] max-w-xl overflow-hidden"
+        bodyClassName="max-h-[calc(90vh-104px)] overflow-y-auto"
+      >
+        {selectedSession ? (
+          <div className="space-y-4">
+            <SessionDetailRow
+              label="Browser / Device"
+              value={describeUserAgent(selectedSession.userAgent)}
+            />
+            <SessionDetailRow
+              label="IP Address"
+              value={selectedSession.ipAddress || "Unavailable"}
+            />
+            <SessionDetailRow
+              label="Last Active"
+              value={formatSessionTime(selectedSession.lastSeenAt)}
+            />
+            <SessionDetailRow
+              label="Signed In"
+              value={formatSessionTime(selectedSession.createdAt)}
+            />
+            <SessionDetailRow
+              label="Expires"
+              value={formatSessionTime(selectedSession.expiresAt)}
+            />
+            <SessionDetailRow
+              label="Session Type"
+              value={selectedSession.rememberMe ? "Keep Me Signed In" : "Browser Session"}
+            />
+          </div>
+        ) : null}
+      </AppDialog>
+      <AppDialog
+        open={isPasswordDialogOpen}
+        onOpenChange={setIsPasswordDialogOpen}
+        title="Change Password"
+        description="Confirm your current password and choose a new one. All active sessions will be signed out after the change."
+        contentClassName="max-h-[90vh] w-[calc(100%-1rem)] max-w-2xl overflow-hidden"
+        bodyClassName="max-h-[calc(90vh-104px)] overflow-y-auto !px-0 !py-0"
+      >
+        <div className="border-b border-slate-200 bg-slate-50 px-6 py-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm leading-6 text-slate-600">
+              Don&apos;t remember your current password? Send a reset link to{" "}
+              <span className="font-semibold text-slate-900">{currentUser.email}</span>.
+            </p>
+            <button
+              type="button"
+              disabled={isResetEmailPending}
+              onClick={async () => {
+                try {
+                  setIsResetEmailPending(true);
+                  const result = await authService.requestPasswordReset({
+                    email: currentUser.email,
+                  });
+                  toast.success(result.message);
+                } catch (error) {
+                  toast.error(
+                    error instanceof Error ? error.message : "Unable to send password reset email.",
+                  );
+                } finally {
+                  setIsResetEmailPending(false);
+                }
+              }}
+              className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isResetEmailPending ? "Sending..." : "Send Reset Email"}
+            </button>
+          </div>
+        </div>
+        <form
+          className="grid gap-4 px-6 py-6 md:grid-cols-3"
+          onSubmit={async (event) => {
+            event.preventDefault();
+
+            try {
+              const result = await changePasswordMutation.mutateAsync(passwordForm);
+              toast.success(result.message);
+              setPasswordForm({
+                currentPassword: "",
+                newPassword: "",
+                confirmPassword: "",
+              });
+              setIsPasswordDialogOpen(false);
+              navigate(APP_ROUTES.auth, {
+                replace: true,
+                search: { mode: "staff" },
+              });
+            } catch (error) {
+              toast.error(error instanceof Error ? error.message : "Unable to change password.");
+            }
+          }}
+        >
+          <PasswordInput
+            label="Current Password"
+            value={passwordForm.currentPassword}
+            onChange={(currentPassword) =>
+              setPasswordForm((current) => ({ ...current, currentPassword }))
+            }
+          />
+          <PasswordInput
+            label="New Password"
+            value={passwordForm.newPassword}
+            onChange={(newPassword) => setPasswordForm((current) => ({ ...current, newPassword }))}
+          />
+          <PasswordInput
+            label="Confirm Password"
+            value={passwordForm.confirmPassword}
+            onChange={(confirmPassword) =>
+              setPasswordForm((current) => ({ ...current, confirmPassword }))
+            }
+          />
+          <div className="md:col-span-3">
+            <button type="submit" disabled={changePasswordMutation.isPending} className="btn-gold">
+              {changePasswordMutation.isPending ? "Updating..." : "Change Password"}
+            </button>
+          </div>
+        </form>
+      </AppDialog>
       {currentUserQuery.isFetching ? <LoadingOverlay label="Refreshing profile..." /> : null}
     </section>
   );
@@ -238,6 +426,40 @@ export function DashboardProfileRedirect() {
 
 function describeUserAgent(userAgent: string | null) {
   return userAgent?.trim() || "Unknown device";
+}
+
+function summarizeUserAgent(userAgent: string | null) {
+  const value = userAgent?.trim();
+
+  if (!value) {
+    return "Unknown device";
+  }
+
+  const browser = /Edg\//.test(value)
+    ? "Edge"
+    : /Chrome\//.test(value)
+      ? "Chrome"
+      : /Firefox\//.test(value)
+        ? "Firefox"
+        : /Safari\//.test(value) && !/Chrome\//.test(value)
+          ? "Safari"
+          : /MSIE|Trident/.test(value)
+            ? "Internet Explorer"
+            : "Browser";
+
+  const platform = /Android/.test(value)
+    ? "Android"
+    : /iPhone|iPad|iPod/.test(value)
+      ? "iOS"
+      : /Windows/.test(value)
+        ? "Windows"
+        : /Mac OS X|Macintosh/.test(value)
+          ? "macOS"
+          : /Linux/.test(value)
+            ? "Linux"
+            : "Unknown";
+
+  return `${browser} on ${platform}`;
 }
 
 function formatSessionTime(value: string) {
@@ -283,6 +505,49 @@ function ProfileSection({
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function PasswordInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+        {label}
+      </span>
+      <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+        <LockKeyhole className="h-4 w-4 text-slate-400" />
+        <input
+          type="password"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="w-full bg-transparent text-sm text-slate-900 outline-none"
+          required
+        />
+      </div>
+    </label>
+  );
+}
+
+function SessionDetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="border-b border-slate-200 pb-4 last:border-b-0 last:pb-0">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+          {label}
+        </div>
+        <div className="break-words text-sm font-semibold text-slate-900 sm:max-w-[65%] sm:text-right">
+          {value}
+        </div>
       </div>
     </div>
   );

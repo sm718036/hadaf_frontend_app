@@ -1,20 +1,14 @@
 import { Link } from "react-router-dom";
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { AppDialog } from "@/components/ui/app-dialog";
 import { Badge } from "@/components/ui/badge";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { useAppDialogs } from "@/components/ui/app-dialogs";
+import { useAppDialogs } from "@/components/ui/use-app-dialogs";
 import { SelectMenu } from "@/components/ui/select-menu";
 import { APP_ROUTES } from "@/config/routes";
 import { useCurrentUser } from "@/features/auth/use-auth";
-import { useDashboardAccess } from "@/features/dashboard/dashboard-context";
+import { useDashboardAccess } from "@/features/dashboard/use-dashboard-access";
 import { DataTable, StatusBadge } from "@/features/dashboard/dashboard-layout";
 import {
   EmptyHint,
@@ -356,52 +350,44 @@ export function LeadListPage({ area }: { area: "admin" | "staff" }) {
           </>
         )}
 
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogContent className="max-w-4xl overflow-y-auto border-slate-200 p-0 sm:max-h-[90vh]">
-            <DialogHeader className="border-b border-slate-200 px-6 py-5">
-              <DialogTitle className="font-display text-2xl font-extrabold text-slate-950">
-                Create Lead
-              </DialogTitle>
-              <DialogDescription>
-                Add a new lead record without leaving the list view.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="px-6 py-6">
-              <LeadForm
-                form={form}
-                onChange={setForm}
-                staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
-                mode="admin"
-                onSubmit={async () => {
-                  try {
-                    const lead = await submitLeadWithDuplicateOverride(
-                      upsertLeadMutation,
-                      form,
-                      (message) =>
-                        dialogs.confirm({
-                          title: "Potential duplicate lead",
-                          description: `${message} Continue and save this lead anyway?`,
-                          confirmLabel: "Continue",
-                        }),
-                    );
-                    toast.success("Lead created.");
-                    setIsCreateOpen(false);
-                    if (area === "admin") {
-                      navigate("/dashboard/admin/leads/:leadId", { params: { leadId: lead.id } });
-                    } else {
-                      navigate("/dashboard/staff/leads/:leadId", { params: { leadId: lead.id } });
-                    }
-                  } catch (error) {
-                    toast.error(
-                      error instanceof Error ? error.message : "Unable to create the lead.",
-                    );
-                  }
-                }}
-                isSubmitting={upsertLeadMutation.isPending}
-              />
-            </div>
-          </DialogContent>
-        </Dialog>
+        <AppDialog
+          open={isCreateOpen}
+          onOpenChange={setIsCreateOpen}
+          title="Create Lead"
+          description="Add a new lead record without leaving the list view."
+          contentClassName="max-w-4xl overflow-y-auto sm:max-h-[90vh]"
+        >
+          <LeadForm
+            form={form}
+            onChange={setForm}
+            staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
+            mode="admin"
+            onSubmit={async () => {
+              try {
+                const lead = await submitLeadWithDuplicateOverride(
+                  upsertLeadMutation,
+                  form,
+                  (message) =>
+                    dialogs.confirm({
+                      title: "Potential duplicate lead",
+                      description: `${message} Continue and save this lead anyway?`,
+                      confirmLabel: "Continue",
+                    }),
+                );
+                toast.success("Lead created.");
+                setIsCreateOpen(false);
+                if (area === "admin") {
+                  navigate("/dashboard/admin/leads/:leadId", { params: { leadId: lead.id } });
+                } else {
+                  navigate("/dashboard/staff/leads/:leadId", { params: { leadId: lead.id } });
+                }
+              } catch (error) {
+                toast.error(error instanceof Error ? error.message : "Unable to create the lead.");
+              }
+            }}
+            isSubmitting={upsertLeadMutation.isPending}
+          />
+        </AppDialog>
       </Panel>
     </div>
   );
@@ -483,9 +469,9 @@ export function LeadDetailPage({ area, leadId }: { area: "admin" | "staff"; lead
             </button>
             {isAdmin && lead && !lead.convertedClientId ? (
               <button
-              type="button"
-              className="btn-gold"
-              onClick={async () => {
+                type="button"
+                className="btn-gold"
+                onClick={async () => {
                   const notes =
                     (await dialogs.prompt({
                       title: "Convert lead to client",
@@ -511,9 +497,9 @@ export function LeadDetailPage({ area, leadId }: { area: "admin" | "staff"; lead
             ) : null}
             {isAdmin ? (
               <button
-              type="button"
-              className="rounded-xl border border-destructive/20 px-4 py-2 text-sm font-semibold text-destructive"
-              onClick={async () => {
+                type="button"
+                className="rounded-xl border border-destructive/20 px-4 py-2 text-sm font-semibold text-destructive"
+                onClick={async () => {
                   const confirmed = await dialogs.confirm({
                     title: "Delete lead?",
                     description: `Delete lead ${lead.fullName}. This action cannot be undone.`,
@@ -557,46 +543,37 @@ export function LeadDetailPage({ area, leadId }: { area: "admin" | "staff"; lead
         {isOverlayVisible ? <LoadingOverlay label="Loading lead details..." /> : null}
       </Panel>
 
-      <Dialog open={isEditOpen && Boolean(form)} onOpenChange={setIsEditOpen}>
-        <DialogContent className="max-w-4xl overflow-y-auto border-slate-200 p-0 sm:max-h-[90vh]">
-          <DialogHeader className="border-b border-slate-200 px-6 py-5">
-            <DialogTitle className="font-display text-2xl font-extrabold text-slate-950">
-              Edit Lead
-            </DialogTitle>
-            <DialogDescription>
-              Update lead details, assignment, status, and follow-up planning.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="px-6 py-6">
-            <LeadForm
-              form={form ?? buildEmptyLeadForm()}
-              onChange={setForm}
-              staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
-              mode={isAdmin ? "admin" : "staff"}
-              onSubmit={async () => {
-                if (!form) return;
-                try {
-                  await submitLeadWithDuplicateOverride(
-                    upsertLeadMutation,
-                    form,
-                    (message) =>
-                      dialogs.confirm({
-                        title: "Potential duplicate lead",
-                        description: `${message} Continue and save this lead anyway?`,
-                        confirmLabel: "Continue",
-                      }),
-                  );
-                  toast.success("Lead updated.");
-                  setIsEditOpen(false);
-                } catch (error) {
-                  toast.error(error instanceof Error ? error.message : "Unable to update the lead.");
-                }
-              }}
-              isSubmitting={upsertLeadMutation.isPending}
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
+      <AppDialog
+        open={isEditOpen && Boolean(form)}
+        onOpenChange={setIsEditOpen}
+        title="Edit Lead"
+        description="Update lead details, assignment, status, and follow-up planning."
+        contentClassName="max-w-4xl overflow-y-auto sm:max-h-[90vh]"
+      >
+        <LeadForm
+          form={form ?? buildEmptyLeadForm()}
+          onChange={setForm}
+          staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
+          mode={isAdmin ? "admin" : "staff"}
+          onSubmit={async () => {
+            if (!form) return;
+            try {
+              await submitLeadWithDuplicateOverride(upsertLeadMutation, form, (message) =>
+                dialogs.confirm({
+                  title: "Potential duplicate lead",
+                  description: `${message} Continue and save this lead anyway?`,
+                  confirmLabel: "Continue",
+                }),
+              );
+              toast.success("Lead updated.");
+              setIsEditOpen(false);
+            } catch (error) {
+              toast.error(error instanceof Error ? error.message : "Unable to update the lead.");
+            }
+          }}
+          isSubmitting={upsertLeadMutation.isPending}
+        />
+      </AppDialog>
 
       <Panel
         title="Lead History"
@@ -646,7 +623,10 @@ function LeadOverview({ lead }: { lead: Lead }) {
         <ReadOnlyField label="Next Follow-up" value={formatDate(lead.nextFollowUpDate)} />
       </div>
       <ReadOnlyTextBlock label="Message / Comments" value={lead.message || "No message added."} />
-      <ReadOnlyTextBlock label="Internal Notes" value={lead.internalNotes || "No internal notes added."} />
+      <ReadOnlyTextBlock
+        label="Internal Notes"
+        value={lead.internalNotes || "No internal notes added."}
+      />
     </div>
   );
 }
@@ -833,12 +813,7 @@ function SelectField({
       <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
         {label}
       </span>
-      <SelectMenu
-        value={value}
-        disabled={disabled}
-        onValueChange={onChange}
-        options={options}
-      />
+      <SelectMenu value={value} disabled={disabled} onValueChange={onChange} options={options} />
     </label>
   );
 }

@@ -1,5 +1,9 @@
 import { apiRequest } from "@/lib/api";
-import { buildListQueryString, type ListQueryParams, type PaginatedResponse } from "@/lib/pagination";
+import {
+  buildListQueryString,
+  type ListQueryParams,
+  type PaginatedResponse,
+} from "@/lib/pagination";
 import type {
   CreateInternalUserInput,
   InternalUser,
@@ -15,6 +19,5 @@ export const usersService = {
     apiRequest<InternalUser>("/api/users", { method: "POST", body: input }),
   update: (id: string, input: UpdateInternalUserInput) =>
     apiRequest<InternalUser>(`/api/users/${id}`, { method: "PUT", body: input }),
-  delete: (id: string) =>
-    apiRequest<{ success: true }>(`/api/users/${id}`, { method: "DELETE" }),
+  delete: (id: string) => apiRequest<{ success: true }>(`/api/users/${id}`, { method: "DELETE" }),
 };

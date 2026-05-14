@@ -28,8 +28,8 @@ export function useCreateInternalUser() {
 
   return useMutation({
     mutationFn: usersService.create,
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
     },
   });
 }
@@ -40,8 +40,8 @@ export function useUpdateInternalUser() {
   return useMutation({
     mutationFn: ({ id, input }: { id: string; input: Parameters<typeof usersService.update>[1] }) =>
       usersService.update(id, input),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
     },
   });
 }
@@ -51,8 +51,8 @@ export function useDeleteInternalUser() {
 
   return useMutation({
     mutationFn: usersService.delete,
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
     },
   });
 }

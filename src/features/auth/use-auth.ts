@@ -99,3 +99,15 @@ export function useRemoveProfileAvatar() {
     },
   });
 }
+
+export function useChangePassword() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: authService.changePassword,
+    onSuccess: () => {
+      queryClient.setQueryData(queryKeys.auth.currentUser, null);
+      queryClient.setQueryData(queryKeys.auth.sessions, []);
+    },
+  });
+}

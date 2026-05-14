@@ -1,4 +1,10 @@
-import type { ClientSignInInput, ClientSignUpInput } from "@/features/client-auth/client-auth.schemas";
+import type {
+  ChangeClientPasswordInput,
+  ClientSignInInput,
+  ClientSignUpInput,
+  RequestClientPasswordResetInput,
+  ResetClientPasswordInput,
+} from "@/features/client-auth/client-auth.schemas";
 import { apiRequest } from "@/lib/api";
 
 export type ClientSessionUser = {
@@ -37,6 +43,11 @@ export type VerifyClientEmailResult = {
   email: string;
 };
 
+export type ClientPasswordActionResult = {
+  success: true;
+  message: string;
+};
+
 export type ClientAccountSessionRecord = {
   id: string;
   ipAddress: string | null;
@@ -69,6 +80,21 @@ export const clientAuthService = {
     apiRequest<ClientSessionUser>("/api/client-auth/sign-in", { method: "POST", body: input }),
   signUp: (input: ClientSignUpInput) =>
     apiRequest<ClientSignUpResult>("/api/client-auth/sign-up", { method: "POST", body: input }),
+  requestPasswordReset: (input: RequestClientPasswordResetInput) =>
+    apiRequest<ClientPasswordActionResult>("/api/client-auth/request-password-reset", {
+      method: "POST",
+      body: input,
+    }),
+  resetPassword: (input: ResetClientPasswordInput) =>
+    apiRequest<ClientPasswordActionResult>("/api/client-auth/reset-password", {
+      method: "POST",
+      body: input,
+    }),
+  changePassword: (input: ChangeClientPasswordInput) =>
+    apiRequest<ClientPasswordActionResult>("/api/client-auth/change-password", {
+      method: "POST",
+      body: input,
+    }),
   verifyEmail: (token: string) =>
     apiRequest<VerifyClientEmailResult>(
       `/api/client-auth/verify-email?token=${encodeURIComponent(token)}`,

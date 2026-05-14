@@ -12,7 +12,7 @@ import {
 import { SelectMenu } from "@/components/ui/select-menu";
 import { useCurrentUser } from "@/features/auth/use-auth";
 import { getDefaultInternalDashboardRoute } from "@/features/dashboard/access-control";
-import { useDashboardAccess } from "@/features/dashboard/dashboard-context";
+import { useDashboardAccess } from "@/features/dashboard/use-dashboard-access";
 import { EmptyHint, Panel } from "@/features/dashboard/dashboard-ui";
 import { type SiteContent, siteContentSchema } from "@/features/site-content/site-content.schemas";
 import {

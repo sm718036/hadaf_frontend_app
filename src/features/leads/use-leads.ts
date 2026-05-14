@@ -68,7 +68,8 @@ export function useConvertLead() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, notes }: { id: string; notes: string }) => leadsService.convert(id, { notes }),
+    mutationFn: ({ id, notes }: { id: string; notes: string }) =>
+      leadsService.convert(id, { notes }),
     onSuccess: async (result) => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.leads.all });
       await queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });

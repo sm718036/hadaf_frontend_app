@@ -2,21 +2,24 @@ import { useEffect, useState, useDeferredValue } from "react";
 import { CalendarDays, Eye, Mail, Pencil, ShieldCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { APP_ROUTES } from "@/config/routes";
+import { AppDialog } from "@/components/ui/app-dialog";
+import {
+  AppTable,
+  AppTableBody,
+  AppTableCell,
+  AppTableEmpty,
+  AppTableHead,
+  AppTableHeading,
+  AppTableRow,
+} from "@/components/ui/app-table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { useAppDialogs } from "@/components/ui/app-dialogs";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { useAppDialogs } from "@/components/ui/use-app-dialogs";
 import { SelectMenu } from "@/components/ui/select-menu";
 import { SpinnerTwo } from "@/components/ui/spinner";
 import { useCurrentUser } from "@/features/auth/use-auth";
 import { getDefaultInternalDashboardRoute } from "@/features/dashboard/access-control";
-import { useDashboardAccess } from "@/features/dashboard/dashboard-context";
+import { useDashboardAccess } from "@/features/dashboard/use-dashboard-access";
 import {
   EmptyHint,
   Field,
@@ -225,117 +228,104 @@ export function DashboardUsersPage() {
           <EmptyHint message="Unable to load internal users." tone="error" />
         ) : (
           <>
-            <div className="overflow-hidden rounded-[24px] border border-slate-200">
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[760px] text-sm">
-                  <thead className="bg-slate-900 text-slate-100">
-                    <tr>
-                      {["Avatar", "Name", "Email", "Verification", "Actions"].map((heading) => (
-                        <th
-                          key={heading}
-                          className="px-5 py-4 text-center font-display font-semibold"
-                        >
-                          {heading}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200 bg-white">
-                    {users.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} className="px-5 py-14 text-center text-slate-500">
-                          {deferredSearch
-                            ? "No matching internal users found."
-                            : "No internal users found."}
-                        </td>
-                      </tr>
-                    ) : (
-                      users.map((user) => (
-                        <tr key={user.id}>
-                          <td className="px-5 py-4 text-center">
-                            <div className="flex justify-center">
-                              <Avatar className="h-11 w-11 border border-slate-200 bg-white">
-                                <AvatarImage src={getUserAvatarUrl(user)} alt={user.name} />
-                                <AvatarFallback className="bg-gold text-xs font-bold text-dark">
-                                  {getUserInitials(user.name)}
-                                </AvatarFallback>
-                              </Avatar>
-                            </div>
-                          </td>
-                          <td className="px-5 py-4 text-center">
-                            <span className="font-semibold text-slate-900">{user.name}</span>
-                          </td>
-                          <td className="px-5 py-4 text-center text-slate-600">
-                            {user.email}
-                          </td>
-                          <td className="px-5 py-4 text-center">
-                            <div className="flex justify-center">
-                              <Badge variant={user.emailVerifiedAt ? "success" : "light"}>
-                                {user.emailVerifiedAt ? "Verified" : "Pending"}
-                              </Badge>
-                            </div>
-                          </td>
-                          <td className="px-5 py-4 text-center">
-                            <div className="flex justify-center gap-2">
+            <AppTable minWidthClass="min-w-[760px]">
+              <AppTableHead>
+                <AppTableRow>
+                  {["Avatar", "Name", "Email", "Verification", "Actions"].map((heading) => (
+                    <AppTableHeading key={heading}>{heading}</AppTableHeading>
+                  ))}
+                </AppTableRow>
+              </AppTableHead>
+              <AppTableBody>
+                {users.length === 0 ? (
+                  <AppTableEmpty colSpan={5} className="py-14">
+                    {deferredSearch
+                      ? "No matching internal users found."
+                      : "No internal users found."}
+                  </AppTableEmpty>
+                ) : (
+                  users.map((user) => (
+                    <AppTableRow key={user.id}>
+                      <AppTableCell>
+                        <div className="flex justify-center">
+                          <Avatar className="h-11 w-11 border border-slate-200 bg-white">
+                            <AvatarImage src={getUserAvatarUrl(user)} alt={user.name} />
+                            <AvatarFallback className="bg-gold text-xs font-bold text-dark">
+                              {getUserInitials(user.name)}
+                            </AvatarFallback>
+                          </Avatar>
+                        </div>
+                      </AppTableCell>
+                      <AppTableCell>
+                        <span className="font-semibold text-slate-900">{user.name}</span>
+                      </AppTableCell>
+                      <AppTableCell className="text-slate-600">{user.email}</AppTableCell>
+                      <AppTableCell>
+                        <div className="flex justify-center">
+                          <Badge variant={user.emailVerifiedAt ? "success" : "light"}>
+                            {user.emailVerifiedAt ? "Verified" : "Pending"}
+                          </Badge>
+                        </div>
+                      </AppTableCell>
+                      <AppTableCell>
+                        <div className="flex justify-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => openEditDialog(user)}
+                            className="inline-flex h-10 w-10 items-center justify-center text-slate-600"
+                            aria-label={`View ${user.name}`}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                          {access.canWriteUsers ? (
+                            <>
                               <button
                                 type="button"
                                 onClick={() => openEditDialog(user)}
                                 className="inline-flex h-10 w-10 items-center justify-center text-slate-600"
-                                aria-label={`View ${user.name}`}
+                                aria-label={`Edit ${user.name}`}
                               >
-                                <Eye className="h-4 w-4" />
+                                <Pencil className="h-4 w-4" />
                               </button>
-                              {access.canWriteUsers ? (
-                                <>
-                                  <button
-                                    type="button"
-                                    onClick={() => openEditDialog(user)}
-                                    className="inline-flex h-10 w-10 items-center justify-center text-slate-600"
-                                    aria-label={`Edit ${user.name}`}
-                                  >
-                                    <Pencil className="h-4 w-4" />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={async () => {
-                                      const confirmed = await dialogs.confirm({
-                                        title: "Delete user?",
-                                        description: `Delete ${user.name}. This action cannot be undone.`,
-                                        confirmLabel: "Delete",
-                                        tone: "destructive",
-                                      });
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  const confirmed = await dialogs.confirm({
+                                    title: "Delete user?",
+                                    description: `Delete ${user.name}. This action cannot be undone.`,
+                                    confirmLabel: "Delete",
+                                    tone: "destructive",
+                                  });
 
-                                      if (!confirmed) {
-                                        return;
-                                      }
+                                  if (!confirmed) {
+                                    return;
+                                  }
 
-                                      try {
-                                        await deleteUserMutation.mutateAsync(user.id);
-                                        toast.success("Internal user deleted.");
-                                      } catch (error) {
-                                        const message =
-                                          error instanceof Error
-                                            ? error.message
-                                            : "Unable to delete the user.";
-                                        toast.error(message);
-                                      }
-                                    }}
-                                    className="inline-flex h-10 w-10 items-center justify-center text-destructive"
-                                    aria-label={`Delete ${user.name}`}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </button>
-                                </>
-                              ) : null}
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                                  try {
+                                    await deleteUserMutation.mutateAsync(user.id);
+                                    toast.success("Internal user deleted.");
+                                  } catch (error) {
+                                    const message =
+                                      error instanceof Error
+                                        ? error.message
+                                        : "Unable to delete the user.";
+                                    toast.error(message);
+                                  }
+                                }}
+                                className="inline-flex h-10 w-10 items-center justify-center text-destructive"
+                                aria-label={`Delete ${user.name}`}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </>
+                          ) : null}
+                        </div>
+                      </AppTableCell>
+                    </AppTableRow>
+                  ))
+                )}
+              </AppTableBody>
+            </AppTable>
             <PaginationControls
               page={page}
               pageSize={DEFAULT_PAGE_SIZE}
@@ -348,219 +338,209 @@ export function DashboardUsersPage() {
       </Panel>
 
       {access.canReadUsers ? (
-        <Dialog open={isDialogOpen} onOpenChange={(open) => !open && closeDialog()}>
-          <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto rounded-[28px] border border-slate-200 bg-white p-0">
-            <DialogHeader className="border-b border-slate-200 px-6 py-5">
-              <DialogTitle className="text-2xl font-display font-extrabold text-slate-950">
-                {editingUser ? "User Details" : "Create Internal User"}
-              </DialogTitle>
-              <DialogDescription className="text-sm text-slate-500">
-                {editingUser
-                  ? "Review and update this internal user's role and access from one focused dialog."
-                  : "Create a new internal admin or staff account and define staff permissions."}
-              </DialogDescription>
-            </DialogHeader>
+        <AppDialog
+          open={isDialogOpen}
+          onOpenChange={(open) => !open && closeDialog()}
+          title={editingUser ? "User Details" : "Create Internal User"}
+          description={
+            editingUser
+              ? "Review and update this internal user's role and access from one focused dialog."
+              : "Create a new internal admin or staff account and define staff permissions."
+          }
+          contentClassName="max-h-[90vh] max-w-3xl overflow-y-auto rounded-[28px]"
+        >
+          <form
+            className="space-y-4"
+            onSubmit={async (event) => {
+              event.preventDefault();
 
-            <div className="px-6 py-6">
-              <form
-                className="space-y-4"
-                onSubmit={async (event) => {
-                  event.preventDefault();
+              try {
+                if (editingUser) {
+                  await updateUserMutation.mutateAsync({
+                    id: editingUser.id,
+                    input: {
+                      name: userForm.name,
+                      role: userForm.role,
+                      permissions: userForm.permissions,
+                    },
+                  });
+                  toast.success("Internal user updated.");
+                } else {
+                  const createdUser = await createUserMutation.mutateAsync(userForm);
+                  toast.success(
+                    createdUser.role === "admin"
+                      ? "Internal admin created."
+                      : "Staff user created. Verification email sent.",
+                  );
+                }
 
-                  try {
-                    if (editingUser) {
-                      await updateUserMutation.mutateAsync({
-                        id: editingUser.id,
-                        input: {
-                          name: userForm.name,
-                          role: userForm.role,
-                          permissions: userForm.permissions,
-                        },
-                      });
-                      toast.success("Internal user updated.");
-                    } else {
-                      const createdUser = await createUserMutation.mutateAsync(userForm);
-                      toast.success(
-                        createdUser.role === "admin"
-                          ? "Internal admin created."
-                          : "Staff user created. Verification email sent.",
-                      );
-                    }
+                closeDialog();
+              } catch (error) {
+                const message = error instanceof Error ? error.message : "Unable to save the user.";
+                toast.error(message);
+              }
+            }}
+          >
+            {editingUser ? (
+              <div className="grid gap-3 rounded-[24px] border border-slate-200 bg-slate-50 p-4 md:grid-cols-3">
+                <InfoTile icon={Mail} label="Email" value={editingUser.email} />
+                <InfoTile
+                  icon={ShieldCheck}
+                  label="Verification"
+                  value={editingUser.emailVerifiedAt ? "Verified" : "Pending verification"}
+                />
+                <InfoTile
+                  icon={CalendarDays}
+                  label="Created"
+                  value={formatUserDate(editingUser.createdAt)}
+                />
+              </div>
+            ) : null}
 
-                    closeDialog();
-                  } catch (error) {
-                    const message =
-                      error instanceof Error ? error.message : "Unable to save the user.";
-                    toast.error(message);
-                  }
-                }}
-              >
-                {editingUser ? (
-                  <div className="grid gap-3 rounded-[24px] border border-slate-200 bg-slate-50 p-4 md:grid-cols-3">
-                    <InfoTile
-                      icon={Mail}
-                      label="Email"
-                      value={editingUser.email}
-                    />
-                    <InfoTile
-                      icon={ShieldCheck}
-                      label="Verification"
-                      value={editingUser.emailVerifiedAt ? "Verified" : "Pending verification"}
-                    />
-                    <InfoTile
-                      icon={CalendarDays}
-                      label="Created"
-                      value={formatUserDate(editingUser.createdAt)}
-                    />
-                  </div>
-                ) : null}
-
-                <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field
+                label="Full Name"
+                required
+                value={userForm.name}
+                onChange={(value) => setUserForm({ ...userForm, name: value })}
+                disabled={isReadOnlyDialog}
+              />
+              <Field
+                label="Email"
+                type="email"
+                required
+                value={userForm.email}
+                onChange={(value) => setUserForm({ ...userForm, email: value })}
+                disabled={Boolean(editingUser) || isReadOnlyDialog}
+              />
+              {!editingUser ? (
+                <>
                   <Field
-                    label="Full Name"
+                    label="Password"
+                    type="password"
                     required
-                    value={userForm.name}
-                    onChange={(value) => setUserForm({ ...userForm, name: value })}
-                    disabled={isReadOnlyDialog}
+                    value={userForm.password}
+                    onChange={(value) => setUserForm({ ...userForm, password: value })}
                   />
                   <Field
-                    label="Email"
-                    type="email"
+                    label="Confirm Password"
+                    type="password"
                     required
-                    value={userForm.email}
-                    onChange={(value) => setUserForm({ ...userForm, email: value })}
-                    disabled={Boolean(editingUser) || isReadOnlyDialog}
+                    value={userForm.confirmPassword}
+                    onChange={(value) => setUserForm({ ...userForm, confirmPassword: value })}
                   />
-                  {!editingUser ? (
-                    <>
-                      <Field
-                        label="Password"
-                        type="password"
-                        required
-                        value={userForm.password}
-                        onChange={(value) => setUserForm({ ...userForm, password: value })}
-                      />
-                      <Field
-                        label="Confirm Password"
-                        type="password"
-                        required
-                        value={userForm.confirmPassword}
-                        onChange={(value) => setUserForm({ ...userForm, confirmPassword: value })}
-                      />
-                    </>
-                  ) : null}
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                    Role
-                  </label>
-                  <div className="mt-2">
-                    <SelectMenu
-                      value={userForm.role}
-                      onValueChange={(value) =>
-                        setUserForm({
-                          ...userForm,
-                          role: value as CreateInternalUserInput["role"],
-                          permissions: value === "admin" ? [] : userForm.permissions,
-                        })
-                      }
-                      disabled={isReadOnlyDialog}
-                      className="h-auto bg-slate-50 py-3"
-                      options={[
-                        { value: "staff", label: "Staff" },
-                        { value: "admin", label: "Admin" },
-                      ]}
-                    />
-                  </div>
-                </div>
-
-                {userForm.role === "staff" ? (
-                  <div>
-                    <div className="flex items-center justify-between gap-3">
-                      <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                        Staff Permissions
-                      </label>
-                      <span className="text-xs font-medium text-slate-400">
-                        {userForm.permissions.length} selected
-                      </span>
-                    </div>
-                    <div className="mt-3 grid gap-3">
-                      {PERMISSION_GROUPS.map((group) => (
-                        <div
-                          key={group.label}
-                          className="rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-4"
-                        >
-                          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                            <div>
-                              <p className="text-sm font-semibold text-slate-900">{group.label}</p>
-                              <p className="text-xs leading-5 text-slate-500">{group.description}</p>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                              {group.permissions.map((permission) => {
-                                const checked = userForm.permissions.includes(permission);
-                                const actionLabel = permission.endsWith(".write") ? "Write" : "Read";
-
-                                return (
-                                  <button
-                                    key={permission}
-                                    type="button"
-                                    disabled={isReadOnlyDialog}
-                                    onClick={() => togglePermission(permission, !checked)}
-                                    className={
-                                      checked
-                                        ? "rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white"
-                                        : "rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-slate-400 hover:text-slate-900"
-                                    }
-                                    aria-pressed={checked}
-                                  >
-                                    {actionLabel}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="rounded-[22px] border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-900">
-                    Admin accounts receive full access across all modules.
-                  </div>
-                )}
-
-                <div className="flex flex-wrap justify-end gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={closeDialog}
-                    className="rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                  >
-                    {isReadOnlyDialog ? "Close" : "Cancel"}
-                  </button>
-                  {!isReadOnlyDialog ? (
-                    <button
-                      type="submit"
-                      disabled={createUserMutation.isPending || updateUserMutation.isPending}
-                      className="btn-gold min-w-[170px] justify-center"
-                    >
-                      {createUserMutation.isPending || updateUserMutation.isPending ? (
-                        <>
-                          <SpinnerTwo size="sm" className="mr-1" />
-                          Saving...
-                        </>
-                      ) : editingUser ? (
-                        "Update User"
-                      ) : (
-                        "Create User"
-                      )}
-                    </button>
-                  ) : null}
-                </div>
-              </form>
+                </>
+              ) : null}
             </div>
-          </DialogContent>
-        </Dialog>
+
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                Role
+              </label>
+              <div className="mt-2">
+                <SelectMenu
+                  value={userForm.role}
+                  onValueChange={(value) =>
+                    setUserForm({
+                      ...userForm,
+                      role: value as CreateInternalUserInput["role"],
+                      permissions: value === "admin" ? [] : userForm.permissions,
+                    })
+                  }
+                  disabled={isReadOnlyDialog}
+                  className="h-auto bg-slate-50 py-3"
+                  options={[
+                    { value: "staff", label: "Staff" },
+                    { value: "admin", label: "Admin" },
+                  ]}
+                />
+              </div>
+            </div>
+
+            {userForm.role === "staff" ? (
+              <div>
+                <div className="flex items-center justify-between gap-3">
+                  <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    Staff Permissions
+                  </label>
+                  <span className="text-xs font-medium text-slate-400">
+                    {userForm.permissions.length} selected
+                  </span>
+                </div>
+                <div className="mt-3 grid gap-3">
+                  {PERMISSION_GROUPS.map((group) => (
+                    <div
+                      key={group.label}
+                      className="rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-4"
+                    >
+                      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900">{group.label}</p>
+                          <p className="text-xs leading-5 text-slate-500">{group.description}</p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {group.permissions.map((permission) => {
+                            const checked = userForm.permissions.includes(permission);
+                            const actionLabel = permission.endsWith(".write") ? "Write" : "Read";
+
+                            return (
+                              <button
+                                key={permission}
+                                type="button"
+                                disabled={isReadOnlyDialog}
+                                onClick={() => togglePermission(permission, !checked)}
+                                className={
+                                  checked
+                                    ? "rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white"
+                                    : "rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-slate-400 hover:text-slate-900"
+                                }
+                                aria-pressed={checked}
+                              >
+                                {actionLabel}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-[22px] border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-900">
+                Admin accounts receive full access across all modules.
+              </div>
+            )}
+
+            <div className="flex flex-wrap justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={closeDialog}
+                className="rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                {isReadOnlyDialog ? "Close" : "Cancel"}
+              </button>
+              {!isReadOnlyDialog ? (
+                <button
+                  type="submit"
+                  disabled={createUserMutation.isPending || updateUserMutation.isPending}
+                  className="btn-gold min-w-[170px] justify-center"
+                >
+                  {createUserMutation.isPending || updateUserMutation.isPending ? (
+                    <>
+                      <SpinnerTwo size="sm" className="mr-1" />
+                      Saving...
+                    </>
+                  ) : editingUser ? (
+                    "Update User"
+                  ) : (
+                    "Create User"
+                  )}
+                </button>
+              ) : null}
+            </div>
+          </form>
+        </AppDialog>
       ) : null}
     </>
   );

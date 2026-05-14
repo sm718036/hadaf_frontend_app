@@ -48,7 +48,9 @@ function buildClientListQueryString(params: ClientListFilters) {
 
 export const clientsService = {
   getClients: (params: ClientListFilters, signal?: AbortSignal) =>
-    apiRequest<ClientsListResponse>(`/api/clients?${buildClientListQueryString(params)}`, { signal }),
+    apiRequest<ClientsListResponse>(`/api/clients?${buildClientListQueryString(params)}`, {
+      signal,
+    }),
   getClientDetail: (id: string, signal?: AbortSignal) =>
     apiRequest<ClientDetail>(`/api/clients/${id}`, { signal }),
   upsertClient: (input: UpsertClientInput) =>

@@ -1,8 +1,17 @@
 import { Link, useLocation } from "react-router-dom";
-import { Bell, ChevronDown, LogOut, Menu, UserCircle2 } from "lucide-react";
+import { Bell, LogOut, Menu, UserCircle2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { BrandLogo } from "@/components/BrandLogo";
+import {
+  AppTable,
+  AppTableBody,
+  AppTableCell,
+  AppTableEmpty,
+  AppTableHead,
+  AppTableHeading,
+  AppTableRow,
+} from "@/components/ui/app-table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -17,7 +26,7 @@ import type { SessionUser } from "@/features/auth/auth.service";
 import { useSignOut } from "@/features/auth/use-auth";
 import { useClientSignOut } from "@/features/client-auth/use-client-auth";
 import type { DashboardArea, DashboardNavItem } from "@/features/dashboard/access-control";
-import { AREA_META, getRoleLabel } from "@/features/dashboard/access-control";
+import { AREA_META } from "@/features/dashboard/access-control";
 import {
   getAvatarDataUrl,
   getUserInitials,
@@ -97,40 +106,30 @@ export function DataTable({
   emptyMessage: string;
 }) {
   return (
-    <div className="overflow-hidden rounded-[24px] border border-slate-200">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[720px] text-sm">
-          <thead className="bg-slate-900 text-slate-100">
-            <tr>
-              {columns.map((column) => (
-                <th key={column} className="px-5 py-4 text-center font-display font-semibold">
-                  {column}
-                </th>
+    <AppTable>
+      <AppTableHead>
+        <AppTableRow>
+          {columns.map((column) => (
+            <AppTableHeading key={column}>{column}</AppTableHeading>
+          ))}
+        </AppTableRow>
+      </AppTableHead>
+      <AppTableBody>
+        {rows.length === 0 ? (
+          <AppTableEmpty colSpan={columns.length}>{emptyMessage}</AppTableEmpty>
+        ) : (
+          rows.map((row, rowIndex) => (
+            <AppTableRow key={rowIndex} hover>
+              {row.map((cell, cellIndex) => (
+                <AppTableCell key={cellIndex} className="text-slate-600">
+                  {cell}
+                </AppTableCell>
               ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-200 bg-white">
-            {rows.length === 0 ? (
-              <tr>
-                <td colSpan={columns.length} className="px-5 py-12 text-center text-slate-500">
-                  {emptyMessage}
-                </td>
-              </tr>
-            ) : (
-              rows.map((row, rowIndex) => (
-                <tr key={rowIndex} className="hover:bg-slate-50/80">
-                  {row.map((cell, cellIndex) => (
-                    <td key={cellIndex} className="px-5 py-4 text-center text-slate-600">
-                      {cell}
-                    </td>
-                  ))}
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
+            </AppTableRow>
+          ))
+        )}
+      </AppTableBody>
+    </AppTable>
   );
 }
 
@@ -249,9 +248,7 @@ function Topbar({
   const internalReadAllMutation = useMarkAllInternalNotificationsRead();
   const clientReadAllMutation = useMarkAllClientNotificationsRead();
   const notifications =
-    area === "client"
-      ? clientNotificationsQuery.data
-      : internalNotificationsQuery.data;
+    area === "client" ? clientNotificationsQuery.data : internalNotificationsQuery.data;
 
   const handleNotificationOpen = async (notification: {
     id: string;
@@ -274,16 +271,96 @@ function Topbar({
   };
 
   return (
-    <header className="sticky top-4 z-20 rounded-[28px] border border-slate-200 bg-white px-5 py-4 shadow-sm xl:px-7">
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-        <div className="flex items-start justify-between gap-4">
+    <header className="sticky top-4 z-20 rounded-[28px] border border-slate-200 bg-white px-4 py-4 shadow-sm sm:px-5 xl:px-7">
+      <div className="flex items-center justify-between gap-4 xl:flex-row xl:items-center">
+        <div className="min-w-0 flex-1">
           <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
+            <div className="hidden text-xs font-semibold uppercase tracking-[0.24em] text-slate-400 sm:block">
               {meta.eyebrow}
             </div>
-            <h1 className="mt-2 text-3xl font-display font-extrabold text-slate-950">
+            <h1 className="text-2xl font-display font-extrabold leading-none text-slate-950 sm:mt-2 sm:text-3xl">
               {pageTitle}
             </h1>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="relative inline-flex items-center justify-center p-1 text-slate-700 transition hover:text-slate-950"
+                  aria-label="Notifications"
+                >
+                  <Bell className="h-5 w-5" />
+                  {notifications && notifications.unreadCount > 0 ? (
+                    <span className="absolute right-2 top-2 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1 text-[11px] font-bold text-dark">
+                      {notifications.unreadCount > 9 ? "9+" : notifications.unreadCount}
+                    </span>
+                  ) : null}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-[360px] rounded-2xl border-slate-200 p-2"
+              >
+                <div className="flex items-center justify-between px-3 py-2">
+                  <div>
+                    <p className="font-semibold text-slate-900">Notifications</p>
+                    <p className="text-xs text-slate-500">
+                      {notifications?.unreadCount ?? 0} unread
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!notifications || notifications.unreadCount === 0}
+                    onClick={() =>
+                      area === "client"
+                        ? clientReadAllMutation.mutate()
+                        : internalReadAllMutation.mutate()
+                    }
+                    className="text-xs font-semibold text-sky-700 disabled:text-slate-400"
+                  >
+                    Mark all read
+                  </button>
+                </div>
+                <DropdownMenuSeparator />
+                <div className="max-h-[360px] space-y-1 overflow-y-auto p-1">
+                  {notifications?.items.length ? (
+                    notifications.items.map((notification) => (
+                      <button
+                        key={notification.id}
+                        type="button"
+                        onClick={() => void handleNotificationOpen(notification)}
+                        className={`block w-full rounded-xl px-3 py-3 text-left transition hover:bg-slate-50 ${
+                          notification.isRead ? "bg-white" : "bg-gold/10"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="font-semibold text-slate-900">{notification.title}</p>
+                            <p className="mt-1 text-sm leading-6 text-slate-600">
+                              {notification.body}
+                            </p>
+                          </div>
+                          {!notification.isRead ? (
+                            <span className="mt-1 h-2.5 w-2.5 rounded-full bg-gold" />
+                          ) : null}
+                        </div>
+                        <p className="mt-2 text-xs font-medium text-slate-400">
+                          {new Date(notification.createdAt).toLocaleString()}
+                        </p>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-3 py-8 text-center text-sm text-slate-500">
+                      No notifications yet.
+                    </div>
+                  )}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           <div className="lg:hidden">
@@ -291,18 +368,21 @@ function Topbar({
               <SheetTrigger asChild>
                 <button
                   type="button"
-                  className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-600"
+                  className="inline-flex items-center justify-center p-1 text-slate-600 transition hover:text-slate-900"
                 >
                   <Menu className="h-5 w-5" />
                 </button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-[290px] border-slate-200 p-0">
+              <SheetContent
+                side="left"
+                className="flex h-full w-[290px] flex-col overflow-hidden border-slate-200 p-0"
+              >
                 <SheetHeader className="border-b border-slate-200 px-5 py-4 text-left">
                   <SheetTitle className="font-display text-xl font-extrabold text-slate-950">
-                    {meta.eyebrow}
+                    Menu
                   </SheetTitle>
                 </SheetHeader>
-                <div className="space-y-2 px-4 py-4">
+                <div className="flex-1 space-y-2 overflow-y-auto px-4 py-4 scrollbar-hidden">
                   {navItems.map((item) => {
                     const Icon = item.icon;
                     const isActive = isNavItemActive(location.pathname, item.to);
@@ -321,91 +401,30 @@ function Topbar({
                       </Link>
                     );
                   })}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileOpen(false);
+                      void handleLogout();
+                    }}
+                    className="flex w-full items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700"
+                  >
+                    <LogOut className="h-5 w-5" />
+                    Sign out
+                  </button>
                 </div>
               </SheetContent>
             </Sheet>
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="hidden items-center gap-3 lg:flex">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="relative inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-700 transition hover:bg-slate-100"
-                aria-label="Notifications"
-              >
-                <Bell className="h-5 w-5" />
-                {notifications && notifications.unreadCount > 0 ? (
-                  <span className="absolute right-2 top-2 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1 text-[11px] font-bold text-dark">
-                    {notifications.unreadCount > 9 ? "9+" : notifications.unreadCount}
-                  </span>
-                ) : null}
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[360px] rounded-2xl border-slate-200 p-2">
-              <div className="flex items-center justify-between px-3 py-2">
-                <div>
-                  <p className="font-semibold text-slate-900">Notifications</p>
-                  <p className="text-xs text-slate-500">
-                    {notifications?.unreadCount ?? 0} unread
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  disabled={!notifications || notifications.unreadCount === 0}
-                  onClick={() =>
-                    area === "client"
-                      ? clientReadAllMutation.mutate()
-                      : internalReadAllMutation.mutate()
-                  }
-                  className="text-xs font-semibold text-sky-700 disabled:text-slate-400"
-                >
-                  Mark all read
-                </button>
-              </div>
-              <DropdownMenuSeparator />
-              <div className="max-h-[360px] space-y-1 overflow-y-auto p-1">
-                {notifications?.items.length ? (
-                  notifications.items.map((notification) => (
-                    <button
-                      key={notification.id}
-                      type="button"
-                      onClick={() => void handleNotificationOpen(notification)}
-                      className={`block w-full rounded-xl px-3 py-3 text-left transition hover:bg-slate-50 ${
-                        notification.isRead ? "bg-white" : "bg-gold/10"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="font-semibold text-slate-900">{notification.title}</p>
-                          <p className="mt-1 text-sm leading-6 text-slate-600">
-                            {notification.body}
-                          </p>
-                        </div>
-                        {!notification.isRead ? (
-                          <span className="mt-1 h-2.5 w-2.5 rounded-full bg-gold" />
-                        ) : null}
-                      </div>
-                      <p className="mt-2 text-xs font-medium text-slate-400">
-                        {new Date(notification.createdAt).toLocaleString()}
-                      </p>
-                    </button>
-                  ))
-                ) : (
-                  <div className="px-3 py-8 text-center text-sm text-slate-500">
-                    No notifications yet.
-                  </div>
-                )}
-              </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className="inline-flex items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition hover:bg-slate-50"
+                className="inline-flex items-center p-1 text-left transition hover:text-slate-950"
+                aria-label="Open account menu"
               >
                 <Avatar className="h-12 w-12">
                   <AvatarImage src={avatarUrl} alt={actor.name} />
@@ -413,14 +432,14 @@ function Topbar({
                     {initials}
                   </AvatarFallback>
                 </Avatar>
-                <div className="min-w-0">
-                  <p className="truncate font-semibold text-slate-900">{actor.name}</p>
-                  <p className="truncate text-sm text-slate-500">{actor.email}</p>
-                </div>
-                <ChevronDown className="h-4 w-4 text-slate-500" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-72 rounded-2xl border-slate-200 p-2">
+              <div className="rounded-xl px-3 py-3">
+                <p className="truncate font-semibold text-slate-900">{actor.name}</p>
+                <p className="truncate text-sm text-slate-500">{actor.email}</p>
+              </div>
+              <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="rounded-xl px-3 py-3 text-sm"
                 onClick={() => navigate(profileRoute)}
@@ -465,28 +484,4 @@ export function DashboardLayout({
       </div>
     </main>
   );
-}
-
-export function toInternalLayoutActor(user: SessionUser): DashboardLayoutActor {
-  return {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    avatarUrl: user.avatarUrl,
-    roleLabel: getRoleLabel(user.role),
-  };
-}
-
-export function toClientLayoutActor(client: {
-  id: string;
-  name: string;
-  email: string;
-}): DashboardLayoutActor {
-  return {
-    id: client.id,
-    name: client.name,
-    email: client.email,
-    avatarUrl: null,
-    roleLabel: "Client",
-  };
 }

@@ -1,4 +1,12 @@
-import type { BootstrapAdminInput, Permission, UserRole, SignInInput } from "@/features/auth/auth.schemas";
+import type {
+  BootstrapAdminInput,
+  ChangePasswordInput,
+  Permission,
+  RequestPasswordResetInput,
+  ResetPasswordInput,
+  SignInInput,
+  UserRole,
+} from "@/features/auth/auth.schemas";
 import { apiFormRequest, apiRequest } from "@/lib/api";
 
 export type SessionUser = {
@@ -15,6 +23,11 @@ export type SessionUser = {
 export type VerifyEmailResult = {
   success: true;
   email: string;
+};
+
+export type PasswordActionResult = {
+  success: true;
+  message: string;
 };
 
 export type UserSessionRecord = {
@@ -36,10 +49,21 @@ type BootstrapStatus = {
 export const authService = {
   getBootstrapStatus: (signal?: AbortSignal) =>
     apiRequest<BootstrapStatus>("/api/auth/bootstrap-status", { signal }),
-  getCurrentUser: (signal?: AbortSignal) => apiRequest<SessionUser | null>("/api/auth/me", { signal }),
-  listSessions: (signal?: AbortSignal) => apiRequest<UserSessionRecord[]>("/api/auth/sessions", { signal }),
+  getCurrentUser: (signal?: AbortSignal) =>
+    apiRequest<SessionUser | null>("/api/auth/me", { signal }),
+  listSessions: (signal?: AbortSignal) =>
+    apiRequest<UserSessionRecord[]>("/api/auth/sessions", { signal }),
   signIn: (input: SignInInput) =>
     apiRequest<SessionUser>("/api/auth/sign-in", { method: "POST", body: input }),
+  requestPasswordReset: (input: RequestPasswordResetInput) =>
+    apiRequest<PasswordActionResult>("/api/auth/request-password-reset", {
+      method: "POST",
+      body: input,
+    }),
+  resetPassword: (input: ResetPasswordInput) =>
+    apiRequest<PasswordActionResult>("/api/auth/reset-password", { method: "POST", body: input }),
+  changePassword: (input: ChangePasswordInput) =>
+    apiRequest<PasswordActionResult>("/api/auth/change-password", { method: "POST", body: input }),
   verifyEmail: (token: string) =>
     apiRequest<VerifyEmailResult>(`/api/auth/verify-email?token=${encodeURIComponent(token)}`),
   bootstrapAdmin: (input: BootstrapAdminInput) =>

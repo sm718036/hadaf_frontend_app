@@ -59,13 +59,18 @@ function buildApplicationListQueryString(params: ApplicationListFilters) {
 
 export const applicationsService = {
   list: (params: ApplicationListFilters, signal?: AbortSignal) =>
-    apiRequest<ApplicationsListResponse>(`/api/applications?${buildApplicationListQueryString(params)}`, { signal }),
+    apiRequest<ApplicationsListResponse>(
+      `/api/applications?${buildApplicationListQueryString(params)}`,
+      { signal },
+    ),
   getById: (id: string, signal?: AbortSignal) =>
     apiRequest<ApplicationDetail>(`/api/applications/${id}`, { signal }),
   upsert: (input: UpsertApplicationInput) =>
     apiRequest<Application>("/api/applications", { method: "POST", body: input }),
   moveStage: (id: string, input: MoveApplicationStageInput) =>
     apiRequest<Application>(`/api/applications/${id}/stage`, { method: "POST", body: input }),
-  delete: (id: string) => apiRequest<{ success: true }>(`/api/applications/${id}`, { method: "DELETE" }),
-  listOwn: (signal?: AbortSignal) => apiRequest<ApplicationDetail[]>("/api/client-auth/applications", { signal }),
+  delete: (id: string) =>
+    apiRequest<{ success: true }>(`/api/applications/${id}`, { method: "DELETE" }),
+  listOwn: (signal?: AbortSignal) =>
+    apiRequest<ApplicationDetail[]>("/api/client-auth/applications", { signal }),
 };

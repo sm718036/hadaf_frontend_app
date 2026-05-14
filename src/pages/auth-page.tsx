@@ -38,6 +38,8 @@ export function AuthPage() {
   const modeParam = searchParams.get("mode");
   const verifyToken = searchParams.get("verifyToken");
   const verifyType = searchParams.get("verifyType");
+  const resetToken = searchParams.get("resetToken");
+  const resetType = searchParams.get("resetType");
   const mode = modeParam === "client" || modeParam === "staff" ? modeParam : undefined;
 
   const authMode = useMemo<AuthMode>(() => {
@@ -49,8 +51,15 @@ export function AuthPage() {
   }, [mode, redirect]);
 
   const [clientView, setClientView] = useState<ClientView>("sign-in");
-  const [rememberMe, setRememberMe] = useState(true);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [isStaffForgotPassword, setIsStaffForgotPassword] = useState(false);
+  const [isClientForgotPassword, setIsClientForgotPassword] = useState(false);
+  const [passwordActionPending, setPasswordActionPending] = useState(false);
   const [verificationState, setVerificationState] = useState<{
+    status: "idle" | "loading" | "success" | "error";
+    message: string;
+  }>({ status: "idle", message: "" });
+  const [passwordState, setPasswordState] = useState<{
     status: "idle" | "loading" | "success" | "error";
     message: string;
   }>({ status: "idle", message: "" });
@@ -65,6 +74,9 @@ export function AuthPage() {
   const [clientPhone, setClientPhone] = useState("");
   const [clientPassword, setClientPassword] = useState("");
   const [clientConfirmPassword, setClientConfirmPassword] = useState("");
+  const isResetFlow =
+    (authMode === "staff" && resetType === "app_user" && Boolean(resetToken)) ||
+    (authMode === "client" && resetType === "client" && Boolean(resetToken));
 
   const redirectTo = redirect || APP_ROUTES.dashboard;
   const requiresSetup = bootstrapStatusQuery.data?.requiresSetup ?? false;
@@ -72,7 +84,8 @@ export function AuthPage() {
     signInMutation.isPending ||
     bootstrapMutation.isPending ||
     clientSignInMutation.isPending ||
-    clientSignUpMutation.isPending;
+    clientSignUpMutation.isPending ||
+    passwordActionPending;
 
   useEffect(() => {
     if (redirect?.startsWith(APP_ROUTES.dashboard) && currentUser) {
@@ -212,36 +225,158 @@ export function AuthPage() {
     }
   };
 
+  const handleStaffForgotPassword = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setPasswordActionPending(true);
+    setPasswordState({ status: "loading", message: "Sending password reset email..." });
+
+    try {
+      const result = await authService.requestPasswordReset({ email: staffEmail });
+      setPasswordState({ status: "success", message: result.message });
+      toast.success(result.message);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to send password reset email.";
+      setPasswordState({ status: "error", message });
+      toast.error(message);
+    } finally {
+      setPasswordActionPending(false);
+    }
+  };
+
+  const handleClientForgotPassword = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setPasswordActionPending(true);
+    setPasswordState({ status: "loading", message: "Sending password reset email..." });
+
+    try {
+      const result = await clientAuthService.requestPasswordReset({ email: clientEmail });
+      setPasswordState({ status: "success", message: result.message });
+      toast.success(result.message);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to send password reset email.";
+      setPasswordState({ status: "error", message });
+      toast.error(message);
+    } finally {
+      setPasswordActionPending(false);
+    }
+  };
+
+  const handleStaffResetPassword = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    if (!resetToken) {
+      setPasswordState({ status: "error", message: "Reset token is missing." });
+      return;
+    }
+
+    setPasswordActionPending(true);
+    setPasswordState({ status: "loading", message: "Resetting your password..." });
+
+    try {
+      const result = await authService.resetPassword({
+        token: resetToken,
+        password: staffPassword,
+        confirmPassword: staffConfirmPassword,
+      });
+      setPasswordState({ status: "success", message: result.message });
+      toast.success(result.message);
+      setStaffPassword("");
+      setStaffConfirmPassword("");
+      navigate(buildPath(APP_ROUTES.auth, { search: { mode: "staff" } }), { replace: true });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to reset your password.";
+      setPasswordState({ status: "error", message });
+      toast.error(message);
+    } finally {
+      setPasswordActionPending(false);
+    }
+  };
+
+  const handleClientResetPassword = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    if (!resetToken) {
+      setPasswordState({ status: "error", message: "Reset token is missing." });
+      return;
+    }
+
+    setPasswordActionPending(true);
+    setPasswordState({ status: "loading", message: "Resetting your password..." });
+
+    try {
+      const result = await clientAuthService.resetPassword({
+        token: resetToken,
+        password: clientPassword,
+        confirmPassword: clientConfirmPassword,
+      });
+      setPasswordState({ status: "success", message: result.message });
+      toast.success(result.message);
+      setClientPassword("");
+      setClientConfirmPassword("");
+      navigate(buildPath(APP_ROUTES.auth, { search: { mode: "client" } }), { replace: true });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to reset your password.";
+      setPasswordState({ status: "error", message });
+      toast.error(message);
+    } finally {
+      setPasswordActionPending(false);
+    }
+  };
+
   if (isCurrentUserLoading || isCurrentClientLoading || bootstrapStatusQuery.isLoading) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-dark px-4 text-white">
-        <SpinnerTwo size="lg" />
-        <span className="text-sm font-medium text-white/70">Loading authentication...</span>
+      <main className="relative min-h-screen overflow-hidden bg-white">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(164,255,238,0.08),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(251,176,64,0.12),transparent_32%)]" />
+        <div className="absolute inset-0 bg-white/70 backdrop-blur-sm" />
+        <div className="relative flex min-h-screen items-center justify-center px-4">
+          <div className="flex min-w-[280px] flex-col items-center gap-4 rounded-[28px] border border-slate-200 bg-white/95 px-8 py-8 text-center shadow-xl">
+            <SpinnerTwo size="lg" />
+            <span className="text-sm font-medium text-slate-600">Loading authentication...</span>
+          </div>
+        </div>
       </main>
     );
   }
 
   const formTitle =
     authMode === "client"
-      ? clientView === "sign-up"
-        ? "Create your client account"
-        : "Sign in to your portal"
-      : requiresSetup
-        ? "Create the first admin account"
-        : "Sign in to the dashboard";
+      ? isResetFlow
+        ? "Reset your client password"
+        : isClientForgotPassword
+          ? "Forgot your password?"
+          : clientView === "sign-up"
+            ? "Create your client account"
+            : "Sign in to your portal"
+      : isResetFlow
+        ? "Reset your dashboard password"
+        : isStaffForgotPassword
+          ? "Forgot your password?"
+          : requiresSetup
+            ? "Create the first admin account"
+            : "Sign in to the dashboard";
 
   const formDescription =
     authMode === "client"
-      ? clientView === "sign-up"
-        ? "Create your client login with basic contact details. You can complete the rest of your profile after signing in."
-        : "Enter your client credentials to view your profile and application record."
-      : requiresSetup
-        ? "This one-time step creates the first internal administrator."
-        : "Use your internal account to manage clients, content, and access control.";
+      ? isResetFlow
+        ? "Choose a new password for your client account."
+        : isClientForgotPassword
+          ? "Enter your email address and we will send you a password reset link."
+          : clientView === "sign-up"
+            ? "Create your client login with basic contact details. You can complete the rest of your profile after signing in."
+            : "Enter your client credentials to view your profile and application record."
+      : isResetFlow
+        ? "Choose a new password for your internal account."
+        : isStaffForgotPassword
+          ? "Enter your email address and we will send you a password reset link."
+          : requiresSetup
+            ? "This one-time step creates the first internal administrator."
+            : "Use your internal account to manage clients, content, and access control.";
 
   return (
     <main className="min-h-screen lg:grid lg:grid-cols-2">
-      <section className="relative flex min-h-[40vh] overflow-hidden bg-dark text-white lg:min-h-screen">
+      <section className="relative hidden min-h-[40vh] overflow-hidden bg-dark text-white lg:flex lg:min-h-screen">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(164,255,238,0.16),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(251,176,64,0.18),transparent_32%),linear-gradient(155deg,#022816_0%,#0b3322_55%,#0f3a26_100%)]" />
         <div
           className="absolute inset-0 opacity-40"
@@ -271,8 +406,11 @@ export function AuthPage() {
         </div>
       </section>
 
-      <section className="flex min-h-screen items-center bg-white px-6 py-10 sm:px-10 lg:px-14 xl:px-18">
+      <section className="flex min-h-screen items-start bg-white px-6 py-8 sm:px-10 lg:items-center lg:px-14 xl:px-18">
         <div className="mx-auto w-full max-w-[430px]">
+          <div className="mb-8 border-b border-slate-200 pb-6 lg:hidden">
+            <BrandLogo brandName="Hadaf" imageClassName="h-12" priority />
+          </div>
           <p className="text-sm font-semibold uppercase tracking-[0.28em] text-primary">
             Welcome Back
           </p>
@@ -295,25 +433,64 @@ export function AuthPage() {
             </div>
           ) : null}
 
+          {passwordState.status !== "idle" ? (
+            <div
+              className={`mt-6 rounded-2xl border px-4 py-3 text-sm leading-6 ${
+                passwordState.status === "error"
+                  ? "border-red-200 bg-red-50 text-red-700"
+                  : passwordState.status === "loading"
+                    ? "border-sky-200 bg-sky-50 text-sky-700"
+                    : "border-emerald-200 bg-emerald-50 text-emerald-700"
+              }`}
+            >
+              {passwordState.message}
+            </div>
+          ) : null}
+
           {authMode === "client" ? (
             <>
-              <div className="mt-8 flex items-center justify-between gap-4 text-sm">
-                <span className="text-slate-500">
-                  {clientView === "sign-up" ? "Already have an account?" : "Need a client account?"}
-                </span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setClientView((current) => (current === "sign-in" ? "sign-up" : "sign-in"))
-                  }
-                  className="font-semibold text-primary transition hover:text-dark"
-                >
-                  {clientView === "sign-up" ? "Sign in" : "Sign up"}
-                </button>
-              </div>
+              {!isResetFlow ? (
+                <div className="mt-8 flex items-center justify-between gap-4 text-sm">
+                  <span className="text-slate-500">
+                    {isClientForgotPassword
+                      ? "Remembered your password?"
+                      : clientView === "sign-up"
+                        ? "Already have an account?"
+                        : "Need a client account?"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPasswordState({ status: "idle", message: "" });
+                      if (isClientForgotPassword) {
+                        setIsClientForgotPassword(false);
+                        return;
+                      }
 
-              <form onSubmit={handleClientSubmit} className="mt-8 space-y-5">
-                {clientView === "sign-up" ? (
+                      setClientView((current) => (current === "sign-in" ? "sign-up" : "sign-in"));
+                    }}
+                    className="font-semibold text-primary transition hover:text-dark"
+                  >
+                    {isClientForgotPassword
+                      ? "Sign in"
+                      : clientView === "sign-up"
+                        ? "Sign in"
+                        : "Sign up"}
+                  </button>
+                </div>
+              ) : null}
+
+              <form
+                onSubmit={
+                  isResetFlow
+                    ? handleClientResetPassword
+                    : isClientForgotPassword
+                      ? handleClientForgotPassword
+                      : handleClientSubmit
+                }
+                className="mt-8 space-y-5"
+              >
+                {!isResetFlow && clientView === "sign-up" && !isClientForgotPassword ? (
                   <div className="grid gap-5 md:grid-cols-2">
                     <InputField
                       label="Full Name"
@@ -340,39 +517,61 @@ export function AuthPage() {
                   required
                 />
 
-                <div
-                  className={clientView === "sign-up" ? "grid gap-5 md:grid-cols-2" : "space-y-5"}
-                >
-                  <InputField
-                    label="Password"
-                    type="password"
-                    value={clientPassword}
-                    onChange={setClientPassword}
-                    icon={LockKeyhole}
-                    required
-                  />
-                  {clientView === "sign-up" ? (
+                {!isClientForgotPassword ? (
+                  <div
+                    className={
+                      clientView === "sign-up" || isResetFlow
+                        ? "grid gap-5 md:grid-cols-2"
+                        : "space-y-5"
+                    }
+                  >
                     <InputField
-                      label="Confirm Password"
+                      label={isResetFlow ? "New Password" : "Password"}
                       type="password"
-                      value={clientConfirmPassword}
-                      onChange={setClientConfirmPassword}
+                      value={clientPassword}
+                      onChange={setClientPassword}
                       icon={LockKeyhole}
                       required
                     />
-                  ) : null}
-                </div>
+                    {clientView === "sign-up" || isResetFlow ? (
+                      <InputField
+                        label="Confirm Password"
+                        type="password"
+                        value={clientConfirmPassword}
+                        onChange={setClientConfirmPassword}
+                        icon={LockKeyhole}
+                        required
+                      />
+                    ) : null}
+                  </div>
+                ) : null}
 
                 <div className="flex items-center justify-between gap-4 text-sm">
-                  <label className="inline-flex items-center gap-3 text-slate-500">
-                    <input
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={(event) => setRememberMe(event.target.checked)}
-                      className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
-                    />
-                    Keep me signed in
-                  </label>
+                  {!isResetFlow && !isClientForgotPassword ? (
+                    <label className="inline-flex items-center gap-3 text-slate-500">
+                      <input
+                        type="checkbox"
+                        checked={rememberMe}
+                        onChange={(event) => setRememberMe(event.target.checked)}
+                        className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
+                      />
+                      Keep me signed in
+                    </label>
+                  ) : (
+                    <span />
+                  )}
+                  {!isResetFlow && clientView === "sign-in" && !isClientForgotPassword ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPasswordState({ status: "idle", message: "" });
+                        setIsClientForgotPassword(true);
+                      }}
+                      className="font-semibold text-primary transition hover:text-dark"
+                    >
+                      Forgot password?
+                    </button>
+                  ) : null}
                 </div>
 
                 <button
@@ -387,7 +586,13 @@ export function AuthPage() {
                     </>
                   ) : (
                     <>
-                      {clientView === "sign-up" ? "Create Client Account" : "Sign In"}
+                      {isResetFlow
+                        ? "Reset Password"
+                        : isClientForgotPassword
+                          ? "Send Reset Link"
+                          : clientView === "sign-up"
+                            ? "Create Client Account"
+                            : "Sign In"}
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </>
                   )}
@@ -395,8 +600,17 @@ export function AuthPage() {
               </form>
             </>
           ) : (
-            <form onSubmit={handleStaffSubmit} className="mt-8 space-y-5">
-              {requiresSetup ? (
+            <form
+              onSubmit={
+                isResetFlow
+                  ? handleStaffResetPassword
+                  : isStaffForgotPassword
+                    ? handleStaffForgotPassword
+                    : handleStaffSubmit
+              }
+              className="mt-8 space-y-5"
+            >
+              {requiresSetup && !isResetFlow && !isStaffForgotPassword ? (
                 <InputField
                   label="Full Name"
                   value={staffName}
@@ -414,16 +628,18 @@ export function AuthPage() {
                 icon={Mail}
                 required
               />
-              <InputField
-                label="Password"
-                type="password"
-                value={staffPassword}
-                onChange={setStaffPassword}
-                icon={LockKeyhole}
-                required
-              />
+              {!isStaffForgotPassword ? (
+                <InputField
+                  label={isResetFlow ? "New Password" : "Password"}
+                  type="password"
+                  value={staffPassword}
+                  onChange={setStaffPassword}
+                  icon={LockKeyhole}
+                  required
+                />
+              ) : null}
 
-              {requiresSetup ? (
+              {requiresSetup || isResetFlow ? (
                 <InputField
                   label="Confirm Password"
                   type="password"
@@ -435,21 +651,43 @@ export function AuthPage() {
               ) : null}
 
               <div className="flex items-center justify-between gap-4 text-sm">
-                <label className="inline-flex items-center gap-3 text-slate-500">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(event) => setRememberMe(event.target.checked)}
-                    className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
-                  />
-                  Keep me signed in
-                </label>
-                <Link
-                  to={APP_ROUTES.home}
-                  className="font-semibold text-primary transition hover:text-dark"
-                >
-                  Back to website
-                </Link>
+                {!isResetFlow && !isStaffForgotPassword ? (
+                  <label className="inline-flex items-center gap-3 text-slate-500">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(event) => setRememberMe(event.target.checked)}
+                      className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
+                    />
+                    Keep me signed in
+                  </label>
+                ) : (
+                  <Link
+                    to={buildPath(APP_ROUTES.auth, { search: { mode: "staff" } })}
+                    className="font-semibold text-primary transition hover:text-dark"
+                  >
+                    Back to sign in
+                  </Link>
+                )}
+                {!requiresSetup && !isResetFlow && !isStaffForgotPassword ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPasswordState({ status: "idle", message: "" });
+                      setIsStaffForgotPassword(true);
+                    }}
+                    className="font-semibold text-primary transition hover:text-dark"
+                  >
+                    Forgot password?
+                  </button>
+                ) : !isResetFlow && !isStaffForgotPassword ? (
+                  <Link
+                    to={APP_ROUTES.home}
+                    className="font-semibold text-primary transition hover:text-dark"
+                  >
+                    Back to website
+                  </Link>
+                ) : null}
               </div>
 
               <button
@@ -464,7 +702,13 @@ export function AuthPage() {
                   </>
                 ) : (
                   <>
-                    {requiresSetup ? "Create Admin Account" : "Sign In"}
+                    {isResetFlow
+                      ? "Reset Password"
+                      : isStaffForgotPassword
+                        ? "Send Reset Link"
+                        : requiresSetup
+                          ? "Create Admin Account"
+                          : "Sign In"}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </>
                 )}

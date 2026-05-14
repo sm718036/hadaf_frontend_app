@@ -1,21 +1,23 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
+import { AppDialog } from "@/components/ui/app-dialog";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { SelectMenu } from "@/components/ui/select-menu";
 import { useCurrentClient } from "@/features/client-auth/use-client-auth";
 import { useApplications, useOwnApplications } from "@/features/applications/use-applications";
 import { useClients } from "@/features/clients/use-clients";
-import { useDashboardAccess } from "@/features/dashboard/dashboard-context";
+import {
+  useDashboardAccess,
+  useOptionalDashboardAccess,
+} from "@/features/dashboard/use-dashboard-access";
 import { DataTable, StatusBadge } from "@/features/dashboard/dashboard-layout";
-import { EmptyHint, PaginationControls, Panel, TableToolbar } from "@/features/dashboard/dashboard-ui";
+import {
+  EmptyHint,
+  PaginationControls,
+  Panel,
+  TableToolbar,
+} from "@/features/dashboard/dashboard-ui";
 import { useInternalUsers } from "@/features/internal-users/use-users";
 import { APP_ROUTES } from "@/config/routes";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
@@ -100,13 +102,7 @@ function makeSelectOptions(values: readonly string[]) {
   }));
 }
 
-function FormField({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function FormField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
       <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
@@ -197,17 +193,15 @@ function FormDialog({
   children: React.ReactNode;
 }) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl overflow-y-auto border-slate-200 p-0 sm:max-h-[90vh]">
-        <DialogHeader className="border-b border-slate-200 px-6 py-5">
-          <DialogTitle className="font-display text-2xl font-extrabold text-slate-950">
-            {title}
-          </DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
-        <div className="px-6 py-6">{children}</div>
-      </DialogContent>
-    </Dialog>
+    <AppDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={title}
+      description={description}
+      contentClassName="max-w-5xl overflow-y-auto sm:max-h-[90vh]"
+    >
+      {children}
+    </AppDialog>
   );
 }
 
@@ -381,10 +375,22 @@ export function TaskListPage({ area }: { area: "admin" | "staff" }) {
                 </div>,
                 task.relatedClientName || "—",
                 task.assignedStaffName || "Unassigned",
-                <StatusBadge tone={task.priority === "urgent" || task.priority === "high" ? "warning" : "neutral"}>
+                <StatusBadge
+                  tone={
+                    task.priority === "urgent" || task.priority === "high" ? "warning" : "neutral"
+                  }
+                >
                   {task.priority}
                 </StatusBadge>,
-                <StatusBadge tone={task.status === "completed" ? "success" : task.status === "in_progress" ? "info" : "neutral"}>
+                <StatusBadge
+                  tone={
+                    task.status === "completed"
+                      ? "success"
+                      : task.status === "in_progress"
+                        ? "info"
+                        : "neutral"
+                  }
+                >
                   {task.status.replaceAll("_", " ")}
                 </StatusBadge>,
                 formatDate(task.dueDate),
@@ -396,7 +402,9 @@ export function TaskListPage({ area }: { area: "admin" | "staff" }) {
                       await deleteTaskMutation.mutateAsync(task.id);
                       toast.success("Task deleted.");
                     } catch (error) {
-                      toast.error(error instanceof Error ? error.message : "Unable to delete task.");
+                      toast.error(
+                        error instanceof Error ? error.message : "Unable to delete task.",
+                      );
                     }
                   }}
                 >
@@ -422,10 +430,23 @@ export function TaskListPage({ area }: { area: "admin" | "staff" }) {
         >
           <div className="grid gap-4 md:grid-cols-2">
             <FormField label="Title">
-              <input value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} className={inputClassName()} />
+              <input
+                value={form.title}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, title: event.target.value }))
+                }
+                className={inputClassName()}
+              />
             </FormField>
             <FormField label="Due Date">
-              <input type="date" value={form.dueDate} onChange={(event) => setForm((current) => ({ ...current, dueDate: event.target.value }))} className={inputClassName()} />
+              <input
+                type="date"
+                value={form.dueDate}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, dueDate: event.target.value }))
+                }
+                className={inputClassName()}
+              />
             </FormField>
             <FormField label="Status">
               <SelectMenu
@@ -475,7 +496,10 @@ export function TaskListPage({ area }: { area: "admin" | "staff" }) {
           </div>
           <div className="mt-4">
             <FormField label="Description">
-              <TextArea value={form.description} onChange={(value) => setForm((current) => ({ ...current, description: value }))} />
+              <TextArea
+                value={form.description}
+                onChange={(value) => setForm((current) => ({ ...current, description: value }))}
+              />
             </FormField>
           </div>
           <div className="mt-4 flex justify-end">
@@ -502,8 +526,14 @@ export function TaskListPage({ area }: { area: "admin" | "staff" }) {
   );
 }
 
-export function DocumentListPage({ mode, area = "staff" }: { mode: "internal" | "client"; area?: "admin" | "staff" }) {
-  const access = mode === "internal" ? useDashboardAccess() : null;
+export function DocumentListPage({
+  mode,
+  area = "staff",
+}: {
+  mode: "internal" | "client";
+  area?: "admin" | "staff";
+}) {
+  const access = useOptionalDashboardAccess();
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const deferredSearch = useDeferredValue(searchInput.trim());
@@ -512,8 +542,18 @@ export function DocumentListPage({ mode, area = "staff" }: { mode: "internal" | 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [form, setForm] = useState<UpsertDocumentInput>(createEmptyDocumentForm("requested"));
-  const staffUsersQuery = useInternalUsers({ enabled: mode === "internal" && area === "admin", page: 1, pageSize: 100, search: "" });
-  const clientsQuery = useClients({ enabled: mode === "internal", page: 1, pageSize: 100, search: "" });
+  const staffUsersQuery = useInternalUsers({
+    enabled: mode === "internal" && area === "admin",
+    page: 1,
+    pageSize: 100,
+    search: "",
+  });
+  const clientsQuery = useClients({
+    enabled: mode === "internal",
+    page: 1,
+    pageSize: 100,
+    search: "",
+  });
   const applicationsQuery = useApplications({
     enabled: mode === "internal",
     page: 1,
@@ -546,12 +586,17 @@ export function DocumentListPage({ mode, area = "staff" }: { mode: "internal" | 
     setPage(1);
   }, [deferredSearch, status, staffId]);
 
-  const items = mode === "internal" ? documentsQuery.data?.items ?? [] : ownDocumentsQuery.data ?? [];
+  const items =
+    mode === "internal" ? (documentsQuery.data?.items ?? []) : (ownDocumentsQuery.data ?? []);
 
   return (
     <Panel
       title={mode === "internal" ? "Documents" : "My Documents"}
-      subtitle={mode === "internal" ? "Track document requests, uploads, and verification." : "View required documents and upload files for your case."}
+      subtitle={
+        mode === "internal"
+          ? "Track document requests, uploads, and verification."
+          : "View required documents and upload files for your case."
+      }
       action={
         <button
           type="button"
@@ -583,7 +628,16 @@ export function DocumentListPage({ mode, area = "staff" }: { mode: "internal" | 
         <EmptyHint message="Loading documents..." loading />
       ) : (
         <DataTable
-          columns={["Title", "Client", "Type", "Status", "File", "Visibility", "Uploaded", "Action"]}
+          columns={[
+            "Title",
+            "Client",
+            "Type",
+            "Status",
+            "File",
+            "Visibility",
+            "Uploaded",
+            "Action",
+          ]}
           rows={items.map((document) => [
             <div className="text-left">
               <p className="font-semibold text-slate-900">{document.title}</p>
@@ -591,11 +645,23 @@ export function DocumentListPage({ mode, area = "staff" }: { mode: "internal" | 
             </div>,
             document.clientName,
             document.documentType,
-            <StatusBadge tone={document.status === "verified" ? "success" : document.status === "rejected" ? "warning" : "info"}>
+            <StatusBadge
+              tone={
+                document.status === "verified"
+                  ? "success"
+                  : document.status === "rejected"
+                    ? "warning"
+                    : "info"
+              }
+            >
               {document.status}
             </StatusBadge>,
             <FileLink url={document.fileUrl} label={document.fileName} />,
-            document.visibleToClient ? <Badge variant="success">Client visible</Badge> : <Badge variant="light">Internal only</Badge>,
+            document.visibleToClient ? (
+              <Badge variant="success">Client visible</Badge>
+            ) : (
+              <Badge variant="light">Internal only</Badge>
+            ),
             document.uploadedByClientName || document.uploadedByInternalName || "—",
             mode === "internal" ? (
               <button
@@ -606,7 +672,9 @@ export function DocumentListPage({ mode, area = "staff" }: { mode: "internal" | 
                     await deleteDocumentMutation.mutateAsync(document.id);
                     toast.success("Document deleted.");
                   } catch (error) {
-                    toast.error(error instanceof Error ? error.message : "Unable to delete document.");
+                    toast.error(
+                      error instanceof Error ? error.message : "Unable to delete document.",
+                    );
                   }
                 }}
               >
@@ -645,9 +713,7 @@ export function DocumentListPage({ mode, area = "staff" }: { mode: "internal" | 
             <FormField label="Client">
               <SelectMenu
                 value={form.clientId}
-                onValueChange={(value) =>
-                  setForm((current) => ({ ...current, clientId: value }))
-                }
+                onValueChange={(value) => setForm((current) => ({ ...current, clientId: value }))}
                 options={[
                   { value: "", label: "Select client" },
                   ...(clientsQuery.data?.items ?? []).map((client) => ({
@@ -667,7 +733,7 @@ export function DocumentListPage({ mode, area = "staff" }: { mode: "internal" | 
               options={[
                 { value: "", label: "Optional" },
                 ...((mode === "internal"
-                  ? applicationsQuery.data?.items ?? []
+                  ? (applicationsQuery.data?.items ?? [])
                   : ownApplicationOptions
                 ).map((application) => ({
                   value: application.id,
@@ -677,10 +743,22 @@ export function DocumentListPage({ mode, area = "staff" }: { mode: "internal" | 
             />
           </FormField>
           <FormField label="Title">
-            <input value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} className={inputClassName()} />
+            <input
+              value={form.title}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, title: event.target.value }))
+              }
+              className={inputClassName()}
+            />
           </FormField>
           <FormField label="Document Type">
-            <input value={form.documentType} onChange={(event) => setForm((current) => ({ ...current, documentType: event.target.value }))} className={inputClassName()} />
+            <input
+              value={form.documentType}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, documentType: event.target.value }))
+              }
+              className={inputClassName()}
+            />
           </FormField>
           {mode === "internal" ? (
             <FormField label="Status">
@@ -694,17 +772,31 @@ export function DocumentListPage({ mode, area = "staff" }: { mode: "internal" | 
             </FormField>
           ) : null}
           <FormField label="File">
-            <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)} className={inputClassName()} />
+            <input
+              type="file"
+              accept="application/pdf,image/jpeg,image/png,image/webp"
+              onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
+              className={inputClassName()}
+            />
           </FormField>
         </div>
         <div className="mt-4">
           <FormField label="Notes">
-            <TextArea value={form.notes} onChange={(value) => setForm((current) => ({ ...current, notes: value }))} />
+            <TextArea
+              value={form.notes}
+              onChange={(value) => setForm((current) => ({ ...current, notes: value }))}
+            />
           </FormField>
         </div>
         {mode === "internal" ? (
           <label className="mt-4 flex items-center gap-2 text-sm text-slate-700">
-            <input type="checkbox" checked={form.visibleToClient} onChange={(event) => setForm((current) => ({ ...current, visibleToClient: event.target.checked }))} />
+            <input
+              type="checkbox"
+              checked={form.visibleToClient}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, visibleToClient: event.target.checked }))
+              }
+            />
             Visible to client
           </label>
         ) : null}
@@ -762,8 +854,14 @@ export function DocumentListPage({ mode, area = "staff" }: { mode: "internal" | 
   );
 }
 
-export function AppointmentListPage({ mode, area = "staff" }: { mode: "internal" | "client"; area?: "admin" | "staff" }) {
-  const access = mode === "internal" ? useDashboardAccess() : null;
+export function AppointmentListPage({
+  mode,
+  area = "staff",
+}: {
+  mode: "internal" | "client";
+  area?: "admin" | "staff";
+}) {
+  const access = useOptionalDashboardAccess();
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const deferredSearch = useDeferredValue(searchInput.trim());
@@ -773,9 +871,24 @@ export function AppointmentListPage({ mode, area = "staff" }: { mode: "internal"
   const [form, setForm] = useState<UpsertAppointmentInput>(
     createEmptyAppointmentForm(area === "staff" ? access?.currentUser.id || null : null),
   );
-  const staffUsersQuery = useInternalUsers({ enabled: mode === "internal" && area === "admin", page: 1, pageSize: 100, search: "" });
-  const clientsQuery = useClients({ enabled: mode === "internal", page: 1, pageSize: 100, search: "" });
-  const applicationsQuery = useApplications({ enabled: mode === "internal", page: 1, pageSize: 100, search: "" });
+  const staffUsersQuery = useInternalUsers({
+    enabled: mode === "internal" && area === "admin",
+    page: 1,
+    pageSize: 100,
+    search: "",
+  });
+  const clientsQuery = useClients({
+    enabled: mode === "internal",
+    page: 1,
+    pageSize: 100,
+    search: "",
+  });
+  const applicationsQuery = useApplications({
+    enabled: mode === "internal",
+    page: 1,
+    pageSize: 100,
+    search: "",
+  });
   const appointmentsQuery = useAppointments({
     enabled: mode === "internal" && !!access?.canReadAppointments,
     page,
@@ -788,12 +901,16 @@ export function AppointmentListPage({ mode, area = "staff" }: { mode: "internal"
   const upsertAppointmentMutation = useUpsertAppointment();
   const deleteAppointmentMutation = useDeleteAppointment();
 
-  const staffUsers = useMemo(() => (staffUsersQuery.data?.items ?? []).filter((user) => user.role === "staff"), [staffUsersQuery.data]);
+  const staffUsers = useMemo(
+    () => (staffUsersQuery.data?.items ?? []).filter((user) => user.role === "staff"),
+    [staffUsersQuery.data],
+  );
   useEffect(() => {
     setPage(1);
   }, [deferredSearch, status, staffId]);
 
-  const items = mode === "internal" ? appointmentsQuery.data?.items ?? [] : ownAppointmentsQuery.data ?? [];
+  const items =
+    mode === "internal" ? (appointmentsQuery.data?.items ?? []) : (ownAppointmentsQuery.data ?? []);
 
   return (
     <Panel
@@ -838,33 +955,57 @@ export function AppointmentListPage({ mode, area = "staff" }: { mode: "internal"
           rows={items.map((appointment) => [
             <div className="text-left">
               <p className="font-semibold text-slate-900">{appointment.title}</p>
-              <p className="text-xs text-slate-500">{appointment.location || appointment.meetingLink || "No location"}</p>
+              <p className="text-xs text-slate-500">
+                {appointment.location || appointment.meetingLink || "No location"}
+              </p>
             </div>,
             appointment.clientName,
             appointment.appointmentType.replaceAll("_", " "),
-            <StatusBadge tone={appointment.status === "completed" ? "success" : appointment.status === "cancelled" ? "warning" : "info"}>
+            <StatusBadge
+              tone={
+                appointment.status === "completed"
+                  ? "success"
+                  : appointment.status === "cancelled"
+                    ? "warning"
+                    : "info"
+              }
+            >
               {appointment.status.replaceAll("_", " ")}
             </StatusBadge>,
             formatDateTime(appointment.scheduledAt),
             appointment.assignedStaffName || "Unassigned",
             mode === "internal" ? (
-              <button type="button" className="rounded-xl border border-destructive/20 px-3 py-1.5 text-xs font-semibold text-destructive" onClick={async () => {
-                try {
-                  await deleteAppointmentMutation.mutateAsync(appointment.id);
-                  toast.success("Appointment deleted.");
-                } catch (error) {
-                  toast.error(error instanceof Error ? error.message : "Unable to delete appointment.");
-                }
-              }}>
+              <button
+                type="button"
+                className="rounded-xl border border-destructive/20 px-3 py-1.5 text-xs font-semibold text-destructive"
+                onClick={async () => {
+                  try {
+                    await deleteAppointmentMutation.mutateAsync(appointment.id);
+                    toast.success("Appointment deleted.");
+                  } catch (error) {
+                    toast.error(
+                      error instanceof Error ? error.message : "Unable to delete appointment.",
+                    );
+                  }
+                }}
+              >
                 Delete
               </button>
-            ) : "—",
+            ) : (
+              "—"
+            ),
           ])}
           emptyMessage="No appointments found."
         />
       )}
       {mode === "internal" && appointmentsQuery.data ? (
-        <PaginationControls page={page} pageSize={DEFAULT_PAGE_SIZE} total={appointmentsQuery.data.total} totalPages={appointmentsQuery.data.totalPages} onPageChange={setPage} />
+        <PaginationControls
+          page={page}
+          pageSize={DEFAULT_PAGE_SIZE}
+          total={appointmentsQuery.data.total}
+          totalPages={appointmentsQuery.data.totalPages}
+          onPageChange={setPage}
+        />
       ) : null}
 
       {mode === "internal" ? (
@@ -904,10 +1045,23 @@ export function AppointmentListPage({ mode, area = "staff" }: { mode: "internal"
               />
             </FormField>
             <FormField label="Title">
-              <input value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} className={inputClassName()} />
+              <input
+                value={form.title}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, title: event.target.value }))
+                }
+                className={inputClassName()}
+              />
             </FormField>
             <FormField label="Scheduled At">
-              <input type="datetime-local" value={form.scheduledAt} onChange={(event) => setForm((current) => ({ ...current, scheduledAt: event.target.value }))} className={inputClassName()} />
+              <input
+                type="datetime-local"
+                value={form.scheduledAt}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, scheduledAt: event.target.value }))
+                }
+                className={inputClassName()}
+              />
             </FormField>
             <FormField label="Type">
               <SelectMenu
@@ -943,35 +1097,68 @@ export function AppointmentListPage({ mode, area = "staff" }: { mode: "internal"
               />
             </FormField>
             <FormField label="Duration">
-              <input type="number" min="15" max="480" value={form.durationMinutes} onChange={(event) => setForm((current) => ({ ...current, durationMinutes: Number(event.target.value) || 30 }))} className={inputClassName()} />
+              <input
+                type="number"
+                min="15"
+                max="480"
+                value={form.durationMinutes}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    durationMinutes: Number(event.target.value) || 30,
+                  }))
+                }
+                className={inputClassName()}
+              />
             </FormField>
             <FormField label="Location">
-              <input value={form.location} onChange={(event) => setForm((current) => ({ ...current, location: event.target.value }))} className={inputClassName()} />
+              <input
+                value={form.location}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, location: event.target.value }))
+                }
+                className={inputClassName()}
+              />
             </FormField>
             <FormField label="Meeting Link">
-              <input value={form.meetingLink} onChange={(event) => setForm((current) => ({ ...current, meetingLink: event.target.value }))} className={inputClassName()} />
+              <input
+                value={form.meetingLink}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, meetingLink: event.target.value }))
+                }
+                className={inputClassName()}
+              />
             </FormField>
           </div>
           <div className="mt-4">
             <FormField label="Notes">
-              <TextArea value={form.notes} onChange={(value) => setForm((current) => ({ ...current, notes: value }))} />
+              <TextArea
+                value={form.notes}
+                onChange={(value) => setForm((current) => ({ ...current, notes: value }))}
+              />
             </FormField>
           </div>
           <div className="mt-4 flex justify-end">
-            <button type="button" className="btn-gold" onClick={async () => {
-              try {
-                await upsertAppointmentMutation.mutateAsync(form);
-                toast.success("Appointment saved.");
-                setForm(
-                  createEmptyAppointmentForm(
-                    area === "staff" ? access?.currentUser.id || null : null,
-                  ),
-                );
-                setIsCreateOpen(false);
-              } catch (error) {
-                toast.error(error instanceof Error ? error.message : "Unable to save appointment.");
-              }
-            }}>
+            <button
+              type="button"
+              className="btn-gold"
+              onClick={async () => {
+                try {
+                  await upsertAppointmentMutation.mutateAsync(form);
+                  toast.success("Appointment saved.");
+                  setForm(
+                    createEmptyAppointmentForm(
+                      area === "staff" ? access?.currentUser.id || null : null,
+                    ),
+                  );
+                  setIsCreateOpen(false);
+                } catch (error) {
+                  toast.error(
+                    error instanceof Error ? error.message : "Unable to save appointment.",
+                  );
+                }
+              }}
+            >
               Save Appointment
             </button>
           </div>
@@ -981,8 +1168,14 @@ export function AppointmentListPage({ mode, area = "staff" }: { mode: "internal"
   );
 }
 
-export function PaymentListPage({ mode, area = "staff" }: { mode: "internal" | "client"; area?: "admin" | "staff" }) {
-  const access = mode === "internal" ? useDashboardAccess() : null;
+export function PaymentListPage({
+  mode,
+  area = "staff",
+}: {
+  mode: "internal" | "client";
+  area?: "admin" | "staff";
+}) {
+  const access = useOptionalDashboardAccess();
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const deferredSearch = useDeferredValue(searchInput.trim());
@@ -990,9 +1183,24 @@ export function PaymentListPage({ mode, area = "staff" }: { mode: "internal" | "
   const [staffId, setStaffId] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [form, setForm] = useState<UpsertPaymentInput>(createEmptyPaymentForm());
-  const staffUsersQuery = useInternalUsers({ enabled: mode === "internal" && area === "admin", page: 1, pageSize: 100, search: "" });
-  const clientsQuery = useClients({ enabled: mode === "internal", page: 1, pageSize: 100, search: "" });
-  const applicationsQuery = useApplications({ enabled: mode === "internal", page: 1, pageSize: 100, search: "" });
+  const staffUsersQuery = useInternalUsers({
+    enabled: mode === "internal" && area === "admin",
+    page: 1,
+    pageSize: 100,
+    search: "",
+  });
+  const clientsQuery = useClients({
+    enabled: mode === "internal",
+    page: 1,
+    pageSize: 100,
+    search: "",
+  });
+  const applicationsQuery = useApplications({
+    enabled: mode === "internal",
+    page: 1,
+    pageSize: 100,
+    search: "",
+  });
   const paymentsQuery = usePayments({
     enabled: mode === "internal" && !!access?.canReadPayments,
     page,
@@ -1004,9 +1212,15 @@ export function PaymentListPage({ mode, area = "staff" }: { mode: "internal" | "
   const ownPaymentsQuery = useOwnPayments(mode === "client");
   const upsertPaymentMutation = useUpsertPayment();
   const deletePaymentMutation = useDeletePayment();
-  const staffUsers = useMemo(() => (staffUsersQuery.data?.items ?? []).filter((user) => user.role === "staff"), [staffUsersQuery.data]);
-  useEffect(() => { setPage(1); }, [deferredSearch, status, staffId]);
-  const items = mode === "internal" ? paymentsQuery.data?.items ?? [] : ownPaymentsQuery.data ?? [];
+  const staffUsers = useMemo(
+    () => (staffUsersQuery.data?.items ?? []).filter((user) => user.role === "staff"),
+    [staffUsersQuery.data],
+  );
+  useEffect(() => {
+    setPage(1);
+  }, [deferredSearch, status, staffId]);
+  const items =
+    mode === "internal" ? (paymentsQuery.data?.items ?? []) : (ownPaymentsQuery.data ?? []);
 
   return (
     <Panel
@@ -1028,7 +1242,16 @@ export function PaymentListPage({ mode, area = "staff" }: { mode: "internal" | "
       }
     >
       {mode === "internal" ? (
-        <InternalFilters searchInput={searchInput} setSearchInput={setSearchInput} status={status} setStatus={setStatus} staffId={staffId} setStaffId={setStaffId} staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))} summary={`${paymentsQuery.data?.total ?? 0} matching payments`} />
+        <InternalFilters
+          searchInput={searchInput}
+          setSearchInput={setSearchInput}
+          status={status}
+          setStatus={setStatus}
+          staffId={staffId}
+          setStaffId={setStaffId}
+          staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
+          summary={`${paymentsQuery.data?.total ?? 0} matching payments`}
+        />
       ) : null}
       {(mode === "internal" ? paymentsQuery.isLoading : ownPaymentsQuery.isLoading) ? (
         <EmptyHint message="Loading payments..." loading />
@@ -1042,28 +1265,52 @@ export function PaymentListPage({ mode, area = "staff" }: { mode: "internal" | "
             </div>,
             payment.clientName,
             `${payment.currency} ${payment.amount.toLocaleString()}`,
-            <StatusBadge tone={payment.status === "paid" ? "success" : payment.status === "overdue" ? "warning" : "info"}>
+            <StatusBadge
+              tone={
+                payment.status === "paid"
+                  ? "success"
+                  : payment.status === "overdue"
+                    ? "warning"
+                    : "info"
+              }
+            >
               {payment.status}
             </StatusBadge>,
             formatDate(payment.dueDate),
             formatDateTime(payment.paidAt),
             mode === "internal" ? (
-              <button type="button" className="rounded-xl border border-destructive/20 px-3 py-1.5 text-xs font-semibold text-destructive" onClick={async () => {
-                try {
-                  await deletePaymentMutation.mutateAsync(payment.id);
-                  toast.success("Payment deleted.");
-                } catch (error) {
-                  toast.error(error instanceof Error ? error.message : "Unable to delete payment.");
-                }
-              }}>
+              <button
+                type="button"
+                className="rounded-xl border border-destructive/20 px-3 py-1.5 text-xs font-semibold text-destructive"
+                onClick={async () => {
+                  try {
+                    await deletePaymentMutation.mutateAsync(payment.id);
+                    toast.success("Payment deleted.");
+                  } catch (error) {
+                    toast.error(
+                      error instanceof Error ? error.message : "Unable to delete payment.",
+                    );
+                  }
+                }}
+              >
                 Delete
               </button>
-            ) : "—",
+            ) : (
+              "—"
+            ),
           ])}
           emptyMessage="No payments found."
         />
       )}
-      {mode === "internal" && paymentsQuery.data ? <PaginationControls page={page} pageSize={DEFAULT_PAGE_SIZE} total={paymentsQuery.data.total} totalPages={paymentsQuery.data.totalPages} onPageChange={setPage} /> : null}
+      {mode === "internal" && paymentsQuery.data ? (
+        <PaginationControls
+          page={page}
+          pageSize={DEFAULT_PAGE_SIZE}
+          total={paymentsQuery.data.total}
+          totalPages={paymentsQuery.data.totalPages}
+          onPageChange={setPage}
+        />
+      ) : null}
       {mode === "internal" ? (
         <FormDialog
           open={isCreateOpen}
@@ -1101,13 +1348,34 @@ export function PaymentListPage({ mode, area = "staff" }: { mode: "internal" | "
               />
             </FormField>
             <FormField label="Title">
-              <input value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} className={inputClassName()} />
+              <input
+                value={form.title}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, title: event.target.value }))
+                }
+                className={inputClassName()}
+              />
             </FormField>
             <FormField label="Amount">
-              <input type="number" min="0" step="0.01" value={form.amount} onChange={(event) => setForm((current) => ({ ...current, amount: Number(event.target.value) || 0 }))} className={inputClassName()} />
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.amount}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, amount: Number(event.target.value) || 0 }))
+                }
+                className={inputClassName()}
+              />
             </FormField>
             <FormField label="Currency">
-              <input value={form.currency} onChange={(event) => setForm((current) => ({ ...current, currency: event.target.value }))} className={inputClassName()} />
+              <input
+                value={form.currency}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, currency: event.target.value }))
+                }
+                className={inputClassName()}
+              />
             </FormField>
             <FormField label="Status">
               <SelectMenu
@@ -1119,36 +1387,69 @@ export function PaymentListPage({ mode, area = "staff" }: { mode: "internal" | "
               />
             </FormField>
             <FormField label="Due Date">
-              <input type="date" value={form.dueDate} onChange={(event) => setForm((current) => ({ ...current, dueDate: event.target.value }))} className={inputClassName()} />
+              <input
+                type="date"
+                value={form.dueDate}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, dueDate: event.target.value }))
+                }
+                className={inputClassName()}
+              />
             </FormField>
             <FormField label="Paid At">
-              <input type="datetime-local" value={form.paidAt} onChange={(event) => setForm((current) => ({ ...current, paidAt: event.target.value }))} className={inputClassName()} />
+              <input
+                type="datetime-local"
+                value={form.paidAt}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, paidAt: event.target.value }))
+                }
+                className={inputClassName()}
+              />
             </FormField>
           </div>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <FormField label="Payment Method">
-              <input value={form.paymentMethod} onChange={(event) => setForm((current) => ({ ...current, paymentMethod: event.target.value }))} className={inputClassName()} />
+              <input
+                value={form.paymentMethod}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, paymentMethod: event.target.value }))
+                }
+                className={inputClassName()}
+              />
             </FormField>
             <FormField label="Reference Number">
-              <input value={form.referenceNumber} onChange={(event) => setForm((current) => ({ ...current, referenceNumber: event.target.value }))} className={inputClassName()} />
+              <input
+                value={form.referenceNumber}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, referenceNumber: event.target.value }))
+                }
+                className={inputClassName()}
+              />
             </FormField>
           </div>
           <div className="mt-4">
             <FormField label="Notes">
-              <TextArea value={form.notes} onChange={(value) => setForm((current) => ({ ...current, notes: value }))} />
+              <TextArea
+                value={form.notes}
+                onChange={(value) => setForm((current) => ({ ...current, notes: value }))}
+              />
             </FormField>
           </div>
           <div className="mt-4 flex justify-end">
-            <button type="button" className="btn-gold" onClick={async () => {
-              try {
-                await upsertPaymentMutation.mutateAsync(form);
-                toast.success("Payment saved.");
-                setForm(createEmptyPaymentForm());
-                setIsCreateOpen(false);
-              } catch (error) {
-                toast.error(error instanceof Error ? error.message : "Unable to save payment.");
-              }
-            }}>
+            <button
+              type="button"
+              className="btn-gold"
+              onClick={async () => {
+                try {
+                  await upsertPaymentMutation.mutateAsync(form);
+                  toast.success("Payment saved.");
+                  setForm(createEmptyPaymentForm());
+                  setIsCreateOpen(false);
+                } catch (error) {
+                  toast.error(error instanceof Error ? error.message : "Unable to save payment.");
+                }
+              }}
+            >
               Save Payment
             </button>
           </div>
@@ -1176,7 +1477,11 @@ function MeetingCard({
   canManage: boolean;
 }) {
   const statusTone =
-    meeting.status === "completed" ? "success" : meeting.status === "cancelled" ? "warning" : "info";
+    meeting.status === "completed"
+      ? "success"
+      : meeting.status === "cancelled"
+        ? "warning"
+        : "info";
 
   return (
     <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5">
@@ -1193,14 +1498,20 @@ function MeetingCard({
         <span>{meeting.meetingType.replaceAll("_", " ")}</span>
         <span>{meeting.durationMinutes} min</span>
       </div>
-      {meeting.notes ? <p className="mt-3 text-sm leading-6 text-slate-600">{meeting.notes}</p> : null}
+      {meeting.notes ? (
+        <p className="mt-3 text-sm leading-6 text-slate-600">{meeting.notes}</p>
+      ) : null}
       <div className="mt-4 flex flex-wrap gap-3">
         <Link to={meeting.joinPath} className="btn-gold">
           {meeting.meetingType === "video_call" ? "Join Video Call" : "Open Meeting"}
         </Link>
         {canManage && meeting.status === "scheduled" ? (
           <>
-            <button type="button" className="btn-secondary" onClick={() => onMarkCompleted?.(meeting.id)}>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => onMarkCompleted?.(meeting.id)}
+            >
               Mark Completed
             </button>
             <button type="button" className="btn-secondary" onClick={() => onCancel?.(meeting.id)}>
@@ -1213,8 +1524,14 @@ function MeetingCard({
   );
 }
 
-export function MessageListPage({ mode, area = "staff" }: { mode: "internal" | "client"; area?: "admin" | "staff" }) {
-  const access = mode === "internal" ? useDashboardAccess() : null;
+export function MessageListPage({
+  mode,
+  area = "staff",
+}: {
+  mode: "internal" | "client";
+  area?: "admin" | "staff";
+}) {
+  const access = useOptionalDashboardAccess();
   const canReadMessages = mode === "client" || Boolean(access?.canReadMessages);
   const canWriteMessages = mode === "client" || Boolean(access?.canWriteMessages);
   const [threadSearch, setThreadSearch] = useState("");
@@ -1266,7 +1583,10 @@ export function MessageListPage({ mode, area = "staff" }: { mode: "internal" | "
 
     if (!selectedThreadId && firstThreadId) {
       setSelectedThreadId(firstThreadId);
-    } else if (selectedThreadId && !(threadsQuery.data ?? []).some((thread) => thread.threadId === selectedThreadId)) {
+    } else if (
+      selectedThreadId &&
+      !(threadsQuery.data ?? []).some((thread) => thread.threadId === selectedThreadId)
+    ) {
       setSelectedThreadId(firstThreadId);
     }
   }, [mode, selectedThreadId, threadsQuery.data]);
@@ -1277,13 +1597,13 @@ export function MessageListPage({ mode, area = "staff" }: { mode: "internal" | "
   );
   const selectedContact =
     mode === "internal"
-      ? conversationQuery.data?.contact ?? selectedThreadSummary?.contact ?? null
-      : ownConversationQuery.data?.contact ?? null;
+      ? (conversationQuery.data?.contact ?? selectedThreadSummary?.contact ?? null)
+      : (ownConversationQuery.data?.contact ?? null);
   const conversationMessages =
     mode === "internal"
-      ? conversationQuery.data?.messages ?? []
-      : ownConversationQuery.data?.messages ?? [];
-  const meetings = mode === "internal" ? meetingsQuery.data ?? [] : ownMeetingsQuery.data ?? [];
+      ? (conversationQuery.data?.messages ?? [])
+      : (ownConversationQuery.data?.messages ?? []);
+  const meetings = mode === "internal" ? (meetingsQuery.data ?? []) : (ownMeetingsQuery.data ?? []);
   const filteredMeetings = selectedContact
     ? meetings.filter((meeting) => contactKey(meeting.contact) === contactKey(selectedContact))
     : meetings;
@@ -1360,7 +1680,11 @@ export function MessageListPage({ mode, area = "staff" }: { mode: "internal" | "
         action={
           mode === "internal" ? (
             <div className="flex flex-wrap gap-3">
-              <button type="button" className="btn-secondary" onClick={() => setIsContactDialogOpen(true)}>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setIsContactDialogOpen(true)}
+              >
                 New Conversation
               </button>
               <button
@@ -1415,7 +1739,9 @@ export function MessageListPage({ mode, area = "staff" }: { mode: "internal" | "
                       <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-600">
                         {thread.lastMessagePreview || "No messages yet."}
                       </p>
-                      <p className="mt-2 text-xs text-slate-400">{formatDateTime(thread.lastMessageAt)}</p>
+                      <p className="mt-2 text-xs text-slate-400">
+                        {formatDateTime(thread.lastMessageAt)}
+                      </p>
                     </button>
                   ))
                 )}
@@ -1447,8 +1773,12 @@ export function MessageListPage({ mode, area = "staff" }: { mode: "internal" | "
                         <EmptyHint message="No messages in this conversation yet." />
                       ) : (
                         conversationMessages.map((message) => {
-                          const isOwn = message.senderAppUserId === undefined ? false : message.senderAppUserId !== null;
-                          const alignsRight = message.senderType === "internal" && message.senderAppUserId !== null;
+                          const isOwn =
+                            message.senderAppUserId === undefined
+                              ? false
+                              : message.senderAppUserId !== null;
+                          const alignsRight =
+                            message.senderType === "internal" && message.senderAppUserId !== null;
 
                           return (
                             <div
@@ -1466,7 +1796,9 @@ export function MessageListPage({ mode, area = "staff" }: { mode: "internal" | "
                                   {message.senderName}
                                 </p>
                                 <p className="mt-2 whitespace-pre-wrap">{message.body}</p>
-                                <p className="mt-2 text-[11px] opacity-70">{formatDateTime(message.createdAt)}</p>
+                                <p className="mt-2 text-[11px] opacity-70">
+                                  {formatDateTime(message.createdAt)}
+                                </p>
                               </div>
                             </div>
                           );
@@ -1497,9 +1829,12 @@ export function MessageListPage({ mode, area = "staff" }: { mode: "internal" | "
               <div className="rounded-[1.8rem] border border-slate-200 bg-slate-50/70 p-5">
                 <div className="mb-4 flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="font-display text-xl font-bold text-slate-950">Meetings & Video Calls</h3>
+                    <h3 className="font-display text-xl font-bold text-slate-950">
+                      Meetings & Video Calls
+                    </h3>
                     <p className="mt-1 text-sm text-slate-500">
-                      Schedule calls from the active conversation and keep every session tied to its contact.
+                      Schedule calls from the active conversation and keep every session tied to its
+                      contact.
                     </p>
                   </div>
                 </div>
@@ -1521,7 +1856,11 @@ export function MessageListPage({ mode, area = "staff" }: { mode: "internal" | "
                             {
                               onSuccess: () => toast.success("Meeting marked completed."),
                               onError: (error) =>
-                                toast.error(error instanceof Error ? error.message : "Unable to update meeting."),
+                                toast.error(
+                                  error instanceof Error
+                                    ? error.message
+                                    : "Unable to update meeting.",
+                                ),
                             },
                           )
                         }
@@ -1531,7 +1870,11 @@ export function MessageListPage({ mode, area = "staff" }: { mode: "internal" | "
                             {
                               onSuccess: () => toast.success("Meeting cancelled."),
                               onError: (error) =>
-                                toast.error(error instanceof Error ? error.message : "Unable to update meeting."),
+                                toast.error(
+                                  error instanceof Error
+                                    ? error.message
+                                    : "Unable to update meeting.",
+                                ),
                             },
                           )
                         }
@@ -1548,12 +1891,20 @@ export function MessageListPage({ mode, area = "staff" }: { mode: "internal" | "
               {ownConversationQuery.isLoading ? (
                 <EmptyHint message="Loading your conversation..." loading />
               ) : ownConversationQuery.error ? (
-                <EmptyHint message={ownConversationQuery.error instanceof Error ? ownConversationQuery.error.message : "Unable to load your conversation."} />
+                <EmptyHint
+                  message={
+                    ownConversationQuery.error instanceof Error
+                      ? ownConversationQuery.error.message
+                      : "Unable to load your conversation."
+                  }
+                />
               ) : selectedContact ? (
                 <>
                   <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 pb-4">
                     <div>
-                      <h3 className="font-display text-xl font-bold text-slate-950">{selectedContact.name}</h3>
+                      <h3 className="font-display text-xl font-bold text-slate-950">
+                        {selectedContact.name}
+                      </h3>
                       <p className="mt-1 text-sm text-slate-500">
                         {selectedContact.roleLabel}
                         {selectedContact.email ? ` · ${selectedContact.email}` : ""}
@@ -1571,7 +1922,10 @@ export function MessageListPage({ mode, area = "staff" }: { mode: "internal" | "
                         const alignsRight = message.senderType === "client";
 
                         return (
-                          <div key={message.id} className={`flex ${alignsRight ? "justify-end" : "justify-start"}`}>
+                          <div
+                            key={message.id}
+                            className={`flex ${alignsRight ? "justify-end" : "justify-start"}`}
+                          >
                             <div
                               className={`max-w-[80%] rounded-[1.5rem] px-4 py-3 text-sm leading-6 ${
                                 alignsRight
@@ -1583,7 +1937,9 @@ export function MessageListPage({ mode, area = "staff" }: { mode: "internal" | "
                                 {message.senderName}
                               </p>
                               <p className="mt-2 whitespace-pre-wrap">{message.body}</p>
-                              <p className="mt-2 text-[11px] opacity-70">{formatDateTime(message.createdAt)}</p>
+                              <p className="mt-2 text-[11px] opacity-70">
+                                {formatDateTime(message.createdAt)}
+                              </p>
                             </div>
                           </div>
                         );
@@ -1613,7 +1969,9 @@ export function MessageListPage({ mode, area = "staff" }: { mode: "internal" | "
 
             <div className="rounded-[1.8rem] border border-slate-200 bg-slate-50/70 p-5">
               <div className="mb-4">
-                <h3 className="font-display text-xl font-bold text-slate-950">Meetings & Video Calls</h3>
+                <h3 className="font-display text-xl font-bold text-slate-950">
+                  Meetings & Video Calls
+                </h3>
                 <p className="mt-1 text-sm text-slate-500">
                   Open your scheduled consultations and join video calls directly from the portal.
                 </p>
@@ -1625,7 +1983,12 @@ export function MessageListPage({ mode, area = "staff" }: { mode: "internal" | "
                   <EmptyHint message="No meetings scheduled yet." />
                 ) : (
                   meetings.map((meeting) => (
-                    <MeetingCard key={meeting.id} meeting={meeting} area="client" canManage={false} />
+                    <MeetingCard
+                      key={meeting.id}
+                      meeting={meeting}
+                      area="client"
+                      canManage={false}
+                    />
                   ))
                 )}
               </div>
@@ -1664,14 +2027,20 @@ export function MessageListPage({ mode, area = "staff" }: { mode: "internal" | "
                     setIsContactDialogOpen(false);
                     toast.success("Conversation ready.");
                   } catch (error) {
-                    toast.error(error instanceof Error ? error.message : "Unable to open conversation.");
+                    toast.error(
+                      error instanceof Error ? error.message : "Unable to open conversation.",
+                    );
                   }
                 }}
                 className="w-full rounded-[1.4rem] border border-slate-200 bg-slate-50 px-4 py-4 text-left hover:bg-white"
               >
                 <p className="font-semibold text-slate-900">{contact.name}</p>
-                <p className="mt-1 text-xs uppercase tracking-[0.16em] text-slate-500">{contact.roleLabel}</p>
-                <p className="mt-2 text-sm text-slate-600">{contact.subtitle || contact.email || "Contact account"}</p>
+                <p className="mt-1 text-xs uppercase tracking-[0.16em] text-slate-500">
+                  {contact.roleLabel}
+                </p>
+                <p className="mt-2 text-sm text-slate-600">
+                  {contact.subtitle || contact.email || "Contact account"}
+                </p>
               </button>
             ))
           )}
@@ -1687,7 +2056,9 @@ export function MessageListPage({ mode, area = "staff" }: { mode: "internal" | "
         <div className="grid gap-4 md:grid-cols-2">
           <FormField label="Contact">
             <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-              {selectedContact ? `${selectedContact.name} · ${selectedContact.roleLabel}` : "Select a conversation first"}
+              {selectedContact
+                ? `${selectedContact.name} · ${selectedContact.roleLabel}`
+                : "Select a conversation first"}
             </div>
           </FormField>
           <FormField label="Meeting Type">
@@ -1704,7 +2075,9 @@ export function MessageListPage({ mode, area = "staff" }: { mode: "internal" | "
           <FormField label="Title">
             <input
               value={meetingForm.title}
-              onChange={(event) => setMeetingForm((current) => ({ ...current, title: event.target.value }))}
+              onChange={(event) =>
+                setMeetingForm((current) => ({ ...current, title: event.target.value }))
+              }
               className={inputClassName()}
             />
           </FormField>
@@ -1762,9 +2135,12 @@ export function MeetingRoomPage({
 }) {
   const { meetingId = "" } = useParams();
   const navigate = useNavigate();
-  const meetingQuery = mode === "internal"
-    ? useMeetingDetail(meetingId, Boolean(meetingId))
-    : useOwnMeetingDetail(meetingId, Boolean(meetingId));
+  const internalMeetingQuery = useMeetingDetail(
+    meetingId,
+    mode === "internal" && Boolean(meetingId),
+  );
+  const ownMeetingQuery = useOwnMeetingDetail(meetingId, mode === "client" && Boolean(meetingId));
+  const meetingQuery = mode === "internal" ? internalMeetingQuery : ownMeetingQuery;
 
   if (meetingQuery.isLoading) {
     return <EmptyHint message="Loading meeting..." loading />;
@@ -1773,7 +2149,11 @@ export function MeetingRoomPage({
   if (meetingQuery.error || !meetingQuery.data) {
     return (
       <Panel title="Meeting" subtitle="Meeting details could not be loaded.">
-        <EmptyHint message={meetingQuery.error instanceof Error ? meetingQuery.error.message : "Meeting not found."} />
+        <EmptyHint
+          message={
+            meetingQuery.error instanceof Error ? meetingQuery.error.message : "Meeting not found."
+          }
+        />
       </Panel>
     );
   }
@@ -1803,7 +2183,9 @@ export function MeetingRoomPage({
             <span>{meeting.status.replaceAll("_", " ")}</span>
             <span>Room: {meeting.roomName}</span>
           </div>
-          {meeting.notes ? <p className="mt-3 text-sm leading-6 text-slate-600">{meeting.notes}</p> : null}
+          {meeting.notes ? (
+            <p className="mt-3 text-sm leading-6 text-slate-600">{meeting.notes}</p>
+          ) : null}
         </div>
         {meeting.meetingType === "video_call" ? (
           <div className="overflow-hidden rounded-[1.8rem] border border-slate-200 bg-slate-950">
@@ -1817,7 +2199,8 @@ export function MeetingRoomPage({
         ) : (
           <div className="rounded-[1.8rem] border border-slate-200 bg-slate-50 p-6">
             <p className="text-sm leading-6 text-slate-600">
-              This meeting is configured as {meeting.meetingType.replaceAll("_", " ")}. Use the thread to confirm logistics with {meeting.contact.name}.
+              This meeting is configured as {meeting.meetingType.replaceAll("_", " ")}. Use the
+              thread to confirm logistics with {meeting.contact.name}.
             </p>
           </div>
         )}

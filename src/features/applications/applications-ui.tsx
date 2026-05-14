@@ -1,16 +1,10 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { AppDialog } from "@/components/ui/app-dialog";
 import { Badge } from "@/components/ui/badge";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { useAppDialogs } from "@/components/ui/app-dialogs";
+import { useAppDialogs } from "@/components/ui/use-app-dialogs";
 import { SelectMenu } from "@/components/ui/select-menu";
 import { APP_ROUTES } from "@/config/routes";
 import type {
@@ -29,7 +23,7 @@ import {
   useUpsertApplication,
 } from "@/features/applications/use-applications";
 import { useClients } from "@/features/clients/use-clients";
-import { useDashboardAccess } from "@/features/dashboard/dashboard-context";
+import { useDashboardAccess } from "@/features/dashboard/use-dashboard-access";
 import { DataTable, StatusBadge } from "@/features/dashboard/dashboard-layout";
 import {
   EmptyHint,
@@ -389,44 +383,38 @@ export function ApplicationListPage({
           </>
         )}
 
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogContent className="max-w-5xl overflow-y-auto border-slate-200 p-0 sm:max-h-[90vh]">
-            <DialogHeader className="border-b border-slate-200 px-6 py-5">
-              <DialogTitle className="font-display text-2xl font-extrabold text-slate-950">
-                Create Application
-              </DialogTitle>
-              <DialogDescription>
-                Add a new application record without leaving the pipeline view.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="px-6 py-6">
-              <ApplicationForm
-                form={form}
-                onChange={setForm}
-                clients={(clientsQuery.data?.items ?? []).map((client) => ({
-                  id: client.id,
-                  name: client.fullName,
-                }))}
-                staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
-                area={area}
-                onSubmit={async () => {
-                  try {
-                    const application = await upsertApplicationMutation.mutateAsync(form);
-                    toast.success("Application created.");
-                    setIsCreateOpen(false);
-                    navigate(detailRoute, { params: { applicationId: application.id } });
-                  } catch (error) {
-                    toast.error(
-                      error instanceof Error ? error.message : "Unable to create the application.",
-                    );
-                  }
-                }}
-                isSubmitting={upsertApplicationMutation.isPending}
-                lockClient={Boolean(clientId)}
-              />
-            </div>
-          </DialogContent>
-        </Dialog>
+        <AppDialog
+          open={isCreateOpen}
+          onOpenChange={setIsCreateOpen}
+          title="Create Application"
+          description="Add a new application record without leaving the pipeline view."
+          contentClassName="max-w-5xl overflow-y-auto sm:max-h-[90vh]"
+        >
+          <ApplicationForm
+            form={form}
+            onChange={setForm}
+            clients={(clientsQuery.data?.items ?? []).map((client) => ({
+              id: client.id,
+              name: client.fullName,
+            }))}
+            staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
+            area={area}
+            onSubmit={async () => {
+              try {
+                const application = await upsertApplicationMutation.mutateAsync(form);
+                toast.success("Application created.");
+                setIsCreateOpen(false);
+                navigate(detailRoute, { params: { applicationId: application.id } });
+              } catch (error) {
+                toast.error(
+                  error instanceof Error ? error.message : "Unable to create the application.",
+                );
+              }
+            }}
+            isSubmitting={upsertApplicationMutation.isPending}
+            lockClient={Boolean(clientId)}
+          />
+        </AppDialog>
       </Panel>
     </div>
   );
@@ -560,9 +548,9 @@ export function ApplicationDetailPage({
             </button>
             {area === "admin" && application ? (
               <button
-              type="button"
-              className="rounded-xl border border-destructive/20 px-4 py-2 text-sm font-semibold text-destructive"
-              onClick={async () => {
+                type="button"
+                className="rounded-xl border border-destructive/20 px-4 py-2 text-sm font-semibold text-destructive"
+                onClick={async () => {
                   const confirmed = await dialogs.confirm({
                     title: "Delete application?",
                     description: `Delete the application for ${application.clientName}. This action cannot be undone.`,
@@ -613,43 +601,37 @@ export function ApplicationDetailPage({
         {isOverlayVisible ? <LoadingOverlay label="Loading application..." /> : null}
       </Panel>
 
-      <Dialog open={isEditOpen && Boolean(form)} onOpenChange={setIsEditOpen}>
-        <DialogContent className="max-w-5xl overflow-y-auto border-slate-200 p-0 sm:max-h-[90vh]">
-          <DialogHeader className="border-b border-slate-200 px-6 py-5">
-            <DialogTitle className="font-display text-2xl font-extrabold text-slate-950">
-              Edit Application
-            </DialogTitle>
-            <DialogDescription>
-              Update application details, assignment, and filing progress.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="px-6 py-6">
-            <ApplicationForm
-              form={form ?? createEmptyApplicationForm()}
-              onChange={setForm}
-              clients={(clientsQuery.data?.items ?? []).map((client) => ({
-                id: client.id,
-                name: client.fullName,
-              }))}
-              staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
-              area={area}
-              onSubmit={async () => {
-                if (!form) return;
-                try {
-                  await upsertApplicationMutation.mutateAsync(form);
-                  toast.success("Application updated.");
-                  setIsEditOpen(false);
-                } catch (error) {
-                  toast.error(
-                    error instanceof Error ? error.message : "Unable to update the application.",
-                  );
-                }
-              }}
-              isSubmitting={upsertApplicationMutation.isPending}
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
+      <AppDialog
+        open={isEditOpen && Boolean(form)}
+        onOpenChange={setIsEditOpen}
+        title="Edit Application"
+        description="Update application details, assignment, and filing progress."
+        contentClassName="max-w-5xl overflow-y-auto sm:max-h-[90vh]"
+      >
+        <ApplicationForm
+          form={form ?? createEmptyApplicationForm()}
+          onChange={setForm}
+          clients={(clientsQuery.data?.items ?? []).map((client) => ({
+            id: client.id,
+            name: client.fullName,
+          }))}
+          staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
+          area={area}
+          onSubmit={async () => {
+            if (!form) return;
+            try {
+              await upsertApplicationMutation.mutateAsync(form);
+              toast.success("Application updated.");
+              setIsEditOpen(false);
+            } catch (error) {
+              toast.error(
+                error instanceof Error ? error.message : "Unable to update the application.",
+              );
+            }
+          }}
+          isSubmitting={upsertApplicationMutation.isPending}
+        />
+      </AppDialog>
     </div>
   );
 }
@@ -916,7 +898,10 @@ function ApplicationOverview({ application }: { application: Application }) {
         <ReadOnlyField label="Target Country" value={application.targetCountry} />
         <ReadOnlyField label="Service Type" value={application.serviceType} />
         <ReadOnlyField label="University / Program" value={application.universityProgram || "—"} />
-        <ReadOnlyField label="Assigned Counselor" value={application.assignedStaffName || "Unassigned"} />
+        <ReadOnlyField
+          label="Assigned Counselor"
+          value={application.assignedStaffName || "Unassigned"}
+        />
         <ReadOnlyField label="Stage" value={application.currentStage} />
         <ReadOnlyField label="Status" value={application.status} />
         <ReadOnlyField label="Priority" value={application.priority} />
@@ -1119,12 +1104,7 @@ function SelectField({
       <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
         {label}
       </span>
-      <SelectMenu
-        value={value}
-        disabled={disabled}
-        onValueChange={onChange}
-        options={options}
-      />
+      <SelectMenu value={value} disabled={disabled} onValueChange={onChange} options={options} />
     </label>
   );
 }

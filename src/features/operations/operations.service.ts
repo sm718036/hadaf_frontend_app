@@ -59,7 +59,8 @@ export const operationsService = {
     }),
   upsertTask: (input: UpsertTaskInput) =>
     apiRequest<Task>("/api/tasks", { method: "POST", body: input }),
-  deleteTask: (id: string) => apiRequest<{ success: true }>(`/api/tasks/${id}`, { method: "DELETE" }),
+  deleteTask: (id: string) =>
+    apiRequest<{ success: true }>(`/api/tasks/${id}`, { method: "DELETE" }),
 
   listDocuments: (params: OperationsListFilters, signal?: AbortSignal) =>
     apiRequest<OperationsListResponse<DocumentRecord>>(
@@ -114,10 +115,9 @@ export const operationsService = {
     apiRequest<MessageRecord>("/api/client-auth/messages", { method: "POST", body: input }),
 
   listChatContacts: (search: string, signal?: AbortSignal) =>
-    apiRequest<ChatContact[]>(
-      `/api/chat/contacts?search=${encodeURIComponent(search.trim())}`,
-      { signal },
-    ),
+    apiRequest<ChatContact[]>(`/api/chat/contacts?search=${encodeURIComponent(search.trim())}`, {
+      signal,
+    }),
   listChatThreads: (search: string, signal?: AbortSignal) =>
     apiRequest<ChatThreadSummary[]>(
       `/api/chat/threads?search=${encodeURIComponent(search.trim())}`,
@@ -129,18 +129,25 @@ export const operationsService = {
     apiRequest<PortalConversation>("/api/chat/thread", { method: "POST", body: input }),
   sendPortalMessage: (input: CreatePortalMessageInput) =>
     apiRequest<PortalConversation>("/api/chat/messages", { method: "POST", body: input }),
-  listMeetings: (signal?: AbortSignal) => apiRequest<PortalMeeting[]>("/api/chat/meetings", { signal }),
+  listMeetings: (signal?: AbortSignal) =>
+    apiRequest<PortalMeeting[]>("/api/chat/meetings", { signal }),
   createMeeting: (input: CreateMeetingInput) =>
     apiRequest<PortalMeeting>("/api/chat/meetings", { method: "POST", body: input }),
   getMeetingDetail: (meetingId: string, signal?: AbortSignal) =>
     apiRequest<PortalMeeting>(`/api/chat/meetings/${meetingId}`, { signal }),
   updateMeetingStatus: (meetingId: string, input: UpdateMeetingStatusInput) =>
-    apiRequest<PortalMeeting>(`/api/chat/meetings/${meetingId}/status`, { method: "PUT", body: input }),
+    apiRequest<PortalMeeting>(`/api/chat/meetings/${meetingId}/status`, {
+      method: "PUT",
+      body: input,
+    }),
 
   getOwnPortalConversation: (signal?: AbortSignal) =>
     apiRequest<PortalConversation>("/api/client-auth/chat/thread", { signal }),
   sendClientPortalMessage: (input: CreateClientPortalMessageInput) =>
-    apiRequest<PortalConversation>("/api/client-auth/chat/messages", { method: "POST", body: input }),
+    apiRequest<PortalConversation>("/api/client-auth/chat/messages", {
+      method: "POST",
+      body: input,
+    }),
   listOwnPortalMeetings: (signal?: AbortSignal) =>
     apiRequest<PortalMeeting[]>("/api/client-auth/chat/meetings", { signal }),
   getOwnMeetingDetail: (meetingId: string, signal?: AbortSignal) =>

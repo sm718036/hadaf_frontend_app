@@ -1,40 +1,16 @@
-import { createContext, useContext, useMemo, useRef, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
+import { AppDialog } from "@/components/ui/app-dialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-
-type ConfirmOptions = {
-  title: string;
-  description?: string;
-  confirmLabel?: string;
-  cancelLabel?: string;
-  tone?: "default" | "destructive";
-};
-
-type PromptOptions = {
-  title: string;
-  description?: string;
-  label?: string;
-  defaultValue?: string;
-  placeholder?: string;
-  confirmLabel?: string;
-  cancelLabel?: string;
-  tone?: "default" | "destructive";
-};
-
-type AppDialogsContextValue = {
-  confirm: (options: ConfirmOptions) => Promise<boolean>;
-  prompt: (options: PromptOptions) => Promise<string | null>;
-};
-
-const AppDialogsContext = createContext<AppDialogsContextValue | null>(null);
+  AppDialogsContext,
+  type AppDialogsContextValue,
+  type ConfirmOptions,
+  type PromptOptions,
+} from "@/components/ui/app-dialogs-context";
 
 export function AppDialogsProvider({ children }: { children: ReactNode }) {
-  const [confirmState, setConfirmState] = useState<(ConfirmOptions & { open: boolean }) | null>(null);
+  const [confirmState, setConfirmState] = useState<(ConfirmOptions & { open: boolean }) | null>(
+    null,
+  );
   const [promptState, setPromptState] = useState<(PromptOptions & { open: boolean }) | null>(null);
   const [promptValue, setPromptValue] = useState("");
   const confirmResolverRef = useRef<((value: boolean) => void) | null>(null);
@@ -86,104 +62,82 @@ export function AppDialogsProvider({ children }: { children: ReactNode }) {
     <AppDialogsContext.Provider value={value}>
       {children}
 
-      <Dialog open={confirmState?.open ?? false} onOpenChange={(open) => !open && closeConfirm(false)}>
-        <DialogContent className="max-w-md rounded-[28px] border border-slate-200 bg-white p-0">
-          <DialogHeader className="border-b border-slate-200 px-6 py-5">
-            <DialogTitle className="font-display text-2xl font-extrabold text-slate-950">
-              {confirmState?.title}
-            </DialogTitle>
-            {confirmState?.description ? (
-              <DialogDescription className="text-sm text-slate-500">
-                {confirmState.description}
-              </DialogDescription>
-            ) : null}
-          </DialogHeader>
-          <div className="flex justify-end gap-3 px-6 py-5">
+      <AppDialog
+        open={confirmState?.open ?? false}
+        onOpenChange={(open) => !open && closeConfirm(false)}
+        title={confirmState?.title ?? ""}
+        description={confirmState?.description}
+        contentClassName="max-w-md rounded-[28px]"
+        bodyClassName="flex justify-end gap-3 py-5"
+      >
+        <button
+          type="button"
+          onClick={() => closeConfirm(false)}
+          className="rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+        >
+          {confirmState?.cancelLabel}
+        </button>
+        <button
+          type="button"
+          onClick={() => closeConfirm(true)}
+          className={
+            confirmState?.tone === "destructive"
+              ? "rounded-2xl bg-destructive px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+              : "btn-gold"
+          }
+        >
+          {confirmState?.confirmLabel}
+        </button>
+      </AppDialog>
+
+      <AppDialog
+        open={promptState?.open ?? false}
+        onOpenChange={(open) => !open && closePrompt(null)}
+        title={promptState?.title ?? ""}
+        description={promptState?.description}
+        contentClassName="max-w-md rounded-[28px]"
+        bodyClassName="py-5"
+      >
+        <form
+          className="space-y-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            closePrompt(promptValue);
+          }}
+        >
+          <label className="block space-y-2">
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              {promptState?.label || "Value"}
+            </span>
+            <input
+              autoFocus
+              value={promptValue}
+              onChange={(event) => setPromptValue(event.target.value)}
+              placeholder={promptState?.placeholder}
+              className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-slate-300"
+            />
+          </label>
+          <div className="flex justify-end gap-3">
             <button
               type="button"
-              onClick={() => closeConfirm(false)}
+              onClick={() => closePrompt(null)}
               className="rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
-              {confirmState?.cancelLabel}
+              {promptState?.cancelLabel}
             </button>
             <button
-              type="button"
-              onClick={() => closeConfirm(true)}
+              type="submit"
               className={
-                confirmState?.tone === "destructive"
+                promptState?.tone === "destructive"
                   ? "rounded-2xl bg-destructive px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
                   : "btn-gold"
               }
             >
-              {confirmState?.confirmLabel}
+              {promptState?.confirmLabel}
             </button>
           </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={promptState?.open ?? false} onOpenChange={(open) => !open && closePrompt(null)}>
-        <DialogContent className="max-w-md rounded-[28px] border border-slate-200 bg-white p-0">
-          <DialogHeader className="border-b border-slate-200 px-6 py-5">
-            <DialogTitle className="font-display text-2xl font-extrabold text-slate-950">
-              {promptState?.title}
-            </DialogTitle>
-            {promptState?.description ? (
-              <DialogDescription className="text-sm text-slate-500">
-                {promptState.description}
-              </DialogDescription>
-            ) : null}
-          </DialogHeader>
-          <form
-            className="space-y-4 px-6 py-5"
-            onSubmit={(event) => {
-              event.preventDefault();
-              closePrompt(promptValue);
-            }}
-          >
-            <label className="block space-y-2">
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                {promptState?.label || "Value"}
-              </span>
-              <input
-                autoFocus
-                value={promptValue}
-                onChange={(event) => setPromptValue(event.target.value)}
-                placeholder={promptState?.placeholder}
-                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-slate-300"
-              />
-            </label>
-            <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => closePrompt(null)}
-                className="rounded-2xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-              >
-                {promptState?.cancelLabel}
-              </button>
-              <button
-                type="submit"
-                className={
-                  promptState?.tone === "destructive"
-                    ? "rounded-2xl bg-destructive px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
-                    : "btn-gold"
-                }
-              >
-                {promptState?.confirmLabel}
-              </button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+        </form>
+      </AppDialog>
     </AppDialogsContext.Provider>
   );
-}
-
-export function useAppDialogs() {
-  const context = useContext(AppDialogsContext);
-
-  if (!context) {
-    throw new Error("useAppDialogs must be used within AppDialogsProvider.");
-  }
-
-  return context;
 }

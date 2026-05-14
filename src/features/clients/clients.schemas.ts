@@ -60,15 +60,24 @@ const upsertClientSchema = z.object({
   passportNumber: z.string().trim().max(40, "Passport number must be 40 characters or fewer."),
   dateOfBirth: z.string().trim(),
   address: z.string().trim().max(300, "Address must be 300 characters or fewer."),
-  countryOfResidence: z.string().trim().max(100, "Country of residence must be 100 characters or fewer."),
+  countryOfResidence: z
+    .string()
+    .trim()
+    .max(100, "Country of residence must be 100 characters or fewer."),
   targetCountry: z.string().trim().max(100, "Target country must be 100 characters or fewer."),
   targetService: z.string().trim().max(120, "Target service must be 120 characters or fewer."),
   educationLevel: z.string().trim().max(120, "Education level must be 120 characters or fewer."),
-  lastQualification: z.string().trim().max(160, "Last qualification must be 160 characters or fewer."),
+  lastQualification: z
+    .string()
+    .trim()
+    .max(160, "Last qualification must be 160 characters or fewer."),
   assignedStaffUserId: z.string().uuid().nullable().optional(),
   status: clientStatusSchema,
   currentApplicationStatus: applicationStatusSchema,
-  emergencyContact: z.string().trim().max(160, "Emergency contact must be 160 characters or fewer."),
+  emergencyContact: z
+    .string()
+    .trim()
+    .max(160, "Emergency contact must be 160 characters or fewer."),
   internalNotes: z.string().trim().max(4_000, "Internal notes must be 4000 characters or fewer."),
 });
 
@@ -91,8 +100,14 @@ const updateOwnClientProfileSchema = z.object({
   passportNumber: z.string().trim().max(40, "Passport number must be 40 characters or fewer."),
   dateOfBirth: z.string().trim(),
   address: z.string().trim().max(300, "Address must be 300 characters or fewer."),
-  countryOfResidence: z.string().trim().max(100, "Country of residence must be 100 characters or fewer."),
-  emergencyContact: z.string().trim().max(160, "Emergency contact must be 160 characters or fewer."),
+  countryOfResidence: z
+    .string()
+    .trim()
+    .max(100, "Country of residence must be 100 characters or fewer."),
+  emergencyContact: z
+    .string()
+    .trim()
+    .max(160, "Emergency contact must be 160 characters or fewer."),
 });
 
 export type Client = z.infer<typeof clientSchema>;

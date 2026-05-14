@@ -39,8 +39,7 @@ export const queryKeys = {
       targetCountry: string;
       targetService: string;
       staffId: string;
-    }) =>
-      ["clients", "list", params] as const,
+    }) => ["clients", "list", params] as const,
     detail: (id: string) => ["clients", "detail", id] as const,
   },
   leads: {
@@ -119,7 +118,8 @@ export const queryKeys = {
     ownMessages: ["operations", "messages", "own"] as const,
     chatContacts: (search: string) => ["operations", "chat", "contacts", search] as const,
     chatThreads: (search: string) => ["operations", "chat", "threads", search] as const,
-    chatConversation: (threadId: string) => ["operations", "chat", "conversation", threadId] as const,
+    chatConversation: (threadId: string) =>
+      ["operations", "chat", "conversation", threadId] as const,
     ownChatConversation: ["operations", "chat", "conversation", "own"] as const,
     meetings: ["operations", "chat", "meetings"] as const,
     meetingDetail: (meetingId: string) => ["operations", "chat", "meeting", meetingId] as const,

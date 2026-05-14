@@ -2,7 +2,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { queryKeys } from "@/lib/query-keys";
 import { operationsService } from "./operations.service";
-import type { CreateMeetingInput, CreatePortalMessageInput, OpenThreadInput, OperationsListFilters, UpdateMeetingStatusInput } from "./operations.schemas";
+import type {
+  CreateMeetingInput,
+  CreatePortalMessageInput,
+  OpenThreadInput,
+  OperationsListFilters,
+  UpdateMeetingStatusInput,
+} from "./operations.schemas";
 
 const DEFAULT_FILTERS: OperationsListFilters = {
   page: 1,
@@ -249,10 +255,10 @@ export const useUpsertAppointment = createInvalidateMutation(operationsService.u
   queryKeys.operations.all,
   queryKeys.operations.ownAppointments,
 ]);
-export const useDeleteAppointment = createInvalidateMutation(
-  operationsService.deleteAppointment,
-  [queryKeys.operations.all, queryKeys.operations.ownAppointments],
-);
+export const useDeleteAppointment = createInvalidateMutation(operationsService.deleteAppointment, [
+  queryKeys.operations.all,
+  queryKeys.operations.ownAppointments,
+]);
 export const useUpsertPayment = createInvalidateMutation(operationsService.upsertPayment, [
   queryKeys.operations.all,
   queryKeys.operations.ownPayments,

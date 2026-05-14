@@ -1,24 +1,29 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { Info } from "lucide-react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
+import { AppDialog } from "@/components/ui/app-dialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { useAppDialogs } from "@/components/ui/app-dialogs";
+  AppTable,
+  AppTableBody,
+  AppTableCell,
+  AppTableHead,
+  AppTableHeading,
+  AppTableRow,
+} from "@/components/ui/app-table";
+import { Badge } from "@/components/ui/badge";
+import { useAppDialogs } from "@/components/ui/use-app-dialogs";
 import { SelectMenu } from "@/components/ui/select-menu";
 import { APP_ROUTES } from "@/config/routes";
 import { ClientApplicationsTab } from "@/features/applications/applications-ui";
 import {
+  useChangeClientPassword,
   useClientSessions,
   useCurrentClient,
   useRevokeClientSession,
   useUpdateClientProfile,
 } from "@/features/client-auth/use-client-auth";
+import { clientAuthService } from "@/features/client-auth/client-auth.service";
 import type { Client, UpsertClientInput } from "@/features/clients/clients.schemas";
 import {
   useClient,
@@ -26,7 +31,7 @@ import {
   useDeleteClient,
   useUpsertClient,
 } from "@/features/clients/use-clients";
-import { useDashboardAccess } from "@/features/dashboard/dashboard-context";
+import { useDashboardAccess } from "@/features/dashboard/use-dashboard-access";
 import { DataTable, StatusBadge } from "@/features/dashboard/dashboard-layout";
 import {
   EmptyHint,
@@ -339,40 +344,34 @@ export function ClientListPage({ area }: { area: "admin" | "staff" }) {
           </>
         )}
 
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogContent className="max-w-5xl overflow-y-auto border-slate-200 p-0 sm:max-h-[90vh]">
-            <DialogHeader className="border-b border-slate-200 px-6 py-5">
-              <DialogTitle className="font-display text-2xl font-extrabold text-slate-950">
-                Create Client
-              </DialogTitle>
-              <DialogDescription>
-                Create a new client profile without leaving the list.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="px-6 py-6">
-              <ClientProfileForm
-                form={form}
-                onChange={setForm}
-                staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
-                canAssign
-                showInternalFields
-                onSubmit={async () => {
-                  try {
-                    const client = await upsertClientMutation.mutateAsync(form);
-                    toast.success("Client created.");
-                    setIsCreateOpen(false);
-                    navigate(detailRoute, { params: { clientId: client.id } });
-                  } catch (error) {
-                    toast.error(
-                      error instanceof Error ? error.message : "Unable to create the client.",
-                    );
-                  }
-                }}
-                isSubmitting={upsertClientMutation.isPending}
-              />
-            </div>
-          </DialogContent>
-        </Dialog>
+        <AppDialog
+          open={isCreateOpen}
+          onOpenChange={setIsCreateOpen}
+          title="Create Client"
+          description="Create a new client profile without leaving the list."
+          contentClassName="max-w-5xl overflow-y-auto sm:max-h-[90vh]"
+        >
+          <ClientProfileForm
+            form={form}
+            onChange={setForm}
+            staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
+            canAssign
+            showInternalFields
+            onSubmit={async () => {
+              try {
+                const client = await upsertClientMutation.mutateAsync(form);
+                toast.success("Client created.");
+                setIsCreateOpen(false);
+                navigate(detailRoute, { params: { clientId: client.id } });
+              } catch (error) {
+                toast.error(
+                  error instanceof Error ? error.message : "Unable to create the client.",
+                );
+              }
+            }}
+            isSubmitting={upsertClientMutation.isPending}
+          />
+        </AppDialog>
       </Panel>
     </div>
   );
@@ -452,9 +451,9 @@ export function ClientDetailPage({
             </button>
             {area === "admin" && client ? (
               <button
-              type="button"
-              className="rounded-xl border border-destructive/20 px-4 py-2 text-sm font-semibold text-destructive"
-              onClick={async () => {
+                type="button"
+                className="rounded-xl border border-destructive/20 px-4 py-2 text-sm font-semibold text-destructive"
+                onClick={async () => {
                   const confirmed = await dialogs.confirm({
                     title: "Delete client?",
                     description: `Delete client ${client.fullName}. This action cannot be undone.`,
@@ -498,18 +497,20 @@ export function ClientDetailPage({
           ))}
         </div>
 
-        {client ? activeTab === "Overview" ? (
-          <ClientProfileOverview client={client} />
-        ) : activeTab === "Applications" ? (
-          <ClientApplicationsTab area={area} clientId={client.id} />
-        ) : activeTab === "Notes" ? (
-          <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-5 py-5 text-sm leading-7 text-slate-600">
-            {client.internalNotes || "No internal notes added yet."}
-          </div>
-        ) : (
-          <EmptyHint
-            message={`${activeTab} is structured for this client profile and can be connected to its dedicated module data when those resources are implemented.`}
-          />
+        {client ? (
+          activeTab === "Overview" ? (
+            <ClientProfileOverview client={client} />
+          ) : activeTab === "Applications" ? (
+            <ClientApplicationsTab area={area} clientId={client.id} />
+          ) : activeTab === "Notes" ? (
+            <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-5 py-5 text-sm leading-7 text-slate-600">
+              {client.internalNotes || "No internal notes added yet."}
+            </div>
+          ) : (
+            <EmptyHint
+              message={`${activeTab} is structured for this client profile and can be connected to its dedicated module data when those resources are implemented.`}
+            />
+          )
         ) : (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {Array.from({ length: 6 }).map((_, index) => (
@@ -523,40 +524,32 @@ export function ClientDetailPage({
         {isOverlayVisible ? <LoadingOverlay label="Loading client profile..." /> : null}
       </Panel>
 
-      <Dialog open={isEditOpen && Boolean(form)} onOpenChange={setIsEditOpen}>
-        <DialogContent className="max-w-5xl overflow-y-auto border-slate-200 p-0 sm:max-h-[90vh]">
-          <DialogHeader className="border-b border-slate-200 px-6 py-5">
-            <DialogTitle className="font-display text-2xl font-extrabold text-slate-950">
-              Edit Client Profile
-            </DialogTitle>
-            <DialogDescription>
-              Update the client profile, assignment, and application status.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="px-6 py-6">
-            <ClientProfileForm
-              form={form ?? createEmptyClientForm()}
-              onChange={setForm}
-              staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
-              canAssign={area === "admin"}
-              showInternalFields
-              onSubmit={async () => {
-                if (!form) return;
-                try {
-                  await upsertClientMutation.mutateAsync(form);
-                  toast.success("Client profile updated.");
-                  setIsEditOpen(false);
-                } catch (error) {
-                  toast.error(
-                    error instanceof Error ? error.message : "Unable to update the client.",
-                  );
-                }
-              }}
-              isSubmitting={upsertClientMutation.isPending}
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
+      <AppDialog
+        open={isEditOpen && Boolean(form)}
+        onOpenChange={setIsEditOpen}
+        title="Edit Client Profile"
+        description="Update the client profile, assignment, and application status."
+        contentClassName="max-w-5xl overflow-y-auto sm:max-h-[90vh]"
+      >
+        <ClientProfileForm
+          form={form ?? createEmptyClientForm()}
+          onChange={setForm}
+          staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
+          canAssign={area === "admin"}
+          showInternalFields
+          onSubmit={async () => {
+            if (!form) return;
+            try {
+              await upsertClientMutation.mutateAsync(form);
+              toast.success("Client profile updated.");
+              setIsEditOpen(false);
+            } catch (error) {
+              toast.error(error instanceof Error ? error.message : "Unable to update the client.");
+            }
+          }}
+          isSubmitting={upsertClientMutation.isPending}
+        />
+      </AppDialog>
     </div>
   );
 }
@@ -566,6 +559,7 @@ export function ClientSelfProfilePage() {
   const sessionsQuery = useClientSessions();
   const revokeSessionMutation = useRevokeClientSession();
   const updateProfileMutation = useUpdateClientProfile();
+  const changePasswordMutation = useChangeClientPassword();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [form, setForm] = useState({
     fullName: "",
@@ -578,6 +572,14 @@ export function ClientSelfProfilePage() {
     countryOfResidence: "",
     emergencyContact: "",
   });
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [isResetEmailPending, setIsResetEmailPending] = useState(false);
 
   useEffect(() => {
     if (client) {
@@ -598,6 +600,9 @@ export function ClientSelfProfilePage() {
   if (!client) {
     return null;
   }
+
+  const selectedSession =
+    sessionsQuery.data?.find((session) => session.id === selectedSessionId) ?? null;
 
   return (
     <div className="space-y-6">
@@ -637,157 +642,299 @@ export function ClientSelfProfilePage() {
       </Panel>
 
       <Panel
+        title="Password"
+        subtitle="Change your password using your current password. All active sessions will be signed out after the change."
+      >
+        <button type="button" className="btn-gold" onClick={() => setIsPasswordDialogOpen(true)}>
+          Change Password
+        </button>
+      </Panel>
+
+      <Panel
         title="Active Sessions"
         subtitle="Review where your client account is signed in and revoke sessions you do not recognize."
       >
-        <div className="space-y-4">
-          {sessionsQuery.data?.map((session) => (
-            <div
-              key={session.id}
-              className="flex flex-col gap-3 rounded-[24px] border border-slate-200 bg-slate-50 px-5 py-5 lg:flex-row lg:items-start lg:justify-between"
-            >
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center gap-2">
+        <AppTable minWidthClass="min-w-[760px]">
+          <AppTableHead>
+            <AppTableRow>
+              {["Session", "Type", "Browser", "IP", "Actions"].map((heading) => (
+                <AppTableHeading key={heading} align="left">
+                  {heading}
+                </AppTableHeading>
+              ))}
+            </AppTableRow>
+          </AppTableHead>
+          <AppTableBody>
+            {sessionsQuery.data?.map((session) => (
+              <AppTableRow key={session.id}>
+                <AppTableCell align="left">
                   <Badge variant={session.isCurrent ? "dark" : "secondary"}>
-                    {session.isCurrent ? "Current Session" : "Signed In Elsewhere"}
+                    {session.isCurrent ? "Current" : "Other"}
                   </Badge>
+                </AppTableCell>
+                <AppTableCell align="left">
                   <Badge variant={session.rememberMe ? "primary" : "outline"}>
-                    {session.rememberMe ? "Keep Me Signed In" : "Browser Session"}
+                    {session.rememberMe ? "Persistent" : "Browser"}
                   </Badge>
-                </div>
-                <p className="text-sm font-semibold text-slate-900">
-                  {session.userAgent?.trim() || "Unknown device"}
-                </p>
-                <p className="text-sm text-slate-600">
-                  IP: {session.ipAddress || "Unavailable"} | Last active {formatDateTime(session.lastSeenAt)}
-                </p>
-                <p className="text-sm text-slate-500">
-                  Signed in {formatDateTime(session.createdAt)} | Expires {formatDateTime(session.expiresAt)}
-                </p>
-              </div>
-              <button
-                type="button"
-                disabled={revokeSessionMutation.isPending}
-                onClick={async () => {
-                  try {
-                    await revokeSessionMutation.mutateAsync(session.id);
-                    toast.success(
-                      session.isCurrent ? "This session has been signed out." : "Session revoked.",
-                    );
-                  } catch (error) {
-                    toast.error(error instanceof Error ? error.message : "Unable to revoke the session.");
-                  }
-                }}
-                className="btn-gold"
-              >
-                {session.isCurrent ? "Sign Out This Session" : "Sign Out Other Session"}
-              </button>
-            </div>
-          ))}
-          {sessionsQuery.isLoading ? (
-            <p className="text-sm text-slate-500">Loading active sessions...</p>
-          ) : null}
-          {sessionsQuery.isError ? (
-            <p className="text-sm text-rose-600">Unable to load active sessions.</p>
-          ) : null}
-        </div>
+                </AppTableCell>
+                <AppTableCell align="left" className="font-medium text-slate-900">
+                  {summarizeClientUserAgent(session.userAgent)}
+                </AppTableCell>
+                <AppTableCell align="left" className="text-slate-600">
+                  {session.ipAddress || "Unavailable"}
+                </AppTableCell>
+                <AppTableCell align="left">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedSessionId(session.id)}
+                      className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                    >
+                      <Info className="h-4 w-4" />
+                      Details
+                    </button>
+                    <button
+                      type="button"
+                      disabled={revokeSessionMutation.isPending}
+                      onClick={async () => {
+                        try {
+                          await revokeSessionMutation.mutateAsync(session.id);
+                          toast.success(
+                            session.isCurrent
+                              ? "This session has been signed out."
+                              : "Session revoked.",
+                          );
+                        } catch (error) {
+                          toast.error(
+                            error instanceof Error
+                              ? error.message
+                              : "Unable to revoke the session.",
+                          );
+                        }
+                      }}
+                      className="btn-gold"
+                    >
+                      {session.isCurrent ? "Logout" : "Revoke"}
+                    </button>
+                  </div>
+                </AppTableCell>
+              </AppTableRow>
+            ))}
+          </AppTableBody>
+        </AppTable>
+        {sessionsQuery.isLoading ? (
+          <p className="mt-5 px-5 text-sm text-slate-500">Loading active sessions...</p>
+        ) : null}
+        {sessionsQuery.isError ? (
+          <p className="mt-5 px-5 text-sm text-rose-600">Unable to load active sessions.</p>
+        ) : null}
       </Panel>
-
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="max-w-4xl overflow-y-auto border-slate-200 p-0 sm:max-h-[90vh]">
-          <DialogHeader className="border-b border-slate-200 px-6 py-5">
-            <DialogTitle className="font-display text-2xl font-extrabold text-slate-950">
-              Edit My Profile
-            </DialogTitle>
-            <DialogDescription>
-              Update your personal contact and identity details here.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="px-6 py-6">
-            <form
-              className="space-y-5"
-              onSubmit={async (event) => {
-                event.preventDefault();
-
+      <AppDialog
+        open={Boolean(selectedSession)}
+        onOpenChange={(open) => !open && setSelectedSessionId(null)}
+        title="Session Details"
+        description="Review more information about this signed-in session."
+        contentClassName="max-h-[90vh] w-[calc(100%-2rem)] max-w-xl overflow-hidden"
+        bodyClassName="max-h-[calc(90vh-104px)] overflow-y-auto"
+      >
+        {selectedSession ? (
+          <div className="space-y-4">
+            <SessionDetailRow
+              label="Browser / Device"
+              value={selectedSession.userAgent?.trim() || "Unknown device"}
+            />
+            <SessionDetailRow
+              label="IP Address"
+              value={selectedSession.ipAddress || "Unavailable"}
+            />
+            <SessionDetailRow
+              label="Last Active"
+              value={formatDateTime(selectedSession.lastSeenAt)}
+            />
+            <SessionDetailRow label="Signed In" value={formatDateTime(selectedSession.createdAt)} />
+            <SessionDetailRow label="Expires" value={formatDateTime(selectedSession.expiresAt)} />
+            <SessionDetailRow
+              label="Session Type"
+              value={selectedSession.rememberMe ? "Keep Me Signed In" : "Browser Session"}
+            />
+          </div>
+        ) : null}
+      </AppDialog>
+      <AppDialog
+        open={isPasswordDialogOpen}
+        onOpenChange={setIsPasswordDialogOpen}
+        title="Change Password"
+        description="Confirm your current password and choose a new one. All active sessions will be signed out after the change."
+        contentClassName="max-h-[90vh] w-[calc(100%-2rem)] max-w-2xl overflow-hidden"
+        bodyClassName="max-h-[calc(90vh-104px)] overflow-y-auto !px-0 !py-0"
+      >
+        <div className="border-b border-slate-200 bg-slate-50 px-6 py-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm leading-6 text-slate-600">
+              Don&apos;t remember your current password? Send a reset link to{" "}
+              <span className="font-semibold text-slate-900">{client.email}</span>.
+            </p>
+            <button
+              type="button"
+              disabled={isResetEmailPending}
+              onClick={async () => {
                 try {
-                  await updateProfileMutation.mutateAsync(form);
-                  toast.success("Profile updated.");
-                  setIsEditOpen(false);
+                  setIsResetEmailPending(true);
+                  const result = await clientAuthService.requestPasswordReset({
+                    email: client.email,
+                  });
+                  toast.success(result.message);
                 } catch (error) {
                   toast.error(
-                    error instanceof Error ? error.message : "Unable to update your profile.",
+                    error instanceof Error ? error.message : "Unable to send password reset email.",
                   );
+                } finally {
+                  setIsResetEmailPending(false);
                 }
               }}
+              className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                <TextField
-                  label="Full Name"
-                  value={form.fullName}
-                  onChange={(fullName) => setForm((current) => ({ ...current, fullName }))}
-                />
-                <TextField
-                  label="Email"
-                  value={form.email}
-                  onChange={(email) => setForm((current) => ({ ...current, email }))}
-                />
-                <TextField
-                  label="Phone"
-                  value={form.phone}
-                  onChange={(phone) => setForm((current) => ({ ...current, phone }))}
-                />
-                <TextField
-                  label="CNIC / National ID"
-                  value={form.cnic}
-                  onChange={(cnic) => setForm((current) => ({ ...current, cnic }))}
-                />
-                <TextField
-                  label="Passport Number"
-                  value={form.passportNumber}
-                  onChange={(passportNumber) =>
-                    setForm((current) => ({ ...current, passportNumber }))
-                  }
-                />
-                <TextField
-                  label="Date of Birth"
-                  type="date"
-                  value={form.dateOfBirth}
-                  onChange={(dateOfBirth) => setForm((current) => ({ ...current, dateOfBirth }))}
-                />
-                <TextField
-                  label="Country of Residence"
-                  value={form.countryOfResidence}
-                  onChange={(countryOfResidence) =>
-                    setForm((current) => ({ ...current, countryOfResidence }))
-                  }
-                />
-                <TextField
-                  label="Emergency Contact"
-                  value={form.emergencyContact}
-                  onChange={(emergencyContact) =>
-                    setForm((current) => ({ ...current, emergencyContact }))
-                  }
-                />
-              </div>
-              <TextAreaField
-                label="Address"
-                value={form.address}
-                onChange={(address) => setForm((current) => ({ ...current, address }))}
-              />
-
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  className="btn-gold min-w-[180px] justify-center"
-                  disabled={updateProfileMutation.isPending}
-                >
-                  {updateProfileMutation.isPending ? "Saving..." : "Update Profile"}
-                </button>
-              </div>
-            </form>
+              {isResetEmailPending ? "Sending..." : "Send Reset Email"}
+            </button>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+        <form
+          className="grid gap-4 px-6 py-6 md:grid-cols-3"
+          onSubmit={async (event) => {
+            event.preventDefault();
+
+            try {
+              const result = await changePasswordMutation.mutateAsync(passwordForm);
+              toast.success(result.message);
+              setPasswordForm({
+                currentPassword: "",
+                newPassword: "",
+                confirmPassword: "",
+              });
+              setIsPasswordDialogOpen(false);
+              window.location.assign(buildPath(APP_ROUTES.auth, { search: { mode: "client" } }));
+            } catch (error) {
+              toast.error(error instanceof Error ? error.message : "Unable to change password.");
+            }
+          }}
+        >
+          <TextField
+            label="Current Password"
+            type="password"
+            value={passwordForm.currentPassword}
+            onChange={(currentPassword) =>
+              setPasswordForm((current) => ({ ...current, currentPassword }))
+            }
+          />
+          <TextField
+            label="New Password"
+            type="password"
+            value={passwordForm.newPassword}
+            onChange={(newPassword) => setPasswordForm((current) => ({ ...current, newPassword }))}
+          />
+          <TextField
+            label="Confirm Password"
+            type="password"
+            value={passwordForm.confirmPassword}
+            onChange={(confirmPassword) =>
+              setPasswordForm((current) => ({ ...current, confirmPassword }))
+            }
+          />
+          <div className="md:col-span-3">
+            <button type="submit" disabled={changePasswordMutation.isPending} className="btn-gold">
+              {changePasswordMutation.isPending ? "Updating..." : "Change Password"}
+            </button>
+          </div>
+        </form>
+      </AppDialog>
+
+      <AppDialog
+        open={isEditOpen}
+        onOpenChange={setIsEditOpen}
+        title="Edit My Profile"
+        description="Update your personal contact and identity details here."
+        contentClassName="max-w-4xl overflow-y-auto sm:max-h-[90vh]"
+      >
+        <form
+          className="space-y-5"
+          onSubmit={async (event) => {
+            event.preventDefault();
+
+            try {
+              await updateProfileMutation.mutateAsync(form);
+              toast.success("Profile updated.");
+              setIsEditOpen(false);
+            } catch (error) {
+              toast.error(
+                error instanceof Error ? error.message : "Unable to update your profile.",
+              );
+            }
+          }}
+        >
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <TextField
+              label="Full Name"
+              value={form.fullName}
+              onChange={(fullName) => setForm((current) => ({ ...current, fullName }))}
+            />
+            <TextField
+              label="Email"
+              value={form.email}
+              onChange={(email) => setForm((current) => ({ ...current, email }))}
+            />
+            <TextField
+              label="Phone"
+              value={form.phone}
+              onChange={(phone) => setForm((current) => ({ ...current, phone }))}
+            />
+            <TextField
+              label="CNIC / National ID"
+              value={form.cnic}
+              onChange={(cnic) => setForm((current) => ({ ...current, cnic }))}
+            />
+            <TextField
+              label="Passport Number"
+              value={form.passportNumber}
+              onChange={(passportNumber) => setForm((current) => ({ ...current, passportNumber }))}
+            />
+            <TextField
+              label="Date of Birth"
+              type="date"
+              value={form.dateOfBirth}
+              onChange={(dateOfBirth) => setForm((current) => ({ ...current, dateOfBirth }))}
+            />
+            <TextField
+              label="Country of Residence"
+              value={form.countryOfResidence}
+              onChange={(countryOfResidence) =>
+                setForm((current) => ({ ...current, countryOfResidence }))
+              }
+            />
+            <TextField
+              label="Emergency Contact"
+              value={form.emergencyContact}
+              onChange={(emergencyContact) =>
+                setForm((current) => ({ ...current, emergencyContact }))
+              }
+            />
+          </div>
+          <TextAreaField
+            label="Address"
+            value={form.address}
+            onChange={(address) => setForm((current) => ({ ...current, address }))}
+          />
+
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              className="btn-gold min-w-[180px] justify-center"
+              disabled={updateProfileMutation.isPending}
+            >
+              {updateProfileMutation.isPending ? "Saving..." : "Update Profile"}
+            </button>
+          </div>
+        </form>
+      </AppDialog>
     </div>
   );
 }
@@ -808,7 +955,10 @@ function ClientProfileOverview({ client }: { client: Client }) {
         <ReadOnlyField label="Education Level" value={client.educationLevel || "—"} />
         <ReadOnlyField label="Last Qualification" value={client.lastQualification || "—"} />
         <ReadOnlyField label="Emergency Contact" value={client.emergencyContact || "—"} />
-        <ReadOnlyField label="Assigned Counselor" value={client.assignedStaffName || "Unassigned"} />
+        <ReadOnlyField
+          label="Assigned Counselor"
+          value={client.assignedStaffName || "Unassigned"}
+        />
         <ReadOnlyField label="Client Status" value={client.status} />
         <ReadOnlyField
           label="Application Status"
@@ -832,6 +982,40 @@ function formatDateTime(value: string | null) {
 
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+}
+
+function summarizeClientUserAgent(userAgent: string | null) {
+  const value = userAgent?.trim();
+
+  if (!value) {
+    return "Unknown device";
+  }
+
+  const browser = /Edg\//.test(value)
+    ? "Edge"
+    : /Chrome\//.test(value)
+      ? "Chrome"
+      : /Firefox\//.test(value)
+        ? "Firefox"
+        : /Safari\//.test(value) && !/Chrome\//.test(value)
+          ? "Safari"
+          : /MSIE|Trident/.test(value)
+            ? "Internet Explorer"
+            : "Browser";
+
+  const platform = /Android/.test(value)
+    ? "Android"
+    : /iPhone|iPad|iPod/.test(value)
+      ? "iOS"
+      : /Windows/.test(value)
+        ? "Windows"
+        : /Mac OS X|Macintosh/.test(value)
+          ? "macOS"
+          : /Linux/.test(value)
+            ? "Linux"
+            : "Unknown";
+
+  return `${browser} on ${platform}`;
 }
 
 function ClientProfileForm({
@@ -1050,12 +1234,7 @@ function SelectField({
       <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
         {label}
       </span>
-      <SelectMenu
-        value={value}
-        disabled={disabled}
-        onValueChange={onChange}
-        options={options}
-      />
+      <SelectMenu value={value} disabled={disabled} onValueChange={onChange} options={options} />
     </label>
   );
 }
@@ -1067,6 +1246,21 @@ function ReadOnlyField({ label, value }: { label: string; value: string }) {
         {label}
       </div>
       <div className="mt-2 text-sm font-semibold text-slate-800">{value}</div>
+    </div>
+  );
+}
+
+function SessionDetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="border-b border-slate-200 pb-4 last:border-b-0 last:pb-0">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+          {label}
+        </div>
+        <div className="break-words text-sm font-semibold text-slate-900 sm:max-w-[65%] sm:text-right">
+          {value}
+        </div>
+      </div>
     </div>
   );
 }

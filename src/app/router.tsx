@@ -11,34 +11,46 @@ import {
   getAllowedInternalNavItems,
   getDefaultInternalDashboardRoute,
 } from "@/features/dashboard/access-control";
-import { DashboardProvider, getDashboardAccess } from "@/features/dashboard/dashboard-context";
+import { DashboardProvider } from "@/features/dashboard/dashboard-context";
+import { getDashboardAccess } from "@/features/dashboard/dashboard-access";
 import { ClientOverviewPage, ModuleOverview } from "@/features/dashboard/module-pages";
-import {
-  DashboardLayout,
-  toClientLayoutActor,
-  toInternalLayoutActor,
-} from "@/features/dashboard/dashboard-layout";
+import { DashboardLayout } from "@/features/dashboard/dashboard-layout";
+import { toClientLayoutActor, toInternalLayoutActor } from "@/features/dashboard/layout-actors";
 import { RoleProtectedRoute } from "@/features/dashboard/role-protected-route";
 
-const HomePage = lazy(() => import("@/pages/home-page").then((module) => ({ default: module.HomePage })));
-const AuthPage = lazy(() => import("@/pages/auth-page").then((module) => ({ default: module.AuthPage })));
+const HomePage = lazy(() =>
+  import("@/pages/home-page").then((module) => ({ default: module.HomePage })),
+);
+const AuthPage = lazy(() =>
+  import("@/pages/auth-page").then((module) => ({ default: module.AuthPage })),
+);
 const DashboardContentPage = lazy(() =>
-  import("@/pages/dashboard/content-page").then((module) => ({ default: module.DashboardContentPage })),
+  import("@/pages/dashboard/content-page").then((module) => ({
+    default: module.DashboardContentPage,
+  })),
 );
 const DashboardContentRedirect = lazy(() =>
-  import("@/pages/dashboard/content-page").then((module) => ({ default: module.DashboardContentRedirect })),
+  import("@/pages/dashboard/content-page").then((module) => ({
+    default: module.DashboardContentRedirect,
+  })),
 );
 const DashboardProfilePage = lazy(() =>
-  import("@/pages/dashboard/profile-page").then((module) => ({ default: module.DashboardProfilePage })),
+  import("@/pages/dashboard/profile-page").then((module) => ({
+    default: module.DashboardProfilePage,
+  })),
 );
 const DashboardProfileRedirect = lazy(() =>
-  import("@/pages/dashboard/profile-page").then((module) => ({ default: module.DashboardProfileRedirect })),
+  import("@/pages/dashboard/profile-page").then((module) => ({
+    default: module.DashboardProfileRedirect,
+  })),
 );
 const DashboardUsersPage = lazy(() =>
   import("@/pages/dashboard/users-page").then((module) => ({ default: module.DashboardUsersPage })),
 );
 const DashboardUsersRedirect = lazy(() =>
-  import("@/pages/dashboard/users-page").then((module) => ({ default: module.DashboardUsersRedirect })),
+  import("@/pages/dashboard/users-page").then((module) => ({
+    default: module.DashboardUsersRedirect,
+  })),
 );
 const LeadListPage = lazy(() =>
   import("@/features/leads/leads-ui").then((module) => ({ default: module.LeadListPage })),
@@ -53,46 +65,74 @@ const ClientDetailPage = lazy(() =>
   import("@/features/clients/client-ui").then((module) => ({ default: module.ClientDetailPage })),
 );
 const ClientSelfProfilePage = lazy(() =>
-  import("@/features/clients/client-ui").then((module) => ({ default: module.ClientSelfProfilePage })),
+  import("@/features/clients/client-ui").then((module) => ({
+    default: module.ClientSelfProfilePage,
+  })),
 );
 const ApplicationListPage = lazy(() =>
-  import("@/features/applications/applications-ui").then((module) => ({ default: module.ApplicationListPage })),
+  import("@/features/applications/applications-ui").then((module) => ({
+    default: module.ApplicationListPage,
+  })),
 );
 const ApplicationDetailPage = lazy(() =>
-  import("@/features/applications/applications-ui").then((module) => ({ default: module.ApplicationDetailPage })),
+  import("@/features/applications/applications-ui").then((module) => ({
+    default: module.ApplicationDetailPage,
+  })),
 );
 const ClientApplicationPage = lazy(() =>
-  import("@/features/applications/applications-ui").then((module) => ({ default: module.ClientApplicationPage })),
+  import("@/features/applications/applications-ui").then((module) => ({
+    default: module.ClientApplicationPage,
+  })),
 );
 const TaskListPage = lazy(() =>
-  import("@/features/operations/operations-ui").then((module) => ({ default: module.TaskListPage })),
+  import("@/features/operations/operations-ui").then((module) => ({
+    default: module.TaskListPage,
+  })),
 );
 const AdminOrStaffDocumentsPage = lazy(() =>
-  import("@/features/operations/operations-ui").then((module) => ({ default: module.AdminOrStaffDocumentsPage })),
+  import("@/features/operations/operations-ui").then((module) => ({
+    default: module.AdminOrStaffDocumentsPage,
+  })),
 );
 const AdminOrStaffAppointmentsPage = lazy(() =>
-  import("@/features/operations/operations-ui").then((module) => ({ default: module.AdminOrStaffAppointmentsPage })),
+  import("@/features/operations/operations-ui").then((module) => ({
+    default: module.AdminOrStaffAppointmentsPage,
+  })),
 );
 const AdminOrStaffMessagesPage = lazy(() =>
-  import("@/features/operations/operations-ui").then((module) => ({ default: module.AdminOrStaffMessagesPage })),
+  import("@/features/operations/operations-ui").then((module) => ({
+    default: module.AdminOrStaffMessagesPage,
+  })),
 );
 const AdminOrStaffPaymentsPage = lazy(() =>
-  import("@/features/operations/operations-ui").then((module) => ({ default: module.AdminOrStaffPaymentsPage })),
+  import("@/features/operations/operations-ui").then((module) => ({
+    default: module.AdminOrStaffPaymentsPage,
+  })),
 );
 const ClientPortalDocumentsPage = lazy(() =>
-  import("@/features/operations/operations-ui").then((module) => ({ default: module.ClientPortalDocumentsPage })),
+  import("@/features/operations/operations-ui").then((module) => ({
+    default: module.ClientPortalDocumentsPage,
+  })),
 );
 const ClientPortalAppointmentsPage = lazy(() =>
-  import("@/features/operations/operations-ui").then((module) => ({ default: module.ClientPortalAppointmentsPage })),
+  import("@/features/operations/operations-ui").then((module) => ({
+    default: module.ClientPortalAppointmentsPage,
+  })),
 );
 const ClientPortalMessagesPage = lazy(() =>
-  import("@/features/operations/operations-ui").then((module) => ({ default: module.ClientPortalMessagesPage })),
+  import("@/features/operations/operations-ui").then((module) => ({
+    default: module.ClientPortalMessagesPage,
+  })),
 );
 const ClientPortalPaymentsPage = lazy(() =>
-  import("@/features/operations/operations-ui").then((module) => ({ default: module.ClientPortalPaymentsPage })),
+  import("@/features/operations/operations-ui").then((module) => ({
+    default: module.ClientPortalPaymentsPage,
+  })),
 );
 const MeetingRoomPage = lazy(() =>
-  import("@/features/operations/operations-ui").then((module) => ({ default: module.MeetingRoomPage })),
+  import("@/features/operations/operations-ui").then((module) => ({
+    default: module.MeetingRoomPage,
+  })),
 );
 
 function RouteChunkFallback() {
@@ -288,7 +328,7 @@ function AdminDashboardLayout() {
         ? "Application Details"
         : location.pathname.startsWith("/dashboard/admin/messages/calls/")
           ? "Video Call"
-        : ADMIN_PAGE_TITLES[location.pathname] || "Admin Dashboard";
+          : ADMIN_PAGE_TITLES[location.pathname] || "Admin Dashboard";
 
   return (
     <DashboardProvider value={getDashboardAccess(currentUser)}>
@@ -320,7 +360,7 @@ function StaffDashboardLayout() {
         ? "Application Details"
         : location.pathname.startsWith("/dashboard/staff/messages/calls/")
           ? "Video Call"
-        : STAFF_PAGE_TITLES[location.pathname] || "Staff Dashboard";
+          : STAFF_PAGE_TITLES[location.pathname] || "Staff Dashboard";
 
   return (
     <DashboardProvider value={getDashboardAccess(currentUser)}>
@@ -421,7 +461,10 @@ export function AppRouter() {
           <Route path={APP_ROUTES.dashboardProfile} element={<DashboardProfileRedirect />} />
           <Route path={APP_ROUTES.dashboardUsers} element={<DashboardUsersRedirect />} />
 
-          <Route path={APP_ROUTES.dashboardAdmin} element={<ProtectedInternalLayout area="admin" />}>
+          <Route
+            path={APP_ROUTES.dashboardAdmin}
+            element={<ProtectedInternalLayout area="admin" />}
+          >
             <Route index element={<AdminOverviewPage />} />
             <Route path="profile" element={<DashboardProfilePage />} />
             <Route path="leads" element={<LeadListPage area="admin" />} />
@@ -434,13 +477,19 @@ export function AppRouter() {
             <Route path="documents" element={<AdminOrStaffDocumentsPage area="admin" />} />
             <Route path="appointments" element={<AdminOrStaffAppointmentsPage area="admin" />} />
             <Route path="messages" element={<AdminOrStaffMessagesPage area="admin" />} />
-            <Route path="messages/calls/:meetingId" element={<MeetingRoomPage mode="internal" area="admin" />} />
+            <Route
+              path="messages/calls/:meetingId"
+              element={<MeetingRoomPage mode="internal" area="admin" />}
+            />
             <Route path="payments" element={<AdminOrStaffPaymentsPage area="admin" />} />
             <Route path="content" element={<DashboardContentPage />} />
             <Route path="users" element={<DashboardUsersPage />} />
           </Route>
 
-          <Route path={APP_ROUTES.dashboardStaff} element={<ProtectedInternalLayout area="staff" />}>
+          <Route
+            path={APP_ROUTES.dashboardStaff}
+            element={<ProtectedInternalLayout area="staff" />}
+          >
             <Route index element={<StaffOverviewPage />} />
             <Route path="profile" element={<DashboardProfilePage />} />
             <Route path="leads" element={<LeadListPage area="staff" />} />
@@ -453,7 +502,10 @@ export function AppRouter() {
             <Route path="documents" element={<AdminOrStaffDocumentsPage area="staff" />} />
             <Route path="appointments" element={<AdminOrStaffAppointmentsPage area="staff" />} />
             <Route path="messages" element={<AdminOrStaffMessagesPage area="staff" />} />
-            <Route path="messages/calls/:meetingId" element={<MeetingRoomPage mode="internal" area="staff" />} />
+            <Route
+              path="messages/calls/:meetingId"
+              element={<MeetingRoomPage mode="internal" area="staff" />}
+            />
             <Route path="payments" element={<AdminOrStaffPaymentsPage area="staff" />} />
           </Route>
 

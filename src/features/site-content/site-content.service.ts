@@ -9,7 +9,8 @@ type UploadedImageAsset = {
 };
 
 export const siteContentService = {
-  getPublicContent: (signal?: AbortSignal) => apiRequest<SiteContent>("/api/site-content", { signal }),
+  getPublicContent: (signal?: AbortSignal) =>
+    apiRequest<SiteContent>("/api/site-content", { signal }),
   updateContent: (input: SiteContent) =>
     apiRequest<SiteContent>("/api/site-content", { method: "PUT", body: input }),
   uploadImage: (file: File) => {

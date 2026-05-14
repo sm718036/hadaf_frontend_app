@@ -24,7 +24,7 @@ const permissionSchema = z.enum([
   "users.write",
 ]);
 
-const passwordSchema = z
+export const passwordSchema = z
   .string()
   .min(8, "Password must be at least 8 characters long.")
   .max(72, "Password must be 72 characters or fewer.")
@@ -35,7 +35,7 @@ const passwordSchema = z
 const signInSchema = z.object({
   email: z.string().trim().toLowerCase().email("Enter a valid email address."),
   password: z.string().min(1, "Password is required."),
-  rememberMe: z.boolean().default(true),
+  rememberMe: z.boolean().default(false),
 });
 
 const bootstrapAdminSchema = z
@@ -48,9 +48,35 @@ const bootstrapAdminSchema = z
     email: z.string().trim().toLowerCase().email("Enter a valid email address."),
     password: passwordSchema,
     confirmPassword: z.string(),
-    rememberMe: z.boolean().default(true),
+    rememberMe: z.boolean().default(false),
   })
   .refine((value) => value.password === value.confirmPassword, {
+    path: ["confirmPassword"],
+    message: "Passwords do not match.",
+  });
+
+const requestPasswordResetSchema = z.object({
+  email: z.string().trim().toLowerCase().email("Enter a valid email address."),
+});
+
+const resetPasswordSchema = z
+  .object({
+    token: z.string().trim().min(1, "Reset token is required."),
+    password: passwordSchema,
+    confirmPassword: z.string(),
+  })
+  .refine((value) => value.password === value.confirmPassword, {
+    path: ["confirmPassword"],
+    message: "Passwords do not match.",
+  });
+
+const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Current password is required."),
+    newPassword: passwordSchema,
+    confirmPassword: z.string(),
+  })
+  .refine((value) => value.newPassword === value.confirmPassword, {
     path: ["confirmPassword"],
     message: "Passwords do not match.",
   });
@@ -59,3 +85,6 @@ export type UserRole = z.infer<typeof userRoleSchema>;
 export type Permission = z.infer<typeof permissionSchema>;
 export type SignInInput = z.infer<typeof signInSchema>;
 export type BootstrapAdminInput = z.infer<typeof bootstrapAdminSchema>;
+export type RequestPasswordResetInput = z.infer<typeof requestPasswordResetSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;

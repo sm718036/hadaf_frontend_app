@@ -8,7 +8,9 @@ const LOG_LEVELS: Record<LogLevel, number> = {
 };
 
 const DEFAULT_LOG_LEVEL: LogLevel = import.meta.env.DEV ? "debug" : "info";
-const ENABLED = String(import.meta.env.VITE_ENABLE_APP_LOGS || (import.meta.env.DEV ? "true" : "false")) === "true";
+const ENABLED =
+  String(import.meta.env.VITE_ENABLE_APP_LOGS || (import.meta.env.DEV ? "true" : "false")) ===
+  "true";
 const CURRENT_LOG_LEVEL = resolveLogLevel(import.meta.env.VITE_APP_LOG_LEVEL);
 
 function resolveLogLevel(value: string | undefined): LogLevel {
@@ -18,7 +20,12 @@ function resolveLogLevel(value: string | undefined): LogLevel {
 
   const normalized = value.trim().toLowerCase();
 
-  if (normalized === "debug" || normalized === "info" || normalized === "warn" || normalized === "error") {
+  if (
+    normalized === "debug" ||
+    normalized === "info" ||
+    normalized === "warn" ||
+    normalized === "error"
+  ) {
     return normalized;
   }
 

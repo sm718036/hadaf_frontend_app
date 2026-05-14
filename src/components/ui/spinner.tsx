@@ -12,13 +12,15 @@ const sizeClasses = {
   lg: "h-14 w-14",
 } as const;
 
-export function SpinnerTwo({
-  className,
-  size = "md",
-  label = "Loading",
-}: SpinnerProps) {
+export function SpinnerTwo({ className, size = "md", label = "Loading" }: SpinnerProps) {
   return (
-    <div className={cn("relative inline-flex items-center justify-center", sizeClasses[size], className)}>
+    <div
+      className={cn(
+        "relative inline-flex items-center justify-center",
+        sizeClasses[size],
+        className,
+      )}
+    >
       <span className="sr-only">{label}</span>
       <span className="absolute inset-0 rounded-full border-[3px] border-dark/12" />
       <span className="absolute inset-0 animate-spin rounded-full border-[3px] border-transparent border-r-primary border-t-primary" />

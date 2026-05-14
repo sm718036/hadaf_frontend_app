@@ -1,9 +1,9 @@
 import { format, isValid, parseISO, subDays } from "date-fns";
-import { CalendarRange, X } from "lucide-react";
+import { CalendarRange } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import { cn } from "@/lib/utils";
 
-type JQueryStatic = typeof import("jquery")["default"];
+type JQueryStatic = (typeof import("jquery"))["default"];
 
 export type DateRangeValue = {
   startDate: string;
@@ -127,9 +127,27 @@ export function DateRangePicker({
       const jquery = (jqueryModule.default ?? jqueryModule) as JQueryStatic;
       const moment = (momentModule.default ?? momentModule) as typeof import("moment");
 
-      (window as Window & { $?: JQueryStatic; jQuery?: JQueryStatic; moment?: typeof import("moment") }).$ = jquery;
-      (window as Window & { $?: JQueryStatic; jQuery?: JQueryStatic; moment?: typeof import("moment") }).jQuery = jquery;
-      (window as Window & { $?: JQueryStatic; jQuery?: JQueryStatic; moment?: typeof import("moment") }).moment = moment;
+      (
+        window as Window & {
+          $?: JQueryStatic;
+          jQuery?: JQueryStatic;
+          moment?: typeof import("moment");
+        }
+      ).$ = jquery;
+      (
+        window as Window & {
+          $?: JQueryStatic;
+          jQuery?: JQueryStatic;
+          moment?: typeof import("moment");
+        }
+      ).jQuery = jquery;
+      (
+        window as Window & {
+          $?: JQueryStatic;
+          jQuery?: JQueryStatic;
+          moment?: typeof import("moment");
+        }
+      ).moment = moment;
 
       await import("bootstrap-daterangepicker");
 
@@ -241,13 +259,13 @@ export function DateRangePicker({
           disabled={disabled || !hasValue}
           onClick={() => onChange({ startDate: "", endDate: "" })}
           className={cn(
-            "inline-flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-500 shadow-sm transition-colors",
-            "hover:border-slate-300 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/40",
+            "inline-flex h-[50px] shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-600 shadow-sm transition-colors",
+            "hover:border-slate-300 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/40",
             "disabled:cursor-not-allowed disabled:opacity-40",
           )}
           aria-label="Clear selected date range"
         >
-          <X className="h-4 w-4" />
+          Clear
         </button>
       </div>
     </div>
