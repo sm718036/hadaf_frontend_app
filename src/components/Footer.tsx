@@ -71,7 +71,7 @@ export function Footer({ branding, contactDetails, workingHours }: FooterProps) 
           })}
         </div>
 
-        <div className="grid gap-10 pb-12 pt-14 md:grid-cols-2 xl:grid-cols-[1.2fr_0.8fr_1fr] xl:pt-16">
+        <div className="grid gap-10 pb-12 pt-14 grid-cols-1 place-items-center md:grid-cols-2 xl:grid-cols-[1.2fr_0.8fr_1fr] xl:pt-16">
           <Reveal>
             <BrandLogo
               brandName={branding.companyName}
@@ -134,7 +134,7 @@ export function Footer({ branding, contactDetails, workingHours }: FooterProps) 
           </Reveal>
         </div>
 
-        <div className="footer-bottom-bar flex flex-col gap-4 py-6 text-[14px] md:flex-row md:items-center md:justify-between">
+        <div className="footer-bottom-bar flex flex-col gap-4 py-6 px-20 text-[14px] md:flex-row md:items-center md:justify-between">
           <p className="text-center md:text-left">
             Copyright {new Date().getFullYear()} {branding.companyName}.
           </p>

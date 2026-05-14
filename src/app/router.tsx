@@ -231,7 +231,7 @@ function DashboardIndexRedirect() {
 
   return (
     <Navigate
-      to={`${APP_ROUTES.auth}?mode=staff&redirect=${encodeURIComponent(APP_ROUTES.dashboard)}`}
+      to={`${APP_ROUTES.auth}?redirect=${encodeURIComponent(APP_ROUTES.dashboard)}`}
       replace
     />
   );
@@ -250,7 +250,7 @@ function ClientPortalRedirect() {
 
   return (
     <Navigate
-      to={`${APP_ROUTES.auth}?mode=client&redirect=${encodeURIComponent(APP_ROUTES.dashboardClient)}`}
+      to={`${APP_ROUTES.auth}?redirect=${encodeURIComponent(APP_ROUTES.dashboardClient)}`}
       replace
     />
   );
@@ -266,7 +266,7 @@ function DashboardClientsRedirect() {
   if (!currentUser) {
     return (
       <Navigate
-        to={`${APP_ROUTES.auth}?mode=staff&redirect=${encodeURIComponent(APP_ROUTES.dashboardClients)}`}
+        to={`${APP_ROUTES.auth}?redirect=${encodeURIComponent(APP_ROUTES.dashboardClients)}`}
         replace
       />
     );

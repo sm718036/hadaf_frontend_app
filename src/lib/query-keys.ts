@@ -1,4 +1,7 @@
 export const queryKeys = {
+  session: {
+    currentActor: ["session", "current-actor"] as const,
+  },
   auth: {
     currentUser: ["auth", "current-user"] as const,
     sessions: ["auth", "sessions"] as const,

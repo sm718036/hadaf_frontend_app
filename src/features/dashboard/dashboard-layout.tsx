@@ -22,9 +22,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { APP_ROUTES } from "@/config/routes";
-import type { SessionUser } from "@/features/auth/auth.service";
-import { useSignOut } from "@/features/auth/use-auth";
-import { useClientSignOut } from "@/features/client-auth/use-client-auth";
 import type { DashboardArea, DashboardNavItem } from "@/features/dashboard/access-control";
 import { AREA_META } from "@/features/dashboard/access-control";
 import {
@@ -40,7 +37,8 @@ import {
   useMarkClientNotificationRead,
   useMarkInternalNotificationRead,
 } from "@/features/notifications/use-notifications";
-import { buildPath, useAppNavigate } from "@/lib/router";
+import { useAppNavigate } from "@/lib/router";
+import { useUnifiedSignOut } from "@/features/session/use-session";
 import { useSiteContent } from "@/features/site-content/use-site-content";
 
 type DashboardLayoutActor = {
@@ -216,8 +214,7 @@ function Topbar({
   const navigate = useAppNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const signOutMutation = useSignOut();
-  const clientSignOutMutation = useClientSignOut();
+  const signOutMutation = useUnifiedSignOut();
   const initials = getUserInitials(actor.name);
   const avatarUrl = actor.avatarUrl ? getUserAvatarUrl(actor) : getAvatarDataUrl(actor.name);
   const meta = AREA_META[area];
@@ -229,15 +226,9 @@ function Topbar({
 
   const handleLogout = async () => {
     try {
-      if (area === "client") {
-        await clientSignOutMutation.mutateAsync();
-      } else {
-        await signOutMutation.mutateAsync();
-      }
+      await signOutMutation.mutateAsync();
     } finally {
-      navigate(APP_ROUTES.auth, {
-        search: area === "client" ? { mode: "client" } : undefined,
-      });
+      navigate(APP_ROUTES.auth);
     }
   };
 

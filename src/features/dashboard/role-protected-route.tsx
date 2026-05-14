@@ -45,7 +45,7 @@ export function RoleProtectedRoute({
 
       navigate(APP_ROUTES.auth, {
         replace: true,
-        search: { mode: "client", redirect: location.pathname },
+        search: { redirect: location.pathname },
       });
       return;
     }
@@ -66,7 +66,7 @@ export function RoleProtectedRoute({
 
     navigate(APP_ROUTES.auth, {
       replace: true,
-      search: { redirect: location.pathname, mode: "staff" },
+      search: { redirect: location.pathname },
     });
   }, [area, currentClient, currentUser, isLoading, location.pathname, navigate]);
 

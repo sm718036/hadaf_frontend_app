@@ -40,6 +40,7 @@ import {
 import { useAppNavigate } from "@/lib/router";
 
 export function DashboardProfilePage() {
+  const navigate = useAppNavigate();
   const currentUserQuery = useCurrentUser();
   const sessionsQuery = useUserSessions();
   const revokeSessionMutation = useRevokeUserSession();
@@ -358,7 +359,6 @@ export function DashboardProfilePage() {
               setIsPasswordDialogOpen(false);
               navigate(APP_ROUTES.auth, {
                 replace: true,
-                search: { mode: "staff" },
               });
             } catch (error) {
               toast.error(error instanceof Error ? error.message : "Unable to change password.");
@@ -408,7 +408,7 @@ export function DashboardProfileRedirect() {
     if (!currentUser) {
       navigate(APP_ROUTES.auth, {
         replace: true,
-        search: { redirect: APP_ROUTES.dashboardProfile, mode: "staff" },
+        search: { redirect: APP_ROUTES.dashboardProfile },
       });
       return;
     }

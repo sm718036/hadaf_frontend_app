@@ -24,6 +24,9 @@ const contactIcons = {
 export function Contact({ content, serviceOptions, countryOptions }: ContactProps) {
   const submitLeadMutation = useSubmitPublicLead();
   const intakeMetadataQuery = usePublicLeadIntakeMetadata(true);
+  const rectangularSelectClassName =
+    "h-[52px] rounded-none border-border px-5 text-[14px] text-foreground focus:border-primary";
+  const rectangularSelectPlaceholderClassName = "text-muted-foreground";
   const [form, setForm] = useState({
     fullName: "",
     phone: "",
@@ -154,7 +157,8 @@ export function Contact({ content, serviceOptions, countryOptions }: ContactProp
                     })
                   }
                   placeholder="Select Country"
-                  className="h-[52px] border-border px-5 text-[14px] text-foreground focus:border-primary"
+                  className={rectangularSelectClassName}
+                  placeholderClassName={rectangularSelectPlaceholderClassName}
                   options={countries.map((option) => ({ value: option.id, label: option.name }))}
                 />
               </div>
@@ -175,7 +179,8 @@ export function Contact({ content, serviceOptions, countryOptions }: ContactProp
                     })
                   }
                   placeholder={STATIC_CONTACT_FORM.placeholders.selectDefault}
-                  className="h-[52px] border-border px-5 text-[14px] text-foreground focus:border-primary"
+                  className={rectangularSelectClassName}
+                  placeholderClassName={rectangularSelectPlaceholderClassName}
                   options={
                     visaCategories.length > 0
                       ? visaCategories.map((option) => ({
@@ -210,7 +215,8 @@ export function Contact({ content, serviceOptions, countryOptions }: ContactProp
                             }))
                           }
                           placeholder="Select answer"
-                          className="h-[52px] border-border px-5 text-[14px] text-foreground focus:border-primary"
+                          className={rectangularSelectClassName}
+                          placeholderClassName={rectangularSelectPlaceholderClassName}
                           options={question.answerOptions.map((option) => ({
                             value: option.id,
                             label: option.label,

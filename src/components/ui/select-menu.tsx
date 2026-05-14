@@ -18,6 +18,7 @@ export function SelectMenu({
   placeholder = "Select an option",
   disabled = false,
   className,
+  placeholderClassName,
   contentClassName,
 }: {
   value: string;
@@ -26,6 +27,7 @@ export function SelectMenu({
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  placeholderClassName?: string;
   contentClassName?: string;
 }) {
   const selectedOption = options.find((option) => option.value === value);
@@ -40,7 +42,7 @@ export function SelectMenu({
             className,
           )}
         >
-          <span className={cn(!selectedOption && "text-slate-400")}>
+          <span className={cn(!selectedOption && "text-slate-400", !selectedOption && placeholderClassName)}>
             {selectedOption?.label || placeholder}
           </span>
           <ChevronDown className="h-4 w-4 text-slate-400" />

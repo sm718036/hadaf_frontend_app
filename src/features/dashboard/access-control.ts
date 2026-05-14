@@ -17,6 +17,7 @@ import {
 import { APP_ROUTES } from "@/config/routes";
 import type { SessionUser } from "@/features/auth/auth.service";
 import type { Permission, UserRole } from "@/features/auth/auth.schemas";
+import type { AuthenticatedActor } from "@/features/session/session.service";
 
 export type DashboardArea = "admin" | "staff" | "client";
 
@@ -33,6 +34,12 @@ function hasPermission(user: SessionUser, permission: Permission) {
 
 export function getDefaultInternalDashboardRoute(user: SessionUser) {
   return user.role === "admin" ? APP_ROUTES.dashboardAdmin : APP_ROUTES.dashboardStaff;
+}
+
+export function getDefaultDashboardRoute(actor: AuthenticatedActor) {
+  return actor.accountType === "client"
+    ? APP_ROUTES.dashboardClient
+    : getDefaultInternalDashboardRoute(actor.user);
 }
 
 export function canAccessInternalArea(user: SessionUser, area: Exclude<DashboardArea, "client">) {

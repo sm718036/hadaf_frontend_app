@@ -3,7 +3,14 @@ import { StatusBadge } from "@/features/dashboard/dashboard-layout";
 import { Panel } from "@/features/dashboard/dashboard-ui";
 
 export function ModuleOverview({ title, description }: { title: string; description: string }) {
-  return <Panel title={title} subtitle={description} />;
+  return (
+    <Panel title={title} subtitle={description}>
+      <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-5 py-5 text-sm leading-7 text-slate-600">
+        Access to this workspace is controlled by role and permission. Available modules appear in
+        the dashboard navigation.
+      </div>
+    </Panel>
+  );
 }
 
 export function PlaceholderModulePage({

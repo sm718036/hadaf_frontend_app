@@ -35,18 +35,6 @@ export const defaultSiteContent: SiteContent = {
         linkHref: "#contact",
         isVisible: true,
       },
-      {
-        id: "hero-banner-support",
-        title: "Transparent processes and practical case guidance.",
-        subtitle: "Admissions, visa filing, interviews, and post-visa support in one place.",
-        image: {
-          src: "contact-agent",
-          alt: "Consultant guiding clients through visa preparation",
-        },
-        linkLabel: "Explore Our Services",
-        linkHref: "#services",
-        isVisible: true,
-      },
     ],
   },
   offers: {

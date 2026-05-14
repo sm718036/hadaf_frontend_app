@@ -812,7 +812,7 @@ export function ClientSelfProfilePage() {
                 confirmPassword: "",
               });
               setIsPasswordDialogOpen(false);
-              window.location.assign(buildPath(APP_ROUTES.auth, { search: { mode: "client" } }));
+              window.location.assign(APP_ROUTES.auth);
             } catch (error) {
               toast.error(error instanceof Error ? error.message : "Unable to change password.");
             }
@@ -1171,12 +1171,12 @@ function TextField({
   value,
   onChange,
   type = "text",
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  type?: "text" | "date";
-}) {
+  }: {
+    label: string;
+    value: string;
+    onChange: (value: string) => void;
+    type?: "text" | "date" | "password";
+  }) {
   return (
     <label className="space-y-2">
       <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">

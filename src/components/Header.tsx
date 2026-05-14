@@ -6,7 +6,6 @@ import { APP_ROUTES } from "@/config/routes";
 import { STATIC_HEADER_LINKS } from "@/content/landing-static";
 import type { SiteContent } from "@/features/site-content/site-content.schemas";
 import { resolveSectionHref } from "@/lib/content-assets";
-import { buildPath } from "@/lib/router";
 
 type HeaderProps = {
   branding: SiteContent["branding"];
@@ -59,7 +58,7 @@ export function Header({ branding, contactDetails }: HeaderProps) {
           </ul>
           <div className="flex items-center gap-3">
             <Link
-              to={buildPath(APP_ROUTES.auth, { search: { mode: "client" } })}
+              to={APP_ROUTES.auth}
               className="hidden text-sm font-semibold text-dark hover:text-gold md:inline-flex"
             >
               Login
@@ -99,7 +98,7 @@ export function Header({ branding, contactDetails }: HeaderProps) {
               </ul>
               <div className="mt-5 flex flex-col gap-3">
                 <Link
-                  to={buildPath(APP_ROUTES.auth, { search: { mode: "client" } })}
+                  to={APP_ROUTES.auth}
                   className="text-sm font-semibold text-dark hover:text-gold"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
