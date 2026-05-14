@@ -16,6 +16,7 @@ export type SessionUser = {
   avatarUrl: string | null;
   role: UserRole;
   permissions: Permission[];
+  specializedCountryConfigurationId: string | null;
   emailVerifiedAt: string | null;
   createdAt: string;
 };

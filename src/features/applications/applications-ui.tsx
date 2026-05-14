@@ -13,7 +13,6 @@ import type {
   ApplicationStageHistory,
   UpsertApplicationInput,
 } from "@/features/applications/applications.schemas";
-import { APPLICATION_STAGES } from "@/features/applications/applications.schemas";
 import {
   useApplication,
   useApplications,
@@ -23,6 +22,7 @@ import {
   useUpsertApplication,
 } from "@/features/applications/use-applications";
 import { useClients } from "@/features/clients/use-clients";
+import { useConfigurationVaultMetadata } from "@/features/configuration-vault/use-configuration-vault";
 import { useDashboardAccess } from "@/features/dashboard/use-dashboard-access";
 import { DataTable, StatusBadge } from "@/features/dashboard/dashboard-layout";
 import {
@@ -82,11 +82,13 @@ function createEmptyApplicationForm(
 ): UpsertApplicationInput {
   return {
     clientId,
+    countryConfigurationId: "",
+    visaCategoryId: "",
     targetCountry: "",
     serviceType: "",
     universityProgram: "",
     assignedStaffUserId,
-    currentStage: APPLICATION_STAGES[0],
+    currentStage: "",
     status: "active",
     priority: "medium",
     deadline: "",
@@ -99,6 +101,8 @@ function mapApplicationToForm(application: Application): UpsertApplicationInput 
   return {
     id: application.id,
     clientId: application.clientId,
+    countryConfigurationId: application.countryConfigurationId ?? "",
+    visaCategoryId: application.visaCategoryId ?? "",
     targetCountry: application.targetCountry,
     serviceType: application.serviceType,
     universityProgram: application.universityProgram ?? "",
@@ -163,11 +167,14 @@ export function ApplicationListPage({
     pageSize: 100,
     search: "",
   });
+  const configurationVaultMetadataQuery = useConfigurationVaultMetadata(access.canReadApplications);
 
   const staffUsers = useMemo(
     () => (staffUsersQuery.data?.items ?? []).filter((user) => user.role === "staff"),
     [staffUsersQuery.data],
   );
+  const workflowStages = configurationVaultMetadataQuery.data?.workflowStages ?? [];
+  const countries = configurationVaultMetadataQuery.data?.countries ?? [];
 
   useEffect(() => {
     setPage(1);
@@ -221,11 +228,14 @@ export function ApplicationListPage({
         />
 
         <div className="mb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-6">
-          <input
+          <SelectMenu
             value={country}
-            onChange={(event) => setCountry(event.target.value)}
-            placeholder="Target country"
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none"
+            onValueChange={setCountry}
+            className="h-auto bg-slate-50 py-3"
+            options={[
+              { value: "", label: "All countries" },
+              ...countries.map((option) => ({ value: option.name, label: option.name })),
+            ]}
           />
           <SelectMenu
             value={stage}
@@ -233,7 +243,7 @@ export function ApplicationListPage({
             className="h-auto bg-slate-50 py-3"
             options={[
               { value: "", label: "All stages" },
-              ...APPLICATION_STAGES.map((option) => ({ value: option, label: option })),
+              ...workflowStages.map((option) => ({ value: option.name, label: option.name })),
             ]}
           />
           <SelectMenu
@@ -398,6 +408,7 @@ export function ApplicationListPage({
               name: client.fullName,
             }))}
             staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
+            configurationMetadata={configurationVaultMetadataQuery.data}
             area={area}
             onSubmit={async () => {
               try {
@@ -446,6 +457,7 @@ export function ApplicationDetailPage({
     pageSize: 100,
     search: "",
   });
+  const configurationVaultMetadataQuery = useConfigurationVaultMetadata(access.canReadApplications);
   const [form, setForm] = useState<UpsertApplicationInput | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
 
@@ -616,6 +628,7 @@ export function ApplicationDetailPage({
             name: client.fullName,
           }))}
           staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
+          configurationMetadata={configurationVaultMetadataQuery.data}
           area={area}
           onSubmit={async () => {
             if (!form) return;
@@ -779,7 +792,15 @@ function ApplicationPipeline({
   application: Application;
   compact?: boolean;
 }) {
-  const currentIndex = APPLICATION_STAGES.indexOf(application.currentStage);
+  const configurationVaultMetadataQuery = useConfigurationVaultMetadata(true);
+  const configuredStages =
+    configurationVaultMetadataQuery.data?.workflowStages.map((stage) => stage.name) ?? [];
+  const stages = configuredStages.includes(application.currentStage)
+    ? configuredStages
+    : application.currentStage
+      ? [...configuredStages, application.currentStage]
+      : configuredStages;
+  const currentIndex = stages.indexOf(application.currentStage);
 
   return (
     <div className="rounded-[24px] border border-slate-200 bg-white p-5">
@@ -814,7 +835,7 @@ function ApplicationPipeline({
       <div
         className={`mt-5 grid gap-3 ${compact ? "md:grid-cols-2 xl:grid-cols-3" : "md:grid-cols-3 xl:grid-cols-4"}`}
       >
-        {APPLICATION_STAGES.map((stage, index) => {
+        {stages.map((stage, index) => {
           const state =
             index < currentIndex ? "done" : index === currentIndex ? "current" : "upcoming";
 
@@ -920,6 +941,7 @@ function ApplicationForm({
   onChange,
   clients,
   staffUsers,
+  configurationMetadata,
   area,
   onSubmit,
   isSubmitting,
@@ -929,11 +951,23 @@ function ApplicationForm({
   onChange: (value: UpsertApplicationInput) => void;
   clients: Array<{ id: string; name: string }>;
   staffUsers: Array<{ id: string; name: string }>;
+  configurationMetadata?: {
+    countries: Array<{ id: string; name: string; baseCurrency: string }>;
+    visaCategories: Array<{ id: string; countryId: string; name: string; code: string }>;
+    workflowStages: Array<{ id: string; name: string }>;
+  };
   area: "admin" | "staff";
   onSubmit: () => void;
   isSubmitting: boolean;
   lockClient?: boolean;
 }) {
+  const countries = configurationMetadata?.countries ?? [];
+  const visaCategories = configurationMetadata?.visaCategories ?? [];
+  const workflowStages = configurationMetadata?.workflowStages ?? [];
+  const availableVisaCategories = visaCategories.filter(
+    (category) => category.countryId === form.countryConfigurationId,
+  );
+
   return (
     <form
       className="space-y-5"
@@ -950,15 +984,39 @@ function ApplicationForm({
           onChange={(clientId) => onChange({ ...form, clientId })}
           options={clients.map((client) => ({ value: client.id, label: client.name }))}
         />
-        <TextField
+        <SelectField
           label="Target Country"
-          value={form.targetCountry}
-          onChange={(targetCountry) => onChange({ ...form, targetCountry })}
+          value={form.countryConfigurationId}
+          onChange={(countryConfigurationId) => {
+            const selectedCountry = countries.find((country) => country.id === countryConfigurationId);
+            onChange({
+              ...form,
+              countryConfigurationId,
+              visaCategoryId: "",
+              targetCountry: selectedCountry?.name ?? "",
+              serviceType: "",
+            });
+          }}
+          options={countries.map((country) => ({
+            value: country.id,
+            label: `${country.name} · ${country.baseCurrency}`,
+          }))}
         />
-        <TextField
+        <SelectField
           label="Service Type"
-          value={form.serviceType}
-          onChange={(serviceType) => onChange({ ...form, serviceType })}
+          value={form.visaCategoryId}
+          onChange={(visaCategoryId) => {
+            const selectedCategory = availableVisaCategories.find((item) => item.id === visaCategoryId);
+            onChange({
+              ...form,
+              visaCategoryId,
+              serviceType: selectedCategory?.name ?? "",
+            });
+          }}
+          options={availableVisaCategories.map((category) => ({
+            value: category.id,
+            label: `${category.code} · ${category.name}`,
+          }))}
         />
         <TextField
           label="University / Program"
@@ -980,13 +1038,8 @@ function ApplicationForm({
         <SelectField
           label="Current Stage"
           value={form.currentStage}
-          onChange={(currentStage) =>
-            onChange({
-              ...form,
-              currentStage: currentStage as UpsertApplicationInput["currentStage"],
-            })
-          }
-          options={APPLICATION_STAGES.map((stage) => ({ value: stage, label: stage }))}
+          onChange={(currentStage) => onChange({ ...form, currentStage })}
+          options={workflowStages.map((stage) => ({ value: stage.name, label: stage.name }))}
         />
         <SelectField
           label="Status"

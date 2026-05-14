@@ -31,6 +31,7 @@ const internalUserSchema = z.object({
   avatarUrl: z.string().nullable(),
   role: userRoleSchema,
   permissions: z.array(permissionSchema),
+  specializedCountryConfigurationId: z.string().uuid().nullable(),
   emailVerifiedAt: z.string().nullable(),
   createdAt: z.string(),
 });
@@ -43,6 +44,7 @@ const createInternalUserSchema = z
     confirmPassword: z.string(),
     role: userRoleSchema,
     permissions: z.array(permissionSchema),
+    specializedCountryConfigurationId: z.string().uuid().nullable(),
   })
   .refine((value) => value.password === value.confirmPassword, {
     path: ["confirmPassword"],
@@ -53,6 +55,7 @@ const updateInternalUserSchema = z.object({
   name: z.string().trim().min(2).max(80),
   role: userRoleSchema,
   permissions: z.array(permissionSchema),
+  specializedCountryConfigurationId: z.string().uuid().nullable(),
 });
 
 export type Permission = z.infer<typeof permissionSchema>;

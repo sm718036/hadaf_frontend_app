@@ -62,6 +62,16 @@ export const queryKeys = {
     list: (params: { page: number; pageSize: number; search: string }) =>
       ["internal-users", "list", params] as const,
   },
+  configurationVault: {
+    all: ["configuration-vault"] as const,
+    snapshot: ["configuration-vault", "snapshot"] as const,
+    metadata: ["configuration-vault", "metadata"] as const,
+  },
+  intakeEngine: {
+    all: ["intake-engine"] as const,
+    publicMetadata: ["intake-engine", "public-metadata"] as const,
+    questions: ["intake-engine", "questions"] as const,
+  },
   siteContent: {
     public: ["site-content", "public"] as const,
   },

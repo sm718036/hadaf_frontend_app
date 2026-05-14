@@ -47,6 +47,16 @@ const DashboardProfileRedirect = lazy(() =>
 const DashboardUsersPage = lazy(() =>
   import("@/pages/dashboard/users-page").then((module) => ({ default: module.DashboardUsersPage })),
 );
+const DashboardConfigurationVaultPage = lazy(() =>
+  import("@/pages/dashboard/configuration-vault-page").then((module) => ({
+    default: module.DashboardConfigurationVaultPage,
+  })),
+);
+const DashboardIntakeEnginePage = lazy(() =>
+  import("@/pages/dashboard/intake-engine-page").then((module) => ({
+    default: module.DashboardIntakeEnginePage,
+  })),
+);
 const DashboardUsersRedirect = lazy(() =>
   import("@/pages/dashboard/users-page").then((module) => ({
     default: module.DashboardUsersRedirect,
@@ -157,6 +167,8 @@ const ADMIN_PAGE_TITLES: Record<string, string> = {
   [APP_ROUTES.dashboardAdminMessages]: "Messages",
   [APP_ROUTES.dashboardAdminMessageCall]: "Video Call",
   [APP_ROUTES.dashboardAdminPayments]: "Payments",
+  [APP_ROUTES.dashboardAdminConfigurationVault]: "Configuration Vault",
+  [APP_ROUTES.dashboardAdminIntakeEngine]: "Intake Engine",
   [APP_ROUTES.dashboardAdminContent]: "Landing CMS",
   [APP_ROUTES.dashboardAdminUsers]: "User Access",
   [APP_ROUTES.dashboardAdminProfile]: "My Profile",
@@ -482,6 +494,8 @@ export function AppRouter() {
               element={<MeetingRoomPage mode="internal" area="admin" />}
             />
             <Route path="payments" element={<AdminOrStaffPaymentsPage area="admin" />} />
+            <Route path="configuration-vault" element={<DashboardConfigurationVaultPage />} />
+            <Route path="intake-engine" element={<DashboardIntakeEnginePage />} />
             <Route path="content" element={<DashboardContentPage />} />
             <Route path="users" element={<DashboardUsersPage />} />
           </Route>

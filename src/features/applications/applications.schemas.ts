@@ -1,38 +1,21 @@
 import { z } from "zod";
-
-export const APPLICATION_STAGES = [
-  "Inquiry received",
-  "Consultation booked",
-  "Eligibility checked",
-  "Documents requested",
-  "Documents received",
-  "University shortlisting",
-  "Application submitted",
-  "Offer letter received",
-  "Visa documents prepared",
-  "Embassy appointment booked",
-  "Visa submitted",
-  "Approved",
-  "Rejected",
-  "Deferred",
-] as const;
-
-const applicationStageSchema = z.enum(APPLICATION_STAGES);
 const applicationStatusSchema = z.enum(["active", "paused", "approved", "rejected", "completed"]);
 const applicationPrioritySchema = z.enum(["low", "medium", "high", "urgent"]);
 
 const applicationSchema = z.object({
   id: z.string().uuid(),
   clientId: z.string().uuid(),
+  countryConfigurationId: z.string().uuid().nullable(),
   clientName: z.string(),
   clientEmail: z.string().nullable(),
   clientPhone: z.string().nullable(),
   targetCountry: z.string(),
+  visaCategoryId: z.string().uuid().nullable(),
   serviceType: z.string(),
   universityProgram: z.string().nullable(),
   assignedStaffUserId: z.string().uuid().nullable(),
   assignedStaffName: z.string().nullable(),
-  currentStage: applicationStageSchema,
+  currentStage: z.string(),
   status: applicationStatusSchema,
   priority: applicationPrioritySchema,
   deadline: z.string().nullable(),
@@ -47,8 +30,8 @@ const applicationSchema = z.object({
 const applicationStageHistorySchema = z.object({
   id: z.string().uuid(),
   applicationId: z.string().uuid(),
-  oldStage: applicationStageSchema.nullable(),
-  newStage: applicationStageSchema,
+  oldStage: z.string().nullable(),
+  newStage: z.string(),
   changedByUserId: z.string().uuid().nullable(),
   changedByName: z.string().nullable(),
   note: z.string().nullable(),
@@ -63,11 +46,13 @@ const applicationDetailSchema = z.object({
 const upsertApplicationSchema = z.object({
   id: z.string().uuid().optional(),
   clientId: z.string().uuid("Select a valid client."),
+  countryConfigurationId: z.string().uuid("Select a valid country."),
+  visaCategoryId: z.string().uuid("Select a valid visa category."),
   targetCountry: z.string().trim().min(2).max(100),
   serviceType: z.string().trim().min(2).max(120),
   universityProgram: z.string().trim().max(160),
   assignedStaffUserId: z.string().uuid().nullable().optional(),
-  currentStage: applicationStageSchema,
+  currentStage: z.string().trim().min(2).max(120),
   status: applicationStatusSchema,
   priority: applicationPrioritySchema,
   deadline: z.string().trim(),

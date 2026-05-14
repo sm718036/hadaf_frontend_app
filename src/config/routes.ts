@@ -15,6 +15,8 @@ export const APP_ROUTES = {
   dashboardAdminMessages: "/dashboard/admin/messages",
   dashboardAdminMessageCall: "/dashboard/admin/messages/calls/:meetingId",
   dashboardAdminPayments: "/dashboard/admin/payments",
+  dashboardAdminConfigurationVault: "/dashboard/admin/configuration-vault",
+  dashboardAdminIntakeEngine: "/dashboard/admin/intake-engine",
   dashboardAdminContent: "/dashboard/admin/content",
   dashboardAdminUsers: "/dashboard/admin/users",
   dashboardStaff: "/dashboard/staff",

@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+const intakeAnswerSchema = z.object({
+  questionId: z.string().uuid(),
+  optionId: z.string().uuid(),
+});
+
 const leadSourceSchema = z.enum([
   "website",
   "whatsapp",
@@ -16,13 +21,28 @@ const leadSchema = z.object({
   fullName: z.string(),
   phone: z.string().nullable(),
   email: z.string().nullable(),
+  interestedCountryConfigurationId: z.string().uuid().nullable(),
   interestedCountry: z.string().nullable(),
+  interestedVisaCategoryId: z.string().uuid().nullable(),
   interestedService: z.string().nullable(),
   message: z.string().nullable(),
+  intakeAnswers: z.array(
+    z.object({
+      questionId: z.string().uuid(),
+      questionPrompt: z.string(),
+      optionId: z.string().uuid(),
+      optionLabel: z.string(),
+      optionValueKey: z.string(),
+      weight: z.number(),
+      isDisqualifying: z.boolean(),
+    }),
+  ),
+  qualificationScore: z.number(),
   source: leadSourceSchema,
   status: leadStatusSchema,
   assignedStaffUserId: z.string().uuid().nullable(),
   assignedStaffName: z.string().nullable(),
+  autoAssignedByRouting: z.boolean(),
   nextFollowUpDate: z.string().nullable(),
   internalNotes: z.string().nullable(),
   convertedClientId: z.string().uuid().nullable(),
@@ -53,9 +73,12 @@ const upsertLeadSchema = z.object({
   fullName: z.string().trim().min(2).max(120),
   phone: z.string().trim().max(30),
   email: z.string().trim().toLowerCase(),
+  interestedCountryConfigurationId: z.string().uuid().nullable().optional(),
   interestedCountry: z.string().trim().max(100),
+  interestedVisaCategoryId: z.string().uuid().nullable().optional(),
   interestedService: z.string().trim().max(120),
   message: z.string().trim().max(2000),
+  intakeAnswers: z.array(intakeAnswerSchema).default([]),
   source: leadSourceSchema,
   status: leadStatusSchema,
   assignedStaffUserId: z.string().uuid().nullable().optional(),
@@ -68,9 +91,12 @@ const publicLeadSubmissionSchema = z.object({
   fullName: z.string().trim().min(2).max(120),
   phone: z.string().trim().max(30),
   email: z.string().trim().toLowerCase(),
+  interestedCountryConfigurationId: z.string().uuid().nullable().optional(),
   interestedCountry: z.string().trim().max(100),
+  interestedVisaCategoryId: z.string().uuid().nullable().optional(),
   interestedService: z.string().trim().max(120),
   message: z.string().trim().max(2000),
+  intakeAnswers: z.array(intakeAnswerSchema).default([]),
   formName: z.string().trim().max(80).optional(),
 });
 

@@ -20,6 +20,7 @@ import { SpinnerTwo } from "@/components/ui/spinner";
 import { useCurrentUser } from "@/features/auth/use-auth";
 import { getDefaultInternalDashboardRoute } from "@/features/dashboard/access-control";
 import { useDashboardAccess } from "@/features/dashboard/use-dashboard-access";
+import { usePublicLeadIntakeMetadata } from "@/features/intake-engine/use-intake-engine";
 import {
   EmptyHint,
   Field,
@@ -129,6 +130,7 @@ function createEmptyUserForm(): CreateInternalUserInput {
     confirmPassword: "",
     role: "staff",
     permissions: [],
+    specializedCountryConfigurationId: null,
   };
 }
 
@@ -147,6 +149,7 @@ export function DashboardUsersPage() {
   const createUserMutation = useCreateInternalUser();
   const deleteUserMutation = useDeleteInternalUser();
   const updateUserMutation = useUpdateInternalUser();
+  const intakeMetadataQuery = usePublicLeadIntakeMetadata(access.canReadUsers);
   const [editingUser, setEditingUser] = useState<InternalUser | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [userForm, setUserForm] = useState<CreateInternalUserInput>(createEmptyUserForm());
@@ -179,6 +182,7 @@ export function DashboardUsersPage() {
       confirmPassword: "",
       role: user.role,
       permissions: user.permissions,
+      specializedCountryConfigurationId: user.specializedCountryConfigurationId,
     });
     setIsDialogOpen(true);
   };
@@ -362,6 +366,10 @@ export function DashboardUsersPage() {
                       name: userForm.name,
                       role: userForm.role,
                       permissions: userForm.permissions,
+                      specializedCountryConfigurationId:
+                        userForm.role === "staff"
+                          ? userForm.specializedCountryConfigurationId
+                          : null,
                     },
                   });
                   toast.success("Internal user updated.");
@@ -459,6 +467,32 @@ export function DashboardUsersPage() {
 
             {userForm.role === "staff" ? (
               <div>
+                <div className="mb-4">
+                  <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    Specialized Country
+                  </label>
+                  <div className="mt-2">
+                    <SelectMenu
+                      value={userForm.specializedCountryConfigurationId ?? ""}
+                      onValueChange={(specializedCountryConfigurationId) =>
+                        setUserForm({
+                          ...userForm,
+                          specializedCountryConfigurationId:
+                            specializedCountryConfigurationId || null,
+                        })
+                      }
+                      disabled={isReadOnlyDialog}
+                      className="h-auto bg-slate-50 py-3"
+                      options={[
+                        { value: "", label: "No specialization" },
+                        ...(intakeMetadataQuery.data?.countries ?? []).map((country) => ({
+                          value: country.id,
+                          label: country.name,
+                        })),
+                      ]}
+                    />
+                  </div>
+                </div>
                 <div className="flex items-center justify-between gap-3">
                   <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
                     Staff Permissions

@@ -7,6 +7,7 @@ import {
   FolderKanban,
   LayoutDashboard,
   MessageSquareText,
+  Network,
   ReceiptText,
   ShieldUser,
   SquareUserRound,
@@ -104,6 +105,16 @@ const ADMIN_NAV_ITEMS: DashboardNavItem[] = [
     to: APP_ROUTES.dashboardAdminPayments,
     icon: ReceiptText,
     permission: "payments.read",
+  },
+  {
+    label: "Config Vault",
+    to: APP_ROUTES.dashboardAdminConfigurationVault,
+    icon: Network,
+  },
+  {
+    label: "Intake Engine",
+    to: APP_ROUTES.dashboardAdminIntakeEngine,
+    icon: MessageSquareText,
   },
   {
     label: "Landing CMS",

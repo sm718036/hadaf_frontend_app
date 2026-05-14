@@ -10,6 +10,7 @@ import { APP_ROUTES } from "@/config/routes";
 import { useCurrentUser } from "@/features/auth/use-auth";
 import { useDashboardAccess } from "@/features/dashboard/use-dashboard-access";
 import { DataTable, StatusBadge } from "@/features/dashboard/dashboard-layout";
+import { usePublicLeadIntakeMetadata } from "@/features/intake-engine/use-intake-engine";
 import {
   EmptyHint,
   LoadingOverlay,
@@ -68,9 +69,12 @@ function buildEmptyLeadForm(): UpsertLeadInput {
     fullName: "",
     phone: "",
     email: "",
+    interestedCountryConfigurationId: null,
     interestedCountry: "",
+    interestedVisaCategoryId: null,
     interestedService: "",
     message: "",
+    intakeAnswers: [],
     source: "website",
     status: "new",
     assignedStaffUserId: null,
@@ -86,9 +90,12 @@ function mapLeadToForm(lead: Lead): UpsertLeadInput {
     fullName: lead.fullName,
     phone: lead.phone ?? "",
     email: lead.email ?? "",
+    interestedCountryConfigurationId: lead.interestedCountryConfigurationId,
     interestedCountry: lead.interestedCountry ?? "",
+    interestedVisaCategoryId: lead.interestedVisaCategoryId,
     interestedService: lead.interestedService ?? "",
     message: lead.message ?? "",
+    intakeAnswers: lead.intakeAnswers,
     source: lead.source,
     status: lead.status,
     assignedStaffUserId: lead.assignedStaffUserId,
@@ -149,6 +156,7 @@ export function LeadListPage({ area }: { area: "admin" | "staff" }) {
   });
   const upsertLeadMutation = useUpsertLead();
   const deleteLeadMutation = useDeleteLead();
+  const intakeMetadataQuery = usePublicLeadIntakeMetadata(access.canReadLeads);
   const staffUsersQuery = useInternalUsers({
     enabled: area === "admin",
     page: 1,
@@ -361,6 +369,7 @@ export function LeadListPage({ area }: { area: "admin" | "staff" }) {
             form={form}
             onChange={setForm}
             staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
+            intakeMetadata={intakeMetadataQuery.data}
             mode="admin"
             onSubmit={async () => {
               try {
@@ -402,6 +411,7 @@ export function LeadDetailPage({ area, leadId }: { area: "admin" | "staff"; lead
   const upsertLeadMutation = useUpsertLead();
   const convertLeadMutation = useConvertLead();
   const deleteLeadMutation = useDeleteLead();
+  const intakeMetadataQuery = usePublicLeadIntakeMetadata(access.canReadLeads);
   const staffUsersQuery = useInternalUsers({
     enabled: area === "admin",
     page: 1,
@@ -554,6 +564,7 @@ export function LeadDetailPage({ area, leadId }: { area: "admin" | "staff"; lead
           form={form ?? buildEmptyLeadForm()}
           onChange={setForm}
           staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
+          intakeMetadata={intakeMetadataQuery.data}
           mode={isAdmin ? "admin" : "staff"}
           onSubmit={async () => {
             if (!form) return;
@@ -617,9 +628,14 @@ function LeadOverview({ lead }: { lead: Lead }) {
         <ReadOnlyField label="Email" value={lead.email || "—"} />
         <ReadOnlyField label="Interested Country" value={lead.interestedCountry || "—"} />
         <ReadOnlyField label="Interested Service" value={lead.interestedService || "—"} />
+        <ReadOnlyField label="Qualification Score" value={String(lead.qualificationScore)} />
         <ReadOnlyField label="Status" value={lead.status.replace("_", " ")} />
         <ReadOnlyField label="Source" value={lead.source.replace("_", " ")} />
         <ReadOnlyField label="Assigned Staff" value={lead.assignedStaffName || "Unassigned"} />
+        <ReadOnlyField
+          label="Routing"
+          value={lead.autoAssignedByRouting ? "Auto-assigned by country" : "Manual or unassigned"}
+        />
         <ReadOnlyField label="Next Follow-up" value={formatDate(lead.nextFollowUpDate)} />
       </div>
       <ReadOnlyTextBlock label="Message / Comments" value={lead.message || "No message added."} />
@@ -627,6 +643,35 @@ function LeadOverview({ lead }: { lead: Lead }) {
         label="Internal Notes"
         value={lead.internalNotes || "No internal notes added."}
       />
+      <div className="rounded-[24px] border border-slate-200 bg-white p-5">
+        <div className="mb-4">
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+            Qualification Answers
+          </div>
+        </div>
+        {lead.intakeAnswers.length === 0 ? (
+          <EmptyHint message="No qualification answers were captured for this lead." />
+        ) : (
+          <div className="space-y-3">
+            {lead.intakeAnswers.map((answer) => (
+              <div key={answer.optionId} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-slate-900">{answer.questionPrompt}</p>
+                    <p className="mt-1 text-sm text-slate-600">{answer.optionLabel}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Badge variant={answer.weight >= 0 ? "success" : "warning"}>
+                      {answer.weight >= 0 ? `+${answer.weight}` : answer.weight}
+                    </Badge>
+                    {answer.isDisqualifying ? <Badge variant="destructive">Disqualifying</Badge> : null}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -635,6 +680,7 @@ function LeadForm({
   form,
   onChange,
   staffUsers,
+  intakeMetadata,
   mode,
   onSubmit,
   isSubmitting,
@@ -642,11 +688,41 @@ function LeadForm({
   form: UpsertLeadInput;
   onChange: (value: UpsertLeadInput) => void;
   staffUsers: Array<{ id: string; name: string }>;
+  intakeMetadata?: {
+    countries: Array<{ id: string; name: string; baseCurrency: string }>;
+    visaCategories: Array<{ id: string; countryId: string; name: string; code: string }>;
+    questions: Array<{
+      id: string;
+      prompt: string;
+      helpText: string | null;
+      inputType: "single_select" | "boolean";
+      countryConfigurationId: string | null;
+      visaCategoryId: string | null;
+      isRequired: boolean;
+      answerOptions: Array<{
+        id: string;
+        label: string;
+        weight: number;
+        isDisqualifying: boolean;
+      }>;
+    }>;
+  };
   mode: "admin" | "staff";
   onSubmit: () => void;
   isSubmitting: boolean;
 }) {
   const isAdmin = mode === "admin";
+  const countries = intakeMetadata?.countries ?? [];
+  const visaCategories = (intakeMetadata?.visaCategories ?? []).filter(
+    (item) => item.countryId === form.interestedCountryConfigurationId,
+  );
+  const intakeQuestions = (intakeMetadata?.questions ?? []).filter(
+    (question) =>
+      (!question.countryConfigurationId ||
+        question.countryConfigurationId === form.interestedCountryConfigurationId) &&
+      (!question.visaCategoryId || question.visaCategoryId === form.interestedVisaCategoryId),
+  );
+  const selectedAnswerMap = new Map((form.intakeAnswers ?? []).map((answer) => [answer.questionId, answer.optionId]));
 
   return (
     <form
@@ -672,15 +748,41 @@ function LeadForm({
           value={form.email}
           onChange={(email) => onChange({ ...form, email })}
         />
-        <TextField
+        <SelectField
           label="Interested Country"
-          value={form.interestedCountry}
-          onChange={(interestedCountry) => onChange({ ...form, interestedCountry })}
+          value={form.interestedCountryConfigurationId ?? ""}
+          onChange={(interestedCountryConfigurationId) => {
+            const selectedCountry = countries.find((item) => item.id === interestedCountryConfigurationId);
+            onChange({
+              ...form,
+              interestedCountryConfigurationId: interestedCountryConfigurationId || null,
+              interestedCountry: selectedCountry?.name ?? "",
+              interestedVisaCategoryId: null,
+              interestedService: "",
+              intakeAnswers: [],
+            });
+          }}
+          options={countries.map((country) => ({
+            value: country.id,
+            label: `${country.name} · ${country.baseCurrency}`,
+          }))}
         />
-        <TextField
+        <SelectField
           label="Interested Service"
-          value={form.interestedService}
-          onChange={(interestedService) => onChange({ ...form, interestedService })}
+          value={form.interestedVisaCategoryId ?? ""}
+          onChange={(interestedVisaCategoryId) => {
+            const selectedCategory = visaCategories.find((item) => item.id === interestedVisaCategoryId);
+            onChange({
+              ...form,
+              interestedVisaCategoryId: interestedVisaCategoryId || null,
+              interestedService: selectedCategory?.name ?? "",
+              intakeAnswers: [],
+            });
+          }}
+          options={visaCategories.map((category) => ({
+            value: category.id,
+            label: `${category.code} · ${category.name}`,
+          }))}
         />
         <SelectField
           label="Status"
@@ -726,6 +828,48 @@ function LeadForm({
         value={form.message}
         onChange={(message) => onChange({ ...form, message })}
       />
+      {intakeQuestions.length > 0 ? (
+        <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+          <div className="mb-4">
+            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+              Qualification Questionnaire
+            </div>
+          </div>
+          <div className="grid gap-4">
+            {intakeQuestions.map((question) => (
+              <div key={question.id} className="rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <p className="font-semibold text-slate-900">{question.prompt}</p>
+                  {question.isRequired ? <Badge variant="dark">Required</Badge> : null}
+                </div>
+                {question.helpText ? (
+                  <p className="mb-3 text-sm text-slate-500">{question.helpText}</p>
+                ) : null}
+                <SelectField
+                  label="Answer"
+                  value={selectedAnswerMap.get(question.id) ?? ""}
+                  onChange={(optionId) =>
+                    onChange({
+                      ...form,
+                      intakeAnswers: [
+                        ...(form.intakeAnswers ?? []).filter((item) => item.questionId !== question.id),
+                        ...(optionId ? [{ questionId: question.id, optionId }] : []),
+                      ],
+                    })
+                  }
+                  options={[
+                    { value: "", label: "Select answer" },
+                    ...question.answerOptions.map((option) => ({
+                      value: option.id,
+                      label: `${option.label} (${option.weight >= 0 ? `+${option.weight}` : option.weight})`,
+                    })),
+                  ]}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
       <TextAreaField
         label="Internal Notes"
         value={form.internalNotes}

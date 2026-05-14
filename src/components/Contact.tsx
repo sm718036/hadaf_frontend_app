@@ -4,6 +4,7 @@ import { Mail, MapPin, Phone } from "lucide-react";
 import { STATIC_CONTACT_FORM } from "@/content/landing-static";
 import { Reveal } from "@/components/reveal";
 import { SelectMenu } from "@/components/ui/select-menu";
+import { usePublicLeadIntakeMetadata } from "@/features/intake-engine/use-intake-engine";
 import { useSubmitPublicLead } from "@/features/leads/use-leads";
 import type { SiteContent } from "@/features/site-content/site-content.schemas";
 import { resolveContentImage } from "@/lib/content-assets";
@@ -22,15 +23,27 @@ const contactIcons = {
 
 export function Contact({ content, serviceOptions, countryOptions }: ContactProps) {
   const submitLeadMutation = useSubmitPublicLead();
+  const intakeMetadataQuery = usePublicLeadIntakeMetadata(true);
   const [form, setForm] = useState({
     fullName: "",
     phone: "",
     email: "",
+    interestedCountryConfigurationId: "",
     interestedCountry: "",
+    interestedVisaCategoryId: "",
     interestedService: "",
     message: "",
+    intakeAnswers: [] as Array<{ questionId: string; optionId: string }>,
   });
   const visibleDetails = content.details.filter((detail) => detail.isVisible);
+  const countries = intakeMetadataQuery.data?.countries ?? countryOptions.map((name) => ({ id: name, name, baseCurrency: "" }));
+  const visaCategories = (intakeMetadataQuery.data?.visaCategories ?? [])
+    .filter((item) => item.countryId === form.interestedCountryConfigurationId);
+  const intakeQuestions = (intakeMetadataQuery.data?.questions ?? []).filter(
+    (question) =>
+      (!question.countryConfigurationId || question.countryConfigurationId === form.interestedCountryConfigurationId) &&
+      (!question.visaCategoryId || question.visaCategoryId === form.interestedVisaCategoryId),
+  );
 
   if (!content.isVisible) {
     return null;
@@ -69,13 +82,12 @@ export function Contact({ content, serviceOptions, countryOptions }: ContactProp
                     fullName: form.fullName,
                     phone: form.phone,
                     email: form.email,
-                    interestedCountry:
-                      form.interestedCountry === "Select Country" ? "" : form.interestedCountry,
-                    interestedService:
-                      form.interestedService === STATIC_CONTACT_FORM.placeholders.selectDefault
-                        ? ""
-                        : form.interestedService,
+                    interestedCountryConfigurationId: form.interestedCountryConfigurationId || null,
+                    interestedCountry: form.interestedCountry,
+                    interestedVisaCategoryId: form.interestedVisaCategoryId || null,
+                    interestedService: form.interestedService,
                     message: form.message,
+                    intakeAnswers: form.intakeAnswers,
                     formName: "Contact Form",
                   });
                   toast.success("Your request has been received.");
@@ -83,9 +95,12 @@ export function Contact({ content, serviceOptions, countryOptions }: ContactProp
                     fullName: "",
                     phone: "",
                     email: "",
+                    interestedCountryConfigurationId: "",
                     interestedCountry: "",
+                    interestedVisaCategoryId: "",
                     interestedService: "",
                     message: "",
+                    intakeAnswers: [],
                   });
                 } catch (error) {
                   toast.error(
@@ -123,27 +138,89 @@ export function Contact({ content, serviceOptions, countryOptions }: ContactProp
                   className="h-[52px] w-full border border-border bg-white px-5 text-[14px] text-foreground placeholder:text-muted-foreground transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15"
                 />
                 <SelectMenu
-                  value={form.interestedCountry}
-                  onValueChange={(interestedCountry) =>
-                    setForm((current) => ({ ...current, interestedCountry }))
+                  value={form.interestedCountryConfigurationId}
+                  onValueChange={(interestedCountryConfigurationId) =>
+                    setForm((current) => {
+                      const selectedCountry = countries.find((item) => item.id === interestedCountryConfigurationId);
+
+                      return {
+                        ...current,
+                        interestedCountryConfigurationId,
+                        interestedCountry: selectedCountry?.name ?? "",
+                        interestedVisaCategoryId: "",
+                        interestedService: "",
+                        intakeAnswers: [],
+                      };
+                    })
                   }
                   placeholder="Select Country"
                   className="h-[52px] border-border px-5 text-[14px] text-foreground focus:border-primary"
-                  options={countryOptions.map((option) => ({ value: option, label: option }))}
+                  options={countries.map((option) => ({ value: option.id, label: option.name }))}
                 />
               </div>
 
               <div className="grid gap-5 sm:grid-cols-2">
                 <SelectMenu
-                  value={form.interestedService}
-                  onValueChange={(interestedService) =>
-                    setForm((current) => ({ ...current, interestedService }))
+                  value={form.interestedVisaCategoryId}
+                  onValueChange={(interestedVisaCategoryId) =>
+                    setForm((current) => {
+                      const selectedCategory = visaCategories.find((item) => item.id === interestedVisaCategoryId);
+
+                      return {
+                        ...current,
+                        interestedVisaCategoryId,
+                        interestedService: selectedCategory?.name ?? "",
+                        intakeAnswers: [],
+                      };
+                    })
                   }
                   placeholder={STATIC_CONTACT_FORM.placeholders.selectDefault}
                   className="h-[52px] border-border px-5 text-[14px] text-foreground focus:border-primary"
-                  options={serviceOptions.map((option) => ({ value: option, label: option }))}
+                  options={
+                    visaCategories.length > 0
+                      ? visaCategories.map((option) => ({
+                          value: option.id,
+                          label: `${option.code} · ${option.name}`,
+                        }))
+                      : serviceOptions.map((option) => ({ value: option, label: option }))
+                  }
                 />
               </div>
+
+              {intakeQuestions.length > 0 ? (
+                <div className="grid gap-5">
+                  {intakeQuestions.map((question) => (
+                    <div key={question.id} className="border border-border bg-white px-5 py-4">
+                      <p className="text-sm font-semibold text-foreground">{question.prompt}</p>
+                      {question.helpText ? (
+                        <p className="mt-2 text-xs leading-6 text-muted-foreground">{question.helpText}</p>
+                      ) : null}
+                      <div className="mt-3">
+                        <SelectMenu
+                          value={
+                            form.intakeAnswers.find((answer) => answer.questionId === question.id)?.optionId ?? ""
+                          }
+                          onValueChange={(optionId) =>
+                            setForm((current) => ({
+                              ...current,
+                              intakeAnswers: [
+                                ...current.intakeAnswers.filter((answer) => answer.questionId !== question.id),
+                                ...(optionId ? [{ questionId: question.id, optionId }] : []),
+                              ],
+                            }))
+                          }
+                          placeholder="Select answer"
+                          className="h-[52px] border-border px-5 text-[14px] text-foreground focus:border-primary"
+                          options={question.answerOptions.map((option) => ({
+                            value: option.id,
+                            label: option.label,
+                          }))}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
 
               <textarea
                 rows={6}
