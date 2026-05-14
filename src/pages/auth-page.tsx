@@ -269,12 +269,10 @@ export function AuthPage() {
     return (
       <main className="relative min-h-screen overflow-hidden bg-white">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(164,255,238,0.08),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(251,176,64,0.12),transparent_32%)]" />
-        <div className="absolute inset-0 bg-white/70 backdrop-blur-sm" />
-        <div className="relative flex min-h-screen items-center justify-center px-4">
-          <div className="flex min-w-[280px] flex-col items-center gap-4 rounded-[28px] border border-slate-200 bg-white/95 px-8 py-8 text-center shadow-xl">
-            <SpinnerTwo size="lg" />
-            <span className="text-sm font-medium text-slate-600">Loading authentication...</span>
-          </div>
+        <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px]" />
+        <div className="relative flex min-h-screen flex-col items-center justify-center gap-4 px-4 text-center">
+          <SpinnerTwo size="lg" />
+          <span className="text-sm font-medium text-slate-600">Loading authentication...</span>
         </div>
       </main>
     );

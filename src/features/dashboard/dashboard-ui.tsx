@@ -86,17 +86,15 @@ export function LoadingOverlay({
   return (
     <div
       className={cn(
-        "absolute inset-0 z-20 flex items-center justify-center bg-white/72",
+        "absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-white/60",
         blur ? "backdrop-blur-[2px]" : "",
         inset,
       )}
       aria-live="polite"
       aria-busy="true"
     >
-      <div className="inline-flex items-center gap-3 rounded-full border border-slate-200 bg-white/92 px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm">
-        <SpinnerTwo size="sm" />
-        <span>{label}</span>
-      </div>
+      <SpinnerTwo size="sm" />
+      <span className="text-sm font-medium text-slate-700">{label}</span>
     </div>
   );
 }

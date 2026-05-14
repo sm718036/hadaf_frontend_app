@@ -72,7 +72,7 @@ export function RoleProtectedRoute({
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 text-slate-500">
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-white/60 text-slate-500 backdrop-blur-[2px]">
         <SpinnerTwo size="lg" />
         <span className="text-sm font-medium">Loading dashboard...</span>
       </div>

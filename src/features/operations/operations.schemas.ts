@@ -131,6 +131,8 @@ export type ChatContact = {
   roleLabel: string;
   subtitle: string | null;
   avatarUrl: string | null;
+  isOnline: boolean;
+  lastActiveAt: string | null;
 };
 
 export type ChatThreadSummary = {

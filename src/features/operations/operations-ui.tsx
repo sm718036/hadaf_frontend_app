@@ -1,7 +1,9 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { Mic, MoreVertical, Phone, Search, SendHorizontal, Video } from "lucide-react";
 import { toast } from "sonner";
 import { AppDialog } from "@/components/ui/app-dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { SelectMenu } from "@/components/ui/select-menu";
 import { useCurrentClient } from "@/features/client-auth/use-client-auth";
@@ -21,6 +23,7 @@ import {
 import { useInternalUsers } from "@/features/internal-users/use-users";
 import { APP_ROUTES } from "@/config/routes";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
+import { cn } from "@/lib/utils";
 import {
   APPOINTMENT_STATUSES,
   APPOINTMENT_TYPES,
@@ -93,6 +96,131 @@ function formatDate(value: string | null) {
 
 function formatDateTime(value: string | null) {
   return value ? new Date(value).toLocaleString() : "—";
+}
+
+function formatConversationDay(value: string) {
+  return new Date(value).toLocaleDateString(undefined, {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function formatPresenceLabel(contact: ChatContact) {
+  if (contact.isOnline) {
+    return "Online";
+  }
+
+  if (!contact.lastActiveAt) {
+    return "Offline";
+  }
+
+  return `Last active ${new Date(contact.lastActiveAt).toLocaleString()}`;
+}
+
+function PresenceBadge({ contact }: { contact: ChatContact }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] ${
+        contact.isOnline ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
+      }`}
+      title={formatPresenceLabel(contact)}
+    >
+      <span
+        className={`h-2 w-2 rounded-full ${contact.isOnline ? "bg-emerald-500" : "bg-slate-400"}`}
+      />
+      {contact.isOnline ? "Online" : "Offline"}
+    </span>
+  );
+}
+
+function getContactInitials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
+function ContactAvatar({
+  contact,
+  size = "md",
+}: {
+  contact: ChatContact;
+  size?: "sm" | "md" | "lg";
+}) {
+  const sizeClassName =
+    size === "sm" ? "h-10 w-10" : size === "lg" ? "h-14 w-14" : "h-12 w-12";
+
+  return (
+    <div className="relative shrink-0">
+      <Avatar className={cn(sizeClassName, "border border-white/70 shadow-sm")}>
+        <AvatarImage src={contact.avatarUrl || undefined} alt={contact.name} />
+        <AvatarFallback className="bg-mint text-sm font-bold text-dark">
+          {getContactInitials(contact.name)}
+        </AvatarFallback>
+      </Avatar>
+      <span
+        className={cn(
+          "absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white",
+          contact.isOnline ? "bg-emerald-500" : "bg-slate-300",
+        )}
+      />
+    </div>
+  );
+}
+
+function ConversationComposer({
+  value,
+  onChange,
+  onSubmit,
+  disabled,
+  pending,
+  placeholder,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  onSubmit: () => void;
+  disabled?: boolean;
+  pending?: boolean;
+  placeholder: string;
+}) {
+  return (
+    <div className="border-t border-slate-200 bg-white px-5 py-4">
+      <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-slate-50 px-4 py-3 shadow-sm">
+        <input
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+          className="min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault();
+              onSubmit();
+            }
+          }}
+        />
+        <button
+          type="button"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-full text-slate-400 transition hover:bg-white hover:text-primary"
+          aria-label="Voice note"
+        >
+          <Mic className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          disabled={disabled || pending}
+          onClick={onSubmit}
+          className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-primary text-dark transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+          aria-label="Send message"
+        >
+          <SendHorizontal className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
 }
 
 function makeSelectOptions(values: readonly string[]) {
@@ -1484,37 +1612,41 @@ function MeetingCard({
         : "info";
 
   return (
-    <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5">
+    <div className="rounded-[1.5rem] border border-slate-200 bg-white/92 p-4 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="font-display text-lg font-bold text-slate-950">{meeting.title}</h3>
+          <h3 className="font-display text-base font-bold text-slate-950">{meeting.title}</h3>
           <p className="mt-1 text-sm text-slate-500">
             {meeting.contact.name} · {formatDateTime(meeting.scheduledAt)}
           </p>
         </div>
         <StatusBadge tone={statusTone}>{meeting.status.replaceAll("_", " ")}</StatusBadge>
       </div>
-      <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+      <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
         <span>{meeting.meetingType.replaceAll("_", " ")}</span>
         <span>{meeting.durationMinutes} min</span>
       </div>
       {meeting.notes ? (
         <p className="mt-3 text-sm leading-6 text-slate-600">{meeting.notes}</p>
       ) : null}
-      <div className="mt-4 flex flex-wrap gap-3">
-        <Link to={meeting.joinPath} className="btn-gold">
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Link to={meeting.joinPath} className="btn-gold !px-4 !py-2.5 text-xs">
           {meeting.meetingType === "video_call" ? "Join Video Call" : "Open Meeting"}
         </Link>
         {canManage && meeting.status === "scheduled" ? (
           <>
             <button
               type="button"
-              className="btn-secondary"
+              className="btn-secondary !px-4 !py-2.5 text-xs"
               onClick={() => onMarkCompleted?.(meeting.id)}
             >
               Mark Completed
             </button>
-            <button type="button" className="btn-secondary" onClick={() => onCancel?.(meeting.id)}>
+            <button
+              type="button"
+              className="btn-secondary !px-4 !py-2.5 text-xs"
+              onClick={() => onCancel?.(meeting.id)}
+            >
               Cancel
             </button>
           </>
@@ -1607,6 +1739,21 @@ export function MessageListPage({
   const filteredMeetings = selectedContact
     ? meetings.filter((meeting) => contactKey(meeting.contact) === contactKey(selectedContact))
     : meetings;
+  const sidebarMeetings = mode === "internal" ? filteredMeetings : meetings;
+  const composerPending =
+    mode === "internal"
+      ? sendPortalMessageMutation.isPending
+      : sendClientPortalMessageMutation.isPending;
+  const showConversationLoading =
+    mode === "internal"
+      ? conversationQuery.isLoading && Boolean(selectedThreadId)
+      : ownConversationQuery.isLoading;
+  const conversationErrorMessage =
+    mode === "client" && ownConversationQuery.error
+      ? ownConversationQuery.error instanceof Error
+        ? ownConversationQuery.error.message
+        : "Unable to load your conversation."
+      : null;
 
   const submitMessage = async () => {
     if (!composerBody.trim()) {
@@ -1674,9 +1821,10 @@ export function MessageListPage({
         title="Messages & Meetings"
         subtitle={
           mode === "internal"
-            ? "Run client and team conversations inside the portal, then schedule meetings or video calls from the same thread."
-            : "Stay connected with your assigned Hadaf contact inside the portal."
+            ? "Work through client and team conversations in one shared workspace."
+            : "Stay connected with your assigned Hadaf contact in one conversation hub."
         }
+        className="overflow-hidden border-brand-line bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(164,255,238,0.12)_100%)] p-0"
         action={
           mode === "internal" ? (
             <div className="flex flex-wrap gap-3">
@@ -1699,300 +1847,360 @@ export function MessageListPage({
           ) : null
         }
       >
-        {!canReadMessages ? (
+{!canReadMessages ? (
           <EmptyHint message="You do not have permission to access the messaging workspace." />
-        ) : mode === "internal" ? (
-          <div className="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)]">
-            <div className="rounded-[1.8rem] border border-slate-200 bg-white p-4">
-              <TableToolbar
-                searchValue={threadSearch}
-                onSearchChange={setThreadSearch}
-                searchPlaceholder="Search conversations..."
-                summary={`${threadsQuery.data?.length ?? 0} conversations`}
-              />
-              <div className="mt-4 space-y-3">
-                {threadsQuery.isLoading ? (
-                  <EmptyHint message="Loading conversations..." loading />
-                ) : (threadsQuery.data ?? []).length === 0 ? (
-                  <EmptyHint message="No conversations available yet." />
-                ) : (
-                  (threadsQuery.data ?? []).map((thread) => (
-                    <button
-                      key={thread.threadId}
-                      type="button"
-                      onClick={() => setSelectedThreadId(thread.threadId)}
-                      className={`w-full rounded-[1.4rem] border px-4 py-4 text-left transition ${
-                        thread.threadId === selectedThreadId
-                          ? "border-amber-300 bg-amber-50/70"
-                          : "border-slate-200 bg-slate-50 hover:bg-white"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="font-semibold text-slate-900">{thread.contact.name}</p>
-                          <p className="mt-1 text-xs uppercase tracking-[0.16em] text-slate-500">
-                            {thread.contact.roleLabel}
-                          </p>
-                        </div>
-                        {thread.unreadCount > 0 ? <Badge>{thread.unreadCount}</Badge> : null}
-                      </div>
-                      <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-600">
-                        {thread.lastMessagePreview || "No messages yet."}
-                      </p>
-                      <p className="mt-2 text-xs text-slate-400">
-                        {formatDateTime(thread.lastMessageAt)}
-                      </p>
-                    </button>
-                  ))
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <div className="rounded-[1.8rem] border border-slate-200 bg-white p-5">
-                {conversationQuery.isLoading && selectedThreadId ? (
+        ) : (
+          <div className="grid min-h-[78vh] gap-0 xl:grid-cols-[minmax(0,1fr)_340px]">
+            <section className="flex min-h-[78vh] flex-col bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(164,255,238,0.1)_100%)]">
+              {showConversationLoading ? (
+                <div className="flex min-h-[78vh] items-center justify-center px-6">
                   <EmptyHint message="Loading conversation..." loading />
-                ) : selectedContact ? (
-                  <>
-                    <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 pb-4">
-                      <div>
-                        <h3 className="font-display text-xl font-bold text-slate-950">
-                          {selectedContact.name}
-                        </h3>
-                        <p className="mt-1 text-sm text-slate-500">
-                          {selectedContact.roleLabel}
-                          {selectedContact.email ? ` · ${selectedContact.email}` : ""}
-                        </p>
+                </div>
+              ) : conversationErrorMessage ? (
+                <div className="flex min-h-[78vh] items-center justify-center px-6">
+                  <EmptyHint message={conversationErrorMessage} tone="error" />
+                </div>
+              ) : selectedContact ? (
+                <>
+                  <div className="border-b border-slate-200/80 bg-white/88 px-5 py-4 backdrop-blur sm:px-6">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex min-w-0 items-center gap-4">
+                        <ContactAvatar contact={selectedContact} size="lg" />
+                        <div className="min-w-0">
+                          <h3 className="truncate font-display text-xl font-extrabold text-slate-950 sm:text-2xl">
+                            {selectedContact.name}
+                          </h3>
+                          <div className="mt-1 flex flex-wrap items-center gap-3">
+                            <p className="truncate text-sm text-slate-500">
+                              {selectedContact.roleLabel}
+                              {selectedContact.email ? ` · ${selectedContact.email}` : ""}
+                            </p>
+                            <PresenceBadge contact={selectedContact} />
+                          </div>
+                        </div>
                       </div>
-                      <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                        Direct portal contact
+                      <div className="flex items-center gap-2 text-slate-500">
+                        <button
+                          type="button"
+                          className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/80 transition hover:bg-brand-soft hover:text-dark"
+                          aria-label="Call contact"
+                        >
+                          <Phone className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/80 transition hover:bg-brand-soft hover:text-dark"
+                          aria-label="Video call contact"
+                        >
+                          <Video className="h-4 w-4" />
+                        </button>
+                        {mode === "internal" ? (
+                          <button
+                            type="button"
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/80 transition hover:bg-brand-soft hover:text-dark"
+                            aria-label="Conversation options"
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </button>
+                        ) : null}
                       </div>
                     </div>
-                    <div className="mt-5 max-h-[420px] space-y-3 overflow-y-auto pr-1">
-                      {conversationMessages.length === 0 ? (
-                        <EmptyHint message="No messages in this conversation yet." />
-                      ) : (
-                        conversationMessages.map((message) => {
-                          const isOwn =
-                            message.senderAppUserId === undefined
-                              ? false
-                              : message.senderAppUserId !== null;
+                  </div>
+
+                  <div className="scrollbar-subtle flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+                    {conversationMessages.length === 0 ? (
+                      <EmptyHint
+                        message={
+                          mode === "internal"
+                            ? "No messages in this conversation yet."
+                            : "No messages yet. Start the conversation below."
+                        }
+                      />
+                    ) : (
+                      <div className="space-y-6">
+                        {conversationMessages.map((message, index) => {
+                          const previousMessage = conversationMessages[index - 1] ?? null;
+                          const currentDay = new Date(message.createdAt).toDateString();
+                          const previousDay = previousMessage
+                            ? new Date(previousMessage.createdAt).toDateString()
+                            : null;
+                          const showsDayDivider = currentDay !== previousDay;
                           const alignsRight =
-                            message.senderType === "internal" && message.senderAppUserId !== null;
+                            mode === "internal"
+                              ? message.senderType === "internal" &&
+                                message.senderAppUserId !== null
+                              : message.senderType === "client";
 
                           return (
-                            <div
-                              key={message.id}
-                              className={`flex ${alignsRight ? "justify-end" : "justify-start"}`}
-                            >
+                            <div key={message.id}>
+                              {showsDayDivider ? (
+                                <div className="mb-5 flex items-center justify-center">
+                                  <span className="rounded-full bg-white/80 px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 shadow-sm ring-1 ring-slate-200/70">
+                                    {formatConversationDay(message.createdAt)}
+                                  </span>
+                                </div>
+                              ) : null}
                               <div
-                                className={`max-w-[80%] rounded-[1.5rem] px-4 py-3 text-sm leading-6 ${
-                                  alignsRight
-                                    ? "bg-slate-950 text-white"
-                                    : "border border-slate-200 bg-slate-50 text-slate-700"
-                                }`}
+                                className={cn(
+                                  "flex gap-3",
+                                  alignsRight ? "justify-end" : "justify-start",
+                                )}
                               >
-                                <p className="text-xs font-semibold uppercase tracking-[0.14em] opacity-70">
-                                  {message.senderName}
-                                </p>
-                                <p className="mt-2 whitespace-pre-wrap">{message.body}</p>
-                                <p className="mt-2 text-[11px] opacity-70">
-                                  {formatDateTime(message.createdAt)}
-                                </p>
+                                {!alignsRight ? (
+                                  <ContactAvatar contact={selectedContact} size="sm" />
+                                ) : null}
+                                <div className="max-w-[85%] sm:max-w-[72%]">
+                                  <div
+                                    className={cn(
+                                      "rounded-[1.55rem] px-4 py-3 text-sm leading-6 shadow-sm sm:px-5",
+                                      alignsRight
+                                        ? "rounded-br-md bg-brand-ink text-white"
+                                        : "rounded-bl-md border border-slate-200/80 bg-white text-slate-700",
+                                    )}
+                                  >
+                                    <p className="font-semibold">{message.senderName}</p>
+                                    <p className="mt-1 whitespace-pre-wrap">{message.body}</p>
+                                  </div>
+                                  <div
+                                    className={cn(
+                                      "mt-1 px-2 text-[11px] text-slate-400",
+                                      alignsRight ? "text-right" : "text-left",
+                                    )}
+                                  >
+                                    {formatDateTime(message.createdAt)}
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           );
-                        })
-                      )}
-                    </div>
-                    <div className="mt-5 border-t border-slate-100 pt-4">
-                      <FormField label="Reply">
-                        <TextArea value={composerBody} onChange={setComposerBody} rows={4} />
-                      </FormField>
-                      <div className="mt-4 flex justify-end">
-                        <button
-                          type="button"
-                          className="btn-gold"
-                          disabled={!canWriteMessages || sendPortalMessageMutation.isPending}
-                          onClick={submitMessage}
-                        >
-                          Send Message
-                        </button>
+                        })}
                       </div>
-                    </div>
-                  </>
-                ) : (
-                  <EmptyHint message="Select a conversation to begin messaging." />
-                )}
-              </div>
-
-              <div className="rounded-[1.8rem] border border-slate-200 bg-slate-50/70 p-5">
-                <div className="mb-4 flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="font-display text-xl font-bold text-slate-950">
-                      Meetings & Video Calls
-                    </h3>
-                    <p className="mt-1 text-sm text-slate-500">
-                      Schedule calls from the active conversation and keep every session tied to its
-                      contact.
-                    </p>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  {meetingsQuery.isLoading ? (
-                    <EmptyHint message="Loading meetings..." loading />
-                  ) : filteredMeetings.length === 0 ? (
-                    <EmptyHint message="No meetings scheduled for this conversation yet." />
-                  ) : (
-                    filteredMeetings.map((meeting) => (
-                      <MeetingCard
-                        key={meeting.id}
-                        meeting={meeting}
-                        area={area}
-                        canManage={canWriteMessages}
-                        onMarkCompleted={(meetingId) =>
-                          updateMeetingStatusMutation.mutate(
-                            { meetingId, input: { status: "completed" } },
-                            {
-                              onSuccess: () => toast.success("Meeting marked completed."),
-                              onError: (error) =>
-                                toast.error(
-                                  error instanceof Error
-                                    ? error.message
-                                    : "Unable to update meeting.",
-                                ),
-                            },
-                          )
-                        }
-                        onCancel={(meetingId) =>
-                          updateMeetingStatusMutation.mutate(
-                            { meetingId, input: { status: "cancelled" } },
-                            {
-                              onSuccess: () => toast.success("Meeting cancelled."),
-                              onError: (error) =>
-                                toast.error(
-                                  error instanceof Error
-                                    ? error.message
-                                    : "Unable to update meeting.",
-                                ),
-                            },
-                          )
-                        }
-                      />
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            <div className="rounded-[1.8rem] border border-slate-200 bg-white p-5">
-              {ownConversationQuery.isLoading ? (
-                <EmptyHint message="Loading your conversation..." loading />
-              ) : ownConversationQuery.error ? (
-                <EmptyHint
-                  message={
-                    ownConversationQuery.error instanceof Error
-                      ? ownConversationQuery.error.message
-                      : "Unable to load your conversation."
-                  }
-                />
-              ) : selectedContact ? (
-                <>
-                  <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 pb-4">
-                    <div>
-                      <h3 className="font-display text-xl font-bold text-slate-950">
-                        {selectedContact.name}
-                      </h3>
-                      <p className="mt-1 text-sm text-slate-500">
-                        {selectedContact.roleLabel}
-                        {selectedContact.email ? ` · ${selectedContact.email}` : ""}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                      Your direct Hadaf contact
-                    </div>
-                  </div>
-                  <div className="mt-5 max-h-[420px] space-y-3 overflow-y-auto pr-1">
-                    {conversationMessages.length === 0 ? (
-                      <EmptyHint message="No messages yet. Start the conversation below." />
-                    ) : (
-                      conversationMessages.map((message) => {
-                        const alignsRight = message.senderType === "client";
-
-                        return (
-                          <div
-                            key={message.id}
-                            className={`flex ${alignsRight ? "justify-end" : "justify-start"}`}
-                          >
-                            <div
-                              className={`max-w-[80%] rounded-[1.5rem] px-4 py-3 text-sm leading-6 ${
-                                alignsRight
-                                  ? "bg-slate-950 text-white"
-                                  : "border border-slate-200 bg-slate-50 text-slate-700"
-                              }`}
-                            >
-                              <p className="text-xs font-semibold uppercase tracking-[0.14em] opacity-70">
-                                {message.senderName}
-                              </p>
-                              <p className="mt-2 whitespace-pre-wrap">{message.body}</p>
-                              <p className="mt-2 text-[11px] opacity-70">
-                                {formatDateTime(message.createdAt)}
-                              </p>
-                            </div>
-                          </div>
-                        );
-                      })
                     )}
                   </div>
-                  <div className="mt-5 border-t border-slate-100 pt-4">
-                    <FormField label="Message">
-                      <TextArea value={composerBody} onChange={setComposerBody} rows={4} />
-                    </FormField>
-                    <div className="mt-4 flex justify-end">
-                      <button
-                        type="button"
-                        className="btn-gold"
-                        disabled={sendClientPortalMessageMutation.isPending}
-                        onClick={submitMessage}
-                      >
-                        Send Message
-                      </button>
-                    </div>
-                  </div>
+
+                  <ConversationComposer
+                    value={composerBody}
+                    onChange={setComposerBody}
+                    onSubmit={submitMessage}
+                    disabled={!canWriteMessages}
+                    pending={composerPending}
+                    placeholder="Type a message"
+                  />
                 </>
               ) : (
-                <EmptyHint message="Your staff contact will appear here once the conversation is ready." />
+                <div className="flex min-h-[78vh] items-center justify-center px-6">
+                  <EmptyHint
+                    message={
+                      mode === "internal"
+                        ? "Select a conversation to begin messaging."
+                        : "Your staff contact will appear here once the conversation is ready."
+                    }
+                  />
+                </div>
               )}
-            </div>
+            </section>
 
-            <div className="rounded-[1.8rem] border border-slate-200 bg-slate-50/70 p-5">
-              <div className="mb-4">
-                <h3 className="font-display text-xl font-bold text-slate-950">
-                  Meetings & Video Calls
-                </h3>
-                <p className="mt-1 text-sm text-slate-500">
-                  Open your scheduled consultations and join video calls directly from the portal.
-                </p>
+            <aside className="border-t border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(164,255,238,0.24)_100%)] xl:border-l xl:border-t-0">
+              <div className="flex h-full flex-col">
+                <div className="border-b border-slate-200/80 px-4 py-4 sm:px-5">
+                  {mode === "internal" ? (
+                    <>
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="font-display text-lg font-extrabold text-slate-950">
+                            Chats
+                          </p>
+                          <p className="text-xs uppercase tracking-[0.16em] text-slate-400">
+                            {threadsQuery.data?.length ?? 0} conversations
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-primary text-dark transition hover:brightness-95"
+                          onClick={() => setIsContactDialogOpen(true)}
+                          aria-label="New conversation"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <div className="mt-4 flex items-center gap-3 rounded-full border border-slate-200/80 bg-white/90 px-4 py-3 shadow-sm">
+                        <Search className="h-4 w-4 text-slate-400" />
+                        <input
+                          value={threadSearch}
+                          onChange={(event) => setThreadSearch(event.target.value)}
+                          placeholder="Search conversations"
+                          className="min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <p className="font-display text-lg font-extrabold text-slate-950">
+                        Conversation Info
+                      </p>
+                      <p className="mt-1 text-sm text-slate-500">
+                        Your Hadaf contact and upcoming consultations live here.
+                      </p>
+                    </>
+                  )}
+                </div>
+
+                {mode === "internal" ? (
+                  <div className="scrollbar-subtle max-h-[42vh] flex-1 overflow-y-auto px-3 py-3">
+                    {threadsQuery.isLoading ? (
+                      <EmptyHint message="Loading conversations..." loading />
+                    ) : (threadsQuery.data ?? []).length === 0 ? (
+                      <EmptyHint message="No conversations available yet." />
+                    ) : (
+                      (threadsQuery.data ?? []).map((thread) => (
+                        <button
+                          key={thread.threadId}
+                          type="button"
+                          onClick={() => setSelectedThreadId(thread.threadId)}
+                          className={cn(
+                            "mb-2 flex w-full items-center gap-3 rounded-[1.5rem] px-3 py-3 text-left transition",
+                            thread.threadId === selectedThreadId
+                              ? "bg-white shadow-sm ring-1 ring-primary/35"
+                              : "hover:bg-white/80",
+                          )}
+                        >
+                          <ContactAvatar contact={thread.contact} size="sm" />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="truncate font-semibold text-slate-900">
+                                  {thread.contact.name}
+                                </p>
+                                <p className="mt-0.5 truncate text-xs text-slate-500">
+                                  {thread.lastMessagePreview || "No messages yet."}
+                                </p>
+                              </div>
+                              <div className="shrink-0 text-right">
+                                <p className="text-[11px] text-slate-400">
+                                  {formatDateTime(thread.lastMessageAt)}
+                                </p>
+                                {thread.unreadCount > 0 ? (
+                                  <span className="mt-2 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-bold text-dark">
+                                    {thread.unreadCount}
+                                  </span>
+                                ) : null}
+                              </div>
+                            </div>
+                            <div className="mt-2 text-[11px] text-slate-400">
+                              {formatPresenceLabel(thread.contact)}
+                            </div>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                ) : selectedContact ? (
+                  <div className="px-4 py-4 sm:px-5">
+                    <div className="rounded-[1.75rem] border border-white/70 bg-white/88 p-4 shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <ContactAvatar contact={selectedContact} size="md" />
+                        <div className="min-w-0">
+                          <p className="truncate font-display text-lg font-extrabold text-slate-950">
+                            {selectedContact.name}
+                          </p>
+                          <p className="truncate text-sm text-slate-500">
+                            {selectedContact.roleLabel}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <PresenceBadge contact={selectedContact} />
+                        {selectedContact.email ? (
+                          <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-500">
+                            {selectedContact.email}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="border-t border-slate-200/80 px-4 py-4 sm:px-5">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="font-display text-lg font-extrabold text-slate-950">
+                        Meetings
+                      </p>
+                      <p className="text-xs uppercase tracking-[0.16em] text-slate-400">
+                        {mode === "internal" ? "Active thread schedule" : "Upcoming consultations"}
+                      </p>
+                    </div>
+                    {mode === "internal" ? (
+                      <button
+                        type="button"
+                        className="text-xs font-semibold text-primary disabled:text-slate-400"
+                        onClick={() => setIsMeetingDialogOpen(true)}
+                        disabled={!selectedContact || !canWriteMessages}
+                      >
+                        Schedule
+                      </button>
+                    ) : null}
+                  </div>
+                  <div className="scrollbar-subtle max-h-[30vh] space-y-3 overflow-y-auto pr-1">
+                    {(mode === "internal" ? meetingsQuery.isLoading : ownMeetingsQuery.isLoading) ? (
+                      <EmptyHint message="Loading meetings..." loading />
+                    ) : sidebarMeetings.length === 0 ? (
+                      <EmptyHint
+                        message={
+                          mode === "internal"
+                            ? "No meetings scheduled for this conversation yet."
+                            : "No meetings scheduled yet."
+                        }
+                      />
+                    ) : (
+                      sidebarMeetings.map((meeting) => (
+                        <MeetingCard
+                          key={meeting.id}
+                          meeting={meeting}
+                          area={mode === "internal" ? area : "client"}
+                          canManage={mode === "internal" && canWriteMessages}
+                          onMarkCompleted={
+                            mode === "internal"
+                              ? (meetingId) =>
+                                  updateMeetingStatusMutation.mutate(
+                                    { meetingId, input: { status: "completed" } },
+                                    {
+                                      onSuccess: () =>
+                                        toast.success("Meeting marked completed."),
+                                      onError: (error) =>
+                                        toast.error(
+                                          error instanceof Error
+                                            ? error.message
+                                            : "Unable to update meeting.",
+                                        ),
+                                    },
+                                  )
+                              : undefined
+                          }
+                          onCancel={
+                            mode === "internal"
+                              ? (meetingId) =>
+                                  updateMeetingStatusMutation.mutate(
+                                    { meetingId, input: { status: "cancelled" } },
+                                    {
+                                      onSuccess: () => toast.success("Meeting cancelled."),
+                                      onError: (error) =>
+                                        toast.error(
+                                          error instanceof Error
+                                            ? error.message
+                                            : "Unable to update meeting.",
+                                        ),
+                                    },
+                                  )
+                              : undefined
+                          }
+                        />
+                      ))
+                    )}
+                  </div>
+                </div>
               </div>
-              <div className="space-y-4">
-                {ownMeetingsQuery.isLoading ? (
-                  <EmptyHint message="Loading meetings..." loading />
-                ) : meetings.length === 0 ? (
-                  <EmptyHint message="No meetings scheduled yet." />
-                ) : (
-                  meetings.map((meeting) => (
-                    <MeetingCard
-                      key={meeting.id}
-                      meeting={meeting}
-                      area="client"
-                      canManage={false}
-                    />
-                  ))
-                )}
-              </div>
-            </div>
+            </aside>
           </div>
         )}
       </Panel>
@@ -2038,6 +2246,9 @@ export function MessageListPage({
                 <p className="mt-1 text-xs uppercase tracking-[0.16em] text-slate-500">
                   {contact.roleLabel}
                 </p>
+                <div className="mt-2">
+                  <PresenceBadge contact={contact} />
+                </div>
                 <p className="mt-2 text-sm text-slate-600">
                   {contact.subtitle || contact.email || "Contact account"}
                 </p>
