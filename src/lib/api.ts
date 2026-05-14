@@ -3,6 +3,20 @@ import { logger } from "@/lib/logger";
 export const API_BASE_URL =
   import.meta.env.VITE_API_URL?.replace(/\/$/, "") || "http://localhost:4000";
 
+function buildApiUrl(path: string) {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+
+  if (!API_BASE_URL) {
+    return normalizedPath;
+  }
+
+  if (API_BASE_URL.endsWith("/api") && normalizedPath.startsWith("/api/")) {
+    return `${API_BASE_URL}${normalizedPath.slice(4)}`;
+  }
+
+  return `${API_BASE_URL}${normalizedPath}`;
+}
+
 type ApiRequestOptions = {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
@@ -52,7 +66,7 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
   });
 
   try {
-    const response = await fetch(`${API_BASE_URL}${path}`, {
+    const response = await fetch(buildApiUrl(path), {
       method,
       credentials: "include",
       signal: options.signal,
@@ -94,7 +108,7 @@ export async function apiFormRequest<T>(path: string, options: ApiFormRequestOpt
   });
 
   try {
-    const response = await fetch(`${API_BASE_URL}${path}`, {
+    const response = await fetch(buildApiUrl(path), {
       method,
       credentials: "include",
       signal: options.signal,
