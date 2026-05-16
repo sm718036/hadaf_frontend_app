@@ -28,9 +28,11 @@ import {
   APPOINTMENT_STATUSES,
   APPOINTMENT_TYPES,
   CHAT_CONTACT_TYPES,
+  DOCUMENT_REVIEW_STATUSES,
   DOCUMENT_STATUSES,
   MEETING_STATUSES,
   MEETING_TYPES,
+  OFFLINE_PAYMENT_MODES,
   PAYMENT_STATUSES,
   TASK_PRIORITIES,
   TASK_STATUSES,
@@ -41,9 +43,11 @@ import {
   type CreateMeetingInput,
   type CreatePortalMessageInput,
   type DocumentStatus,
+  type DocumentReviewStatus,
   type MeetingStatus,
   type MeetingType,
   type PaymentStatus,
+  type PaymentReceiptInput,
   type PortalMeeting,
   type TaskPriority,
   type TaskStatus,
@@ -65,6 +69,7 @@ import {
   useDeleteDocument,
   useDeletePayment,
   useDeleteTask,
+  useLogPaymentReceipt,
   useDocuments,
   useMeetingDetail,
   useMessages,
@@ -88,7 +93,9 @@ import {
   useUpsertTask,
   useUploadDocumentFile,
   useUploadOwnDocumentFile,
+  useUploadPaymentReceiptImage,
 } from "./use-operations";
+import { useFinancialLedger } from "@/features/financial-ledger/use-financial-ledger";
 
 function formatDate(value: string | null) {
   return value ? new Date(value).toLocaleDateString() : "—";
@@ -263,14 +270,19 @@ function createEmptyDocumentForm(status: DocumentStatus): UpsertDocumentInput {
   return {
     clientId: "",
     applicationId: null,
+    checklistRuleId: null,
     title: "",
     documentType: "",
     status,
+    reviewStatus: "pending",
     fileUrl: "",
     fileName: "",
     fileSize: null,
     contentType: "",
     notes: "",
+    reviewNote: "",
+    expiryDate: "",
+    expiryAlertMonths: null,
     visibleToClient: true,
   };
 }
@@ -299,11 +311,15 @@ function createEmptyPaymentForm(): UpsertPaymentInput {
     amount: 0,
     currency: "PKR",
     status: "pending",
+    milestoneLabel: "",
+    contractTotal: 0,
     dueDate: "",
     paidAt: "",
+    paymentMode: null,
     paymentMethod: "",
     referenceNumber: "",
     notes: "",
+    feeLines: [],
   };
 }
 
@@ -761,6 +777,7 @@ export function DocumentListPage({
             "Client",
             "Type",
             "Status",
+            "Review",
             "File",
             "Visibility",
             "Uploaded",
@@ -784,30 +801,81 @@ export function DocumentListPage({
             >
               {document.status}
             </StatusBadge>,
+            <StatusBadge
+              tone={
+                document.reviewStatus === "accepted"
+                  ? "success"
+                  : document.reviewStatus === "rejected" || document.reviewStatus === "expired"
+                    ? "warning"
+                    : "info"
+              }
+            >
+              {document.reviewStatus}
+            </StatusBadge>,
             <FileLink url={document.fileUrl} label={document.fileName} />,
             document.visibleToClient ? (
               <Badge variant="success">Client visible</Badge>
             ) : (
               <Badge variant="light">Internal only</Badge>
             ),
-            document.uploadedByClientName || document.uploadedByInternalName || "—",
+            <div className="text-left">
+              <p>{document.uploadedByClientName || document.uploadedByInternalName || "—"}</p>
+              {document.isExpiryAlertDue ? (
+                <p className="text-xs font-semibold text-amber-700">
+                  Expiry alert due {document.expiryDate ? `· ${formatDate(document.expiryDate)}` : ""}
+                </p>
+              ) : document.expiryDate ? (
+                <p className="text-xs text-slate-500">Expires {formatDate(document.expiryDate)}</p>
+              ) : null}
+            </div>,
             mode === "internal" ? (
-              <button
-                type="button"
-                className="rounded-xl border border-destructive/20 px-3 py-1.5 text-xs font-semibold text-destructive"
-                onClick={async () => {
-                  try {
-                    await deleteDocumentMutation.mutateAsync(document.id);
-                    toast.success("Document deleted.");
-                  } catch (error) {
-                    toast.error(
-                      error instanceof Error ? error.message : "Unable to delete document.",
-                    );
-                  }
-                }}
-              >
-                Delete
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
+                  onClick={() => {
+                    setSelectedFile(null);
+                    setForm({
+                      id: document.id,
+                      clientId: document.clientId,
+                      applicationId: document.applicationId,
+                      checklistRuleId: document.checklistRuleId,
+                      title: document.title,
+                      documentType: document.documentType,
+                      status: document.status,
+                      reviewStatus: document.reviewStatus,
+                      fileUrl: document.fileUrl ?? "",
+                      fileName: document.fileName ?? "",
+                      fileSize: document.fileSize,
+                      contentType: document.contentType ?? "",
+                      notes: document.notes ?? "",
+                      reviewNote: document.reviewNote ?? "",
+                      expiryDate: document.expiryDate ?? "",
+                      expiryAlertMonths: document.expiryAlertMonths,
+                      visibleToClient: document.visibleToClient,
+                    });
+                    setIsCreateOpen(true);
+                  }}
+                >
+                  Review
+                </button>
+                <button
+                  type="button"
+                  className="rounded-xl border border-destructive/20 px-3 py-1.5 text-xs font-semibold text-destructive"
+                  onClick={async () => {
+                    try {
+                      await deleteDocumentMutation.mutateAsync(document.id);
+                      toast.success("Document deleted.");
+                    } catch (error) {
+                      toast.error(
+                        error instanceof Error ? error.message : "Unable to delete document.",
+                      );
+                    }
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
             ) : (
               "—"
             ),
@@ -832,7 +900,7 @@ export function DocumentListPage({
         title={mode === "internal" ? "Create Document Record" : "Upload Document"}
         description={
           mode === "internal"
-            ? "Create or request a document record without leaving the document list."
+            ? "Create, review, or request a document record without leaving the document list."
             : "Upload a document from your portal without leaving the page."
         }
       >
@@ -899,6 +967,46 @@ export function DocumentListPage({
               />
             </FormField>
           ) : null}
+          {mode === "internal" ? (
+            <FormField label="Review Status">
+              <SelectMenu
+                value={form.reviewStatus}
+                onValueChange={(value) =>
+                  setForm((current) => ({ ...current, reviewStatus: value as DocumentReviewStatus }))
+                }
+                options={makeSelectOptions(DOCUMENT_REVIEW_STATUSES)}
+              />
+            </FormField>
+          ) : null}
+          {mode === "internal" ? (
+            <FormField label="Expiry Date">
+              <input
+                type="date"
+                value={form.expiryDate}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, expiryDate: event.target.value }))
+                }
+                className={inputClassName()}
+              />
+            </FormField>
+          ) : null}
+          {mode === "internal" ? (
+            <FormField label="Alert Months">
+              <input
+                type="number"
+                min={1}
+                max={24}
+                value={form.expiryAlertMonths ?? ""}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    expiryAlertMonths: event.target.value === "" ? null : Number(event.target.value),
+                  }))
+                }
+                className={inputClassName()}
+              />
+            </FormField>
+          ) : null}
           <FormField label="File">
             <input
               type="file"
@@ -916,6 +1024,16 @@ export function DocumentListPage({
             />
           </FormField>
         </div>
+        {mode === "internal" ? (
+          <div className="mt-4">
+            <FormField label="Review Notes">
+              <TextArea
+                value={form.reviewNote}
+                onChange={(value) => setForm((current) => ({ ...current, reviewNote: value }))}
+              />
+            </FormField>
+          </div>
+        ) : null}
         {mode === "internal" ? (
           <label className="mt-4 flex items-center gap-2 text-sm text-slate-700">
             <input
@@ -955,6 +1073,7 @@ export function DocumentListPage({
                 } else {
                   await createOwnDocumentMutation.mutateAsync({
                     applicationId: payload.applicationId,
+                    checklistRuleId: payload.checklistRuleId,
                     title: payload.title,
                     documentType: payload.documentType,
                     fileUrl: payload.fileUrl,
@@ -1310,7 +1429,19 @@ export function PaymentListPage({
   const [status, setStatus] = useState("");
   const [staffId, setStaffId] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isReceiptOpen, setIsReceiptOpen] = useState(false);
+  const [selectedReceiptFile, setSelectedReceiptFile] = useState<File | null>(null);
   const [form, setForm] = useState<UpsertPaymentInput>(createEmptyPaymentForm());
+  const [receiptForm, setReceiptForm] = useState<PaymentReceiptInput>({
+    paymentId: "",
+    amount: 0,
+    paymentMode: "cash",
+    receiptUrl: "",
+    receiptFileName: "",
+    receiptContentType: "",
+    receivedAt: "",
+    notes: "",
+  });
   const staffUsersQuery = useInternalUsers({
     enabled: mode === "internal" && area === "admin",
     page: 1,
@@ -1338,8 +1469,11 @@ export function PaymentListPage({
     staffId,
   });
   const ownPaymentsQuery = useOwnPayments(mode === "client");
+  const ledgerQuery = useFinancialLedger(mode === "internal" && area === "admin");
   const upsertPaymentMutation = useUpsertPayment();
+  const logPaymentReceiptMutation = useLogPaymentReceipt();
   const deletePaymentMutation = useDeletePayment();
+  const uploadPaymentReceiptImageMutation = useUploadPaymentReceiptImage();
   const staffUsers = useMemo(
     () => (staffUsersQuery.data?.items ?? []).filter((user) => user.role === "staff"),
     [staffUsersQuery.data],
@@ -1353,7 +1487,7 @@ export function PaymentListPage({
   return (
     <Panel
       title={mode === "internal" ? "Payments" : "My Payments"}
-      subtitle="Track invoices, due dates, and payment status for each client case."
+      subtitle="Track milestone invoices, offline receipts, and live balance due for each client case."
       action={
         mode === "internal" ? (
           <button
@@ -1389,10 +1523,17 @@ export function PaymentListPage({
           rows={items.map((payment) => [
             <div className="text-left">
               <p className="font-semibold text-slate-900">{payment.title}</p>
-              <p className="text-xs text-slate-500">{payment.notes || "No notes"}</p>
+              <p className="text-xs text-slate-500">
+                {[payment.milestoneLabel, payment.notes].filter(Boolean).join(" · ") || "No notes"}
+              </p>
             </div>,
             payment.clientName,
-            `${payment.currency} ${payment.amount.toLocaleString()}`,
+            <div className="text-left">
+              <p>{`${payment.currency} ${payment.amount.toLocaleString()}`}</p>
+              <p className="text-xs text-slate-500">
+                Received {payment.amountReceived.toLocaleString()} · Due {payment.balanceDue.toLocaleString()}
+              </p>
+            </div>,
             <StatusBadge
               tone={
                 payment.status === "paid"
@@ -1405,24 +1546,49 @@ export function PaymentListPage({
               {payment.status}
             </StatusBadge>,
             formatDate(payment.dueDate),
-            formatDateTime(payment.paidAt),
+            <div className="text-left">
+              <p>{formatDateTime(payment.paidAt)}</p>
+              <p className="text-xs text-slate-500">{payment.paymentMode || "No manual mode logged"}</p>
+            </div>,
             mode === "internal" ? (
-              <button
-                type="button"
-                className="rounded-xl border border-destructive/20 px-3 py-1.5 text-xs font-semibold text-destructive"
-                onClick={async () => {
-                  try {
-                    await deletePaymentMutation.mutateAsync(payment.id);
-                    toast.success("Payment deleted.");
-                  } catch (error) {
-                    toast.error(
-                      error instanceof Error ? error.message : "Unable to delete payment.",
-                    );
-                  }
-                }}
-              >
-                Delete
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
+                  onClick={() => {
+                    setReceiptForm({
+                      paymentId: payment.id,
+                      amount: payment.balanceDue > 0 ? payment.balanceDue : payment.amount,
+                      paymentMode: payment.paymentMode ?? "cash",
+                      receiptUrl: "",
+                      receiptFileName: "",
+                      receiptContentType: "",
+                      receivedAt: new Date().toISOString().slice(0, 16),
+                      notes: "",
+                    });
+                    setSelectedReceiptFile(null);
+                    setIsReceiptOpen(true);
+                  }}
+                >
+                  Log Receipt
+                </button>
+                <button
+                  type="button"
+                  className="rounded-xl border border-destructive/20 px-3 py-1.5 text-xs font-semibold text-destructive"
+                  onClick={async () => {
+                    try {
+                      await deletePaymentMutation.mutateAsync(payment.id);
+                      toast.success("Payment deleted.");
+                    } catch (error) {
+                      toast.error(
+                        error instanceof Error ? error.message : "Unable to delete payment.",
+                      );
+                    }
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
             ) : (
               "—"
             ),
@@ -1496,6 +1662,27 @@ export function PaymentListPage({
                 className={inputClassName()}
               />
             </FormField>
+            <FormField label="Milestone Label">
+              <input
+                value={form.milestoneLabel}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, milestoneLabel: event.target.value }))
+                }
+                className={inputClassName()}
+              />
+            </FormField>
+            <FormField label="Contract Total">
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.contractTotal}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, contractTotal: Number(event.target.value) || 0 }))
+                }
+                className={inputClassName()}
+              />
+            </FormField>
             <FormField label="Currency">
               <input
                 value={form.currency}
@@ -1512,6 +1699,18 @@ export function PaymentListPage({
                   setForm((current) => ({ ...current, status: value as PaymentStatus }))
                 }
                 options={makeSelectOptions(PAYMENT_STATUSES)}
+              />
+            </FormField>
+            <FormField label="Manual Payment Mode">
+              <SelectMenu
+                value={form.paymentMode || ""}
+                onValueChange={(value) =>
+                  setForm((current) => ({ ...current, paymentMode: (value || null) as UpsertPaymentInput["paymentMode"] }))
+                }
+                options={[
+                  { value: "", label: "Not set" },
+                  ...makeSelectOptions(OFFLINE_PAYMENT_MODES),
+                ]}
               />
             </FormField>
             <FormField label="Due Date">
@@ -1563,6 +1762,106 @@ export function PaymentListPage({
               />
             </FormField>
           </div>
+          <div className="mt-4 rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <p className="text-sm font-semibold text-slate-900">Fee Lines</p>
+              <button
+                type="button"
+                className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
+                onClick={() =>
+                  setForm((current) => ({
+                    ...current,
+                    feeLines: [
+                      ...current.feeLines,
+                      {
+                        feeItemId: null,
+                        label: "",
+                        amount: 0,
+                        currency: current.currency,
+                        displayOrder: current.feeLines.length,
+                      },
+                    ],
+                  }))
+                }
+              >
+                Add Fee Line
+              </button>
+            </div>
+            <div className="space-y-3">
+              {form.feeLines.map((line, index) => (
+                <div key={line.id ?? index} className="grid gap-3 md:grid-cols-4">
+                  <SelectMenu
+                    value={line.feeItemId || ""}
+                    onValueChange={(value) => {
+                      const selected = (ledgerQuery.data?.feeItems ?? []).find((item) => item.id === value);
+                      setForm((current) => ({
+                        ...current,
+                        feeLines: current.feeLines.map((item, itemIndex) =>
+                          itemIndex === index
+                            ? {
+                                ...item,
+                                feeItemId: value || null,
+                                label: selected?.label ?? item.label,
+                                amount: selected?.defaultAmount ?? item.amount,
+                                currency: selected?.currency ?? item.currency,
+                              }
+                            : item,
+                        ),
+                      }));
+                    }}
+                    options={[
+                      { value: "", label: "Custom line" },
+                      ...((ledgerQuery.data?.feeItems ?? []).map((item) => ({
+                        value: item.id,
+                        label: `${item.code} · ${item.label}`,
+                      })) as Array<{ value: string; label: string }>),
+                    ]}
+                  />
+                  <input
+                    value={line.label}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        feeLines: current.feeLines.map((item, itemIndex) =>
+                          itemIndex === index ? { ...item, label: event.target.value } : item,
+                        ),
+                      }))
+                    }
+                    className={inputClassName()}
+                    placeholder="Fee label"
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={line.amount}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        feeLines: current.feeLines.map((item, itemIndex) =>
+                          itemIndex === index ? { ...item, amount: Number(event.target.value) || 0 } : item,
+                        ),
+                      }))
+                    }
+                    className={inputClassName()}
+                  />
+                  <input
+                    value={line.currency}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        feeLines: current.feeLines.map((item, itemIndex) =>
+                          itemIndex === index ? { ...item, currency: event.target.value.toUpperCase() } : item,
+                        ),
+                      }))
+                    }
+                    className={inputClassName()}
+                    placeholder="Currency"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
           <div className="mt-4 flex justify-end">
             <button
               type="button"
@@ -1579,6 +1878,94 @@ export function PaymentListPage({
               }}
             >
               Save Payment
+            </button>
+          </div>
+        </FormDialog>
+      ) : null}
+
+      {mode === "internal" ? (
+        <FormDialog
+          open={isReceiptOpen}
+          onOpenChange={setIsReceiptOpen}
+          title="Log Offline Payment"
+          description="Attach a cash, wire, or POS receipt and reconcile the outstanding balance immediately."
+        >
+          <div className="grid gap-4 md:grid-cols-2">
+            <FormField label="Amount Received">
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={receiptForm.amount}
+                onChange={(event) =>
+                  setReceiptForm((current) => ({ ...current, amount: Number(event.target.value) || 0 }))
+                }
+                className={inputClassName()}
+              />
+            </FormField>
+            <FormField label="Manual Mode">
+              <SelectMenu
+                value={receiptForm.paymentMode}
+                onValueChange={(value) =>
+                  setReceiptForm((current) => ({ ...current, paymentMode: value as PaymentReceiptInput["paymentMode"] }))
+                }
+                options={makeSelectOptions(OFFLINE_PAYMENT_MODES)}
+              />
+            </FormField>
+            <FormField label="Received At">
+              <input
+                type="datetime-local"
+                value={receiptForm.receivedAt}
+                onChange={(event) =>
+                  setReceiptForm((current) => ({ ...current, receivedAt: event.target.value }))
+                }
+                className={inputClassName()}
+              />
+            </FormField>
+            <FormField label="Receipt Screenshot">
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(event) => setSelectedReceiptFile(event.target.files?.[0] ?? null)}
+                className={inputClassName()}
+              />
+            </FormField>
+          </div>
+          <div className="mt-4">
+            <FormField label="Notes">
+              <TextArea
+                value={receiptForm.notes}
+                onChange={(value) => setReceiptForm((current) => ({ ...current, notes: value }))}
+              />
+            </FormField>
+          </div>
+          <div className="mt-4 flex justify-end">
+            <button
+              type="button"
+              className="btn-gold"
+              onClick={async () => {
+                try {
+                  let upload = null;
+
+                  if (selectedReceiptFile) {
+                    upload = await uploadPaymentReceiptImageMutation.mutateAsync(selectedReceiptFile);
+                  }
+
+                  await logPaymentReceiptMutation.mutateAsync({
+                    ...receiptForm,
+                    receiptUrl: upload?.src || receiptForm.receiptUrl,
+                    receiptFileName: upload?.fileName || receiptForm.receiptFileName,
+                    receiptContentType: upload?.contentType || receiptForm.receiptContentType,
+                  });
+                  toast.success("Receipt logged.");
+                  setSelectedReceiptFile(null);
+                  setIsReceiptOpen(false);
+                } catch (error) {
+                  toast.error(error instanceof Error ? error.message : "Unable to log receipt.");
+                }
+              }}
+            >
+              Log Receipt
             </button>
           </div>
         </FormDialog>

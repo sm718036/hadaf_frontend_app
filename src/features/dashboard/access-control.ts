@@ -5,9 +5,11 @@ import {
   FileCheck2,
   FileJson2,
   FolderKanban,
+  GraduationCap,
   LayoutDashboard,
   MessageSquareText,
   Network,
+  NotebookTabs,
   ReceiptText,
   ShieldUser,
   SquareUserRound,
@@ -122,6 +124,21 @@ const ADMIN_NAV_ITEMS: DashboardNavItem[] = [
     label: "Intake Engine",
     to: APP_ROUTES.dashboardAdminIntakeEngine,
     icon: MessageSquareText,
+  },
+  {
+    label: "Academic Engine",
+    to: APP_ROUTES.dashboardAdminAcademicEngine,
+    icon: GraduationCap,
+  },
+  {
+    label: "Digital Vault",
+    to: APP_ROUTES.dashboardAdminDigitalVault,
+    icon: FileJson2,
+  },
+  {
+    label: "Financial Ledger",
+    to: APP_ROUTES.dashboardAdminFinancialLedger,
+    icon: NotebookTabs,
   },
   {
     label: "Landing CMS",

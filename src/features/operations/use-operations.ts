@@ -263,6 +263,10 @@ export const useUpsertPayment = createInvalidateMutation(operationsService.upser
   queryKeys.operations.all,
   queryKeys.operations.ownPayments,
 ]);
+export const useLogPaymentReceipt = createInvalidateMutation(operationsService.logPaymentReceipt, [
+  queryKeys.operations.all,
+  queryKeys.operations.ownPayments,
+]);
 export const useDeletePayment = createInvalidateMutation(operationsService.deletePayment, [
   queryKeys.operations.all,
   queryKeys.operations.ownPayments,
@@ -282,6 +286,10 @@ export function useUploadDocumentFile() {
 
 export function useUploadOwnDocumentFile() {
   return useMutation({ mutationFn: operationsService.uploadOwnDocumentFile });
+}
+
+export function useUploadPaymentReceiptImage() {
+  return useMutation({ mutationFn: operationsService.uploadPaymentReceiptImage });
 }
 
 export function useOpenChatThread() {

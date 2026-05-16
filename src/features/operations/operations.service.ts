@@ -14,6 +14,7 @@ import type {
   OperationsListFilters,
   OperationsListResponse,
   Payment,
+  PaymentReceiptInput,
   PortalConversation,
   PortalMeeting,
   Task,
@@ -77,6 +78,7 @@ export const operationsService = {
     apiRequest<{ success: true }>(`/api/documents/${id}`, { method: "DELETE" }),
   uploadDocumentFile: (file: File) => uploadFile("/api/uploads/document-file", file),
   uploadOwnDocumentFile: (file: File) => uploadFile("/api/client-auth/uploads/document-file", file),
+  uploadPaymentReceiptImage: (file: File) => uploadFile("/api/uploads/payment-receipt-image", file),
 
   listAppointments: (params: OperationsListFilters, signal?: AbortSignal) =>
     apiRequest<OperationsListResponse<Appointment>>(
@@ -99,6 +101,8 @@ export const operationsService = {
     apiRequest<Payment[]>("/api/client-auth/payments", { signal }),
   upsertPayment: (input: UpsertPaymentInput) =>
     apiRequest<Payment>("/api/payments", { method: "POST", body: input }),
+  logPaymentReceipt: (input: PaymentReceiptInput) =>
+    apiRequest<{ success: true }>("/api/payments/receipts", { method: "POST", body: input }),
   deletePayment: (id: string) =>
     apiRequest<{ success: true }>(`/api/payments/${id}`, { method: "DELETE" }),
 

@@ -6,6 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { useAppDialogs } from "@/components/ui/use-app-dialogs";
 import { SelectMenu } from "@/components/ui/select-menu";
+import {
+  useAcademicEngineMetadata,
+  useAcademicWorkspace,
+  useAddAcademicComment,
+  useSaveAcademicSop,
+} from "@/features/academic-engine/use-academic-engine";
 import { APP_ROUTES } from "@/config/routes";
 import type {
   Application,
@@ -45,6 +51,12 @@ const APPLICATION_STATUS_OPTIONS = [
   "completed",
 ] as const;
 const PRIORITY_OPTIONS = ["low", "medium", "high", "urgent"] as const;
+const ACADEMIC_STAGE_OPTIONS = [
+  { value: "applied", label: "Applied" },
+  { value: "interview", label: "Interview" },
+  { value: "offer", label: "Offer" },
+  { value: "cas_coe", label: "CAS / COE" },
+] as const;
 
 function formatDate(value: string | null) {
   return value ? new Date(value).toLocaleDateString() : "—";
@@ -87,6 +99,12 @@ function createEmptyApplicationForm(
     targetCountry: "",
     serviceType: "",
     universityProgram: "",
+    partnerUniversityId: null,
+    partnerCampusId: null,
+    partnerCourseId: null,
+    academicStage: "applied",
+    enrollmentStatus: "not_enrolled",
+    contractTotal: 0,
     assignedStaffUserId,
     currentStage: "",
     status: "active",
@@ -106,6 +124,12 @@ function mapApplicationToForm(application: Application): UpsertApplicationInput 
     targetCountry: application.targetCountry,
     serviceType: application.serviceType,
     universityProgram: application.universityProgram ?? "",
+    partnerUniversityId: application.partnerUniversityId,
+    partnerCampusId: application.partnerCampusId,
+    partnerCourseId: application.partnerCourseId,
+    academicStage: application.academicStage,
+    enrollmentStatus: application.enrollmentStatus,
+    contractTotal: application.contractTotal,
     assignedStaffUserId: application.assignedStaffUserId,
     currentStage: application.currentStage,
     status: application.status,
@@ -168,6 +192,7 @@ export function ApplicationListPage({
     search: "",
   });
   const configurationVaultMetadataQuery = useConfigurationVaultMetadata(access.canReadApplications);
+  const academicMetadataQuery = useAcademicEngineMetadata(access.canReadApplications);
 
   const staffUsers = useMemo(
     () => (staffUsersQuery.data?.items ?? []).filter((user) => user.role === "staff"),
@@ -408,8 +433,9 @@ export function ApplicationListPage({
               name: client.fullName,
             }))}
             staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
-            configurationMetadata={configurationVaultMetadataQuery.data}
-            area={area}
+          configurationMetadata={configurationVaultMetadataQuery.data}
+          academicMetadata={academicMetadataQuery.data}
+          area={area}
             onSubmit={async () => {
               try {
                 const application = await upsertApplicationMutation.mutateAsync(form);
@@ -458,14 +484,24 @@ export function ApplicationDetailPage({
     search: "",
   });
   const configurationVaultMetadataQuery = useConfigurationVaultMetadata(access.canReadApplications);
+  const academicMetadataQuery = useAcademicEngineMetadata(access.canReadApplications);
+  const academicWorkspaceQuery = useAcademicWorkspace(applicationId, access.canReadApplications);
+  const saveAcademicSopMutation = useSaveAcademicSop(applicationId);
+  const addAcademicCommentMutation = useAddAcademicComment(applicationId);
   const [form, setForm] = useState<UpsertApplicationInput | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [sopDraft, setSopDraft] = useState("");
+  const [commentBody, setCommentBody] = useState("");
 
   useEffect(() => {
     if (applicationQuery.data?.application) {
       setForm(mapApplicationToForm(applicationQuery.data.application));
     }
   }, [applicationQuery.data]);
+
+  useEffect(() => {
+    setSopDraft(academicWorkspaceQuery.data?.draft?.body ?? "");
+  }, [academicWorkspaceQuery.data?.draft?.body]);
 
   const staffUsers = useMemo(
     () => (staffUsersQuery.data?.items ?? []).filter((user) => user.role === "staff"),
@@ -595,6 +631,25 @@ export function ApplicationDetailPage({
           <div className="space-y-6">
             <ApplicationPipeline application={application} />
             <ApplicationOverview application={application} />
+            <AcademicWorkspaceSection
+              application={application}
+              sopDraft={sopDraft}
+              onSopDraftChange={setSopDraft}
+              workspace={academicWorkspaceQuery.data}
+              onSaveDraft={async () => {
+                await saveAcademicSopMutation.mutateAsync(sopDraft);
+                toast.success("SOP draft saved.");
+              }}
+              onAddComment={async () => {
+                await addAcademicCommentMutation.mutateAsync(commentBody);
+                setCommentBody("");
+                toast.success("Comment added.");
+              }}
+              commentBody={commentBody}
+              onCommentBodyChange={setCommentBody}
+              isSavingDraft={saveAcademicSopMutation.isPending}
+              isSavingComment={addAcademicCommentMutation.isPending}
+            />
             <ApplicationHistory history={history} />
           </div>
         ) : (
@@ -629,6 +684,7 @@ export function ApplicationDetailPage({
           }))}
           staffUsers={staffUsers.map((user) => ({ id: user.id, name: user.name }))}
           configurationMetadata={configurationVaultMetadataQuery.data}
+          academicMetadata={academicMetadataQuery.data}
           area={area}
           onSubmit={async () => {
             if (!form) return;
@@ -919,6 +975,16 @@ function ApplicationOverview({ application }: { application: Application }) {
         <ReadOnlyField label="Target Country" value={application.targetCountry} />
         <ReadOnlyField label="Service Type" value={application.serviceType} />
         <ReadOnlyField label="University / Program" value={application.universityProgram || "—"} />
+        <ReadOnlyField label="University" value={application.partnerUniversityName || "—"} />
+        <ReadOnlyField label="Campus" value={application.partnerCampusName || "—"} />
+        <ReadOnlyField label="Course" value={application.partnerCourseName || "—"} />
+        <ReadOnlyField
+          label="Academic Stage"
+          value={ACADEMIC_STAGE_OPTIONS.find((item) => item.value === application.academicStage)?.label || application.academicStage}
+        />
+        <ReadOnlyField label="Enrollment" value={application.enrollmentStatus.replaceAll("_", " ")} />
+        <ReadOnlyField label="Contract Total" value={String(application.contractTotal)} />
+        <ReadOnlyField label="Received" value={String(application.amountReceived)} />
         <ReadOnlyField
           label="Assigned Counselor"
           value={application.assignedStaffName || "Unassigned"}
@@ -936,12 +1002,120 @@ function ApplicationOverview({ application }: { application: Application }) {
   );
 }
 
+function AcademicWorkspaceSection({
+  application,
+  workspace,
+  sopDraft,
+  onSopDraftChange,
+  onSaveDraft,
+  isSavingDraft,
+  commentBody,
+  onCommentBodyChange,
+  onAddComment,
+  isSavingComment,
+}: {
+  application: Application;
+  workspace:
+    | {
+        draft: {
+          body: string;
+          updatedByName: string | null;
+          updatedAt: string;
+        } | null;
+        comments: Array<{
+          id: string;
+          authorName: string | null;
+          body: string;
+          createdAt: string;
+        }>;
+      }
+    | undefined;
+  sopDraft: string;
+  onSopDraftChange: (value: string) => void;
+  onSaveDraft: () => Promise<void>;
+  isSavingDraft: boolean;
+  commentBody: string;
+  onCommentBodyChange: (value: string) => void;
+  onAddComment: () => Promise<void>;
+  isSavingComment: boolean;
+}) {
+  return (
+    <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
+      <div className="rounded-[24px] border border-slate-200 bg-white p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+              SOP Workspace
+            </div>
+            <h3 className="mt-2 text-xl font-display font-extrabold text-slate-950">
+              Draft for {application.clientName}
+            </h3>
+          </div>
+          <button type="button" className="btn-gold" disabled={isSavingDraft} onClick={() => void onSaveDraft()}>
+            {isSavingDraft ? "Saving..." : "Save SOP"}
+          </button>
+        </div>
+        <textarea
+          rows={14}
+          value={sopDraft}
+          onChange={(event) => onSopDraftChange(event.target.value)}
+          className="mt-4 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-7 text-slate-700 outline-none"
+        />
+        <p className="mt-3 text-xs text-slate-500">
+          Last update:{" "}
+          {workspace?.draft
+            ? `${workspace.draft.updatedByName || "Team member"} · ${formatDateTime(workspace.draft.updatedAt)}`
+            : "No SOP draft saved yet."}
+        </p>
+      </div>
+
+      <div className="rounded-[24px] border border-slate-200 bg-white p-5">
+        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+          Staff Comments
+        </div>
+        <h3 className="mt-2 text-xl font-display font-extrabold text-slate-950">Feedback Thread</h3>
+        <textarea
+          rows={4}
+          value={commentBody}
+          onChange={(event) => onCommentBodyChange(event.target.value)}
+          className="mt-4 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-7 text-slate-700 outline-none"
+          placeholder="Add counselor feedback, structure notes, or revision requests."
+        />
+        <div className="mt-3 flex justify-end">
+          <button
+            type="button"
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+            disabled={isSavingComment || commentBody.trim().length === 0}
+            onClick={() => void onAddComment()}
+          >
+            {isSavingComment ? "Posting..." : "Add Comment"}
+          </button>
+        </div>
+        <div className="mt-4 space-y-3">
+          {(workspace?.comments ?? []).length === 0 ? (
+            <p className="text-sm text-slate-500">No comments added yet.</p>
+          ) : (
+            workspace?.comments.map((comment) => (
+              <div key={comment.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div className="text-sm font-semibold text-slate-900">{comment.authorName || "Staff"}</div>
+                <div className="mt-1 text-xs text-slate-500">{formatDateTime(comment.createdAt)}</div>
+                <p className="mt-3 text-sm leading-6 text-slate-700">{comment.body}</p>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ApplicationForm({
   form,
   onChange,
   clients,
   staffUsers,
   configurationMetadata,
+  academicMetadata,
   area,
   onSubmit,
   isSubmitting,
@@ -956,6 +1130,11 @@ function ApplicationForm({
     visaCategories: Array<{ id: string; countryId: string; name: string; code: string }>;
     workflowStages: Array<{ id: string; name: string }>;
   };
+  academicMetadata?: {
+    universities: Array<{ id: string; countryId: string; name: string }>;
+    campuses: Array<{ id: string; universityId: string; name: string }>;
+    courses: Array<{ id: string; campusId: string; visaCategoryId: string | null; name: string }>;
+  };
   area: "admin" | "staff";
   onSubmit: () => void;
   isSubmitting: boolean;
@@ -964,8 +1143,18 @@ function ApplicationForm({
   const countries = configurationMetadata?.countries ?? [];
   const visaCategories = configurationMetadata?.visaCategories ?? [];
   const workflowStages = configurationMetadata?.workflowStages ?? [];
+  const universities = academicMetadata?.universities ?? [];
+  const campuses = academicMetadata?.campuses ?? [];
+  const courses = academicMetadata?.courses ?? [];
   const availableVisaCategories = visaCategories.filter(
     (category) => category.countryId === form.countryConfigurationId,
+  );
+  const availableUniversities = universities.filter((item) => item.countryId === form.countryConfigurationId);
+  const availableCampuses = campuses.filter((item) => item.universityId === form.partnerUniversityId);
+  const availableCourses = courses.filter(
+    (item) =>
+      item.campusId === form.partnerCampusId &&
+      (!item.visaCategoryId || item.visaCategoryId === form.visaCategoryId),
   );
 
   return (
@@ -1023,6 +1212,81 @@ function ApplicationForm({
           value={form.universityProgram}
           onChange={(universityProgram) => onChange({ ...form, universityProgram })}
         />
+        <SelectField
+          label="Partner University"
+          value={form.partnerUniversityId ?? ""}
+          onChange={(partnerUniversityId) =>
+            onChange({
+              ...form,
+              partnerUniversityId: partnerUniversityId || null,
+              partnerCampusId: null,
+              partnerCourseId: null,
+            })
+          }
+          options={[
+            { value: "", label: "Optional" },
+            ...availableUniversities.map((item) => ({ value: item.id, label: item.name })),
+          ]}
+        />
+        <SelectField
+          label="Campus"
+          value={form.partnerCampusId ?? ""}
+          onChange={(partnerCampusId) =>
+            onChange({
+              ...form,
+              partnerCampusId: partnerCampusId || null,
+              partnerCourseId: null,
+            })
+          }
+          options={[
+            { value: "", label: "Optional" },
+            ...availableCampuses.map((item) => ({ value: item.id, label: item.name })),
+          ]}
+        />
+        <SelectField
+          label="Course"
+          value={form.partnerCourseId ?? ""}
+          onChange={(partnerCourseId) => onChange({ ...form, partnerCourseId: partnerCourseId || null })}
+          options={[
+            { value: "", label: "Optional" },
+            ...availableCourses.map((item) => ({ value: item.id, label: item.name })),
+          ]}
+        />
+        <SelectField
+          label="Academic Stage"
+          value={form.academicStage}
+          onChange={(academicStage) =>
+            onChange({ ...form, academicStage: academicStage as UpsertApplicationInput["academicStage"] })
+          }
+          options={ACADEMIC_STAGE_OPTIONS.map((item) => ({ value: item.value, label: item.label }))}
+        />
+        <SelectField
+          label="Enrollment"
+          value={form.enrollmentStatus}
+          onChange={(enrollmentStatus) =>
+            onChange({
+              ...form,
+              enrollmentStatus: enrollmentStatus as UpsertApplicationInput["enrollmentStatus"],
+            })
+          }
+          options={[
+            { value: "not_enrolled", label: "Not enrolled" },
+            { value: "enrolled", label: "Enrolled" },
+          ]}
+        />
+        <label className="space-y-2">
+          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+            Contract Total
+          </span>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={form.contractTotal}
+            onChange={(event) => onChange({ ...form, contractTotal: Number(event.target.value) || 0 })}
+            className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm outline-none focus:border-slate-300"
+          />
+        </label>
         <SelectField
           label="Assigned Counselor"
           value={form.assignedStaffUserId ?? ""}

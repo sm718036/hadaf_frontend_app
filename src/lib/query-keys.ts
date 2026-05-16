@@ -75,6 +75,20 @@ export const queryKeys = {
     publicMetadata: ["intake-engine", "public-metadata"] as const,
     questions: ["intake-engine", "questions"] as const,
   },
+  academicEngine: {
+    all: ["academic-engine"] as const,
+    snapshot: ["academic-engine", "snapshot"] as const,
+    metadata: ["academic-engine", "metadata"] as const,
+    workspace: (applicationId: string) => ["academic-engine", "workspace", applicationId] as const,
+  },
+  digitalVault: {
+    all: ["digital-vault"] as const,
+    snapshot: ["digital-vault", "snapshot"] as const,
+  },
+  financialLedger: {
+    all: ["financial-ledger"] as const,
+    snapshot: ["financial-ledger", "snapshot"] as const,
+  },
   siteContent: {
     public: ["site-content", "public"] as const,
   },

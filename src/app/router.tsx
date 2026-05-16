@@ -57,6 +57,21 @@ const DashboardIntakeEnginePage = lazy(() =>
     default: module.DashboardIntakeEnginePage,
   })),
 );
+const DashboardAcademicEnginePage = lazy(() =>
+  import("@/pages/dashboard/academic-engine-page").then((module) => ({
+    default: module.DashboardAcademicEnginePage,
+  })),
+);
+const DashboardDigitalVaultPage = lazy(() =>
+  import("@/pages/dashboard/digital-vault-page").then((module) => ({
+    default: module.DashboardDigitalVaultPage,
+  })),
+);
+const DashboardFinancialLedgerPage = lazy(() =>
+  import("@/pages/dashboard/financial-ledger-page").then((module) => ({
+    default: module.DashboardFinancialLedgerPage,
+  })),
+);
 const DashboardUsersRedirect = lazy(() =>
   import("@/pages/dashboard/users-page").then((module) => ({
     default: module.DashboardUsersRedirect,
@@ -169,6 +184,9 @@ const ADMIN_PAGE_TITLES: Record<string, string> = {
   [APP_ROUTES.dashboardAdminPayments]: "Payments",
   [APP_ROUTES.dashboardAdminConfigurationVault]: "Configuration Vault",
   [APP_ROUTES.dashboardAdminIntakeEngine]: "Intake Engine",
+  [APP_ROUTES.dashboardAdminAcademicEngine]: "Academic Engine",
+  [APP_ROUTES.dashboardAdminDigitalVault]: "Digital Vault",
+  [APP_ROUTES.dashboardAdminFinancialLedger]: "Financial Ledger",
   [APP_ROUTES.dashboardAdminContent]: "Landing CMS",
   [APP_ROUTES.dashboardAdminUsers]: "User Access",
   [APP_ROUTES.dashboardAdminProfile]: "My Profile",
@@ -496,6 +514,9 @@ export function AppRouter() {
             <Route path="payments" element={<AdminOrStaffPaymentsPage area="admin" />} />
             <Route path="configuration-vault" element={<DashboardConfigurationVaultPage />} />
             <Route path="intake-engine" element={<DashboardIntakeEnginePage />} />
+            <Route path="academic-engine" element={<DashboardAcademicEnginePage />} />
+            <Route path="digital-vault" element={<DashboardDigitalVaultPage />} />
+            <Route path="financial-ledger" element={<DashboardFinancialLedgerPage />} />
             <Route path="content" element={<DashboardContentPage />} />
             <Route path="users" element={<DashboardUsersPage />} />
           </Route>
