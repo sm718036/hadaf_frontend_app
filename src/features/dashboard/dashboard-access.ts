@@ -1,4 +1,5 @@
 import type { SessionUser } from "@/features/auth/auth.service";
+import { hasPermission } from "@/features/auth/permissions";
 
 export type DashboardAccess = {
   currentUser: SessionUser;
@@ -27,41 +28,27 @@ export type DashboardAccess = {
 export function getDashboardAccess(currentUser: SessionUser): DashboardAccess {
   return {
     currentUser,
-    canReadLeads: currentUser.role === "admin" || currentUser.permissions.includes("leads.read"),
-    canWriteLeads: currentUser.role === "admin" || currentUser.permissions.includes("leads.write"),
-    canReadClients:
-      currentUser.role === "admin" || currentUser.permissions.includes("clients.read"),
-    canWriteClients:
-      currentUser.role === "admin" || currentUser.permissions.includes("clients.write"),
-    canReadApplications:
-      currentUser.role === "admin" || currentUser.permissions.includes("applications.read"),
-    canWriteApplications:
-      currentUser.role === "admin" || currentUser.permissions.includes("applications.write"),
-    canReadTasks: currentUser.role === "admin" || currentUser.permissions.includes("tasks.read"),
-    canWriteTasks: currentUser.role === "admin" || currentUser.permissions.includes("tasks.write"),
-    canReadDocuments:
-      currentUser.role === "admin" || currentUser.permissions.includes("documents.read"),
-    canWriteDocuments:
-      currentUser.role === "admin" || currentUser.permissions.includes("documents.write"),
-    canReadAppointments:
-      currentUser.role === "admin" || currentUser.permissions.includes("appointments.read"),
-    canWriteAppointments:
-      currentUser.role === "admin" || currentUser.permissions.includes("appointments.write"),
-    canReadMessages:
-      currentUser.role === "admin" || currentUser.permissions.includes("messages.read"),
-    canWriteMessages:
-      currentUser.role === "admin" || currentUser.permissions.includes("messages.write"),
-    canReadPayments:
-      currentUser.role === "admin" || currentUser.permissions.includes("payments.read"),
-    canWritePayments:
-      currentUser.role === "admin" || currentUser.permissions.includes("payments.write"),
+    canReadLeads: hasPermission(currentUser, "leads.read"),
+    canWriteLeads: hasPermission(currentUser, "leads.write"),
+    canReadClients: hasPermission(currentUser, "clients.read"),
+    canWriteClients: hasPermission(currentUser, "clients.write"),
+    canReadApplications: hasPermission(currentUser, "applications.read"),
+    canWriteApplications: hasPermission(currentUser, "applications.write"),
+    canReadTasks: hasPermission(currentUser, "tasks.read"),
+    canWriteTasks: hasPermission(currentUser, "tasks.write"),
+    canReadDocuments: hasPermission(currentUser, "documents.read"),
+    canWriteDocuments: hasPermission(currentUser, "documents.write"),
+    canReadAppointments: hasPermission(currentUser, "appointments.read"),
+    canWriteAppointments: hasPermission(currentUser, "appointments.write"),
+    canReadMessages: hasPermission(currentUser, "messages.read"),
+    canWriteMessages: hasPermission(currentUser, "messages.write"),
+    canReadPayments: hasPermission(currentUser, "payments.read"),
+    canWritePayments: hasPermission(currentUser, "payments.write"),
     canReadSiteContent:
-      currentUser.role === "admin" ||
-      currentUser.permissions.includes("site_content.read") ||
-      currentUser.permissions.includes("site_content.write"),
-    canWriteSiteContent:
-      currentUser.role === "admin" || currentUser.permissions.includes("site_content.write"),
-    canReadUsers: currentUser.role === "admin" || currentUser.permissions.includes("users.read"),
-    canWriteUsers: currentUser.role === "admin" || currentUser.permissions.includes("users.write"),
+      hasPermission(currentUser, "site_content.read") ||
+      hasPermission(currentUser, "site_content.write"),
+    canWriteSiteContent: hasPermission(currentUser, "site_content.write"),
+    canReadUsers: hasPermission(currentUser, "users.read"),
+    canWriteUsers: hasPermission(currentUser, "users.write"),
   };
 }

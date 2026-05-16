@@ -3,11 +3,11 @@ import { Link, Navigate, Outlet, Route, Routes, useLocation, useParams } from "r
 import { SeoHead } from "@/components/SeoHead";
 import { SpinnerTwo } from "@/components/ui/spinner";
 import { APP_ROUTES } from "@/config/routes";
+import { ProtectedRoute } from "@/features/auth/protected-route";
 import { useCurrentUser } from "@/features/auth/use-auth";
 import { useCurrentClient } from "@/features/client-auth/use-client-auth";
 import {
   CLIENT_NAV_ITEMS,
-  canAccessInternalArea,
   getAllowedInternalNavItems,
   getDefaultInternalDashboardRoute,
 } from "@/features/dashboard/access-control";
@@ -16,7 +16,6 @@ import { getDashboardAccess } from "@/features/dashboard/dashboard-access";
 import { ClientOverviewPage, ModuleOverview } from "@/features/dashboard/module-pages";
 import { DashboardLayout } from "@/features/dashboard/dashboard-layout";
 import { toClientLayoutActor, toInternalLayoutActor } from "@/features/dashboard/layout-actors";
-import { RoleProtectedRoute } from "@/features/dashboard/role-protected-route";
 
 const HomePage = lazy(() =>
   import("@/pages/home-page").then((module) => ({ default: module.HomePage })),
@@ -462,17 +461,17 @@ function StaffApplicationDetailRoute() {
 
 function ProtectedInternalLayout({ area }: { area: "admin" | "staff" }) {
   return (
-    <RoleProtectedRoute area={area}>
+    <ProtectedRoute area={area}>
       {area === "admin" ? <AdminDashboardLayout /> : <StaffDashboardLayout />}
-    </RoleProtectedRoute>
+    </ProtectedRoute>
   );
 }
 
 function ProtectedClientLayout() {
   return (
-    <RoleProtectedRoute area="client">
+    <ProtectedRoute area="client">
       <ClientDashboardLayout />
-    </RoleProtectedRoute>
+    </ProtectedRoute>
   );
 }
 
@@ -497,28 +496,158 @@ export function AppRouter() {
           >
             <Route index element={<AdminOverviewPage />} />
             <Route path="profile" element={<DashboardProfilePage />} />
-            <Route path="leads" element={<LeadListPage area="admin" />} />
-            <Route path="leads/:leadId" element={<AdminLeadDetailRoute />} />
-            <Route path="clients" element={<ClientListPage area="admin" />} />
-            <Route path="clients/:clientId" element={<AdminClientDetailRoute />} />
-            <Route path="applications" element={<ApplicationListPage area="admin" />} />
-            <Route path="applications/:applicationId" element={<AdminApplicationDetailRoute />} />
-            <Route path="tasks" element={<TaskListPage area="admin" />} />
-            <Route path="documents" element={<AdminOrStaffDocumentsPage area="admin" />} />
-            <Route path="appointments" element={<AdminOrStaffAppointmentsPage area="admin" />} />
-            <Route path="messages" element={<AdminOrStaffMessagesPage area="admin" />} />
+            <Route
+              path="leads"
+              element={
+                <ProtectedRoute area="admin" permissions={["leads.read"]}>
+                  <LeadListPage area="admin" />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="leads/:leadId"
+              element={
+                <ProtectedRoute area="admin" permissions={["leads.read"]}>
+                  <AdminLeadDetailRoute />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="clients"
+              element={
+                <ProtectedRoute area="admin" permissions={["clients.read"]}>
+                  <ClientListPage area="admin" />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="clients/:clientId"
+              element={
+                <ProtectedRoute area="admin" permissions={["clients.read"]}>
+                  <AdminClientDetailRoute />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="applications"
+              element={
+                <ProtectedRoute area="admin" permissions={["applications.read"]}>
+                  <ApplicationListPage area="admin" />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="applications/:applicationId"
+              element={
+                <ProtectedRoute area="admin" permissions={["applications.read"]}>
+                  <AdminApplicationDetailRoute />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="tasks"
+              element={
+                <ProtectedRoute area="admin" permissions={["tasks.read"]}>
+                  <TaskListPage area="admin" />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="documents"
+              element={
+                <ProtectedRoute area="admin" permissions={["documents.read"]}>
+                  <AdminOrStaffDocumentsPage area="admin" />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="appointments"
+              element={
+                <ProtectedRoute area="admin" permissions={["appointments.read"]}>
+                  <AdminOrStaffAppointmentsPage area="admin" />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="messages"
+              element={
+                <ProtectedRoute area="admin" permissions={["messages.read"]}>
+                  <AdminOrStaffMessagesPage area="admin" />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="messages/calls/:meetingId"
-              element={<MeetingRoomPage mode="internal" area="admin" />}
+              element={
+                <ProtectedRoute area="admin" permissions={["messages.read"]}>
+                  <MeetingRoomPage mode="internal" area="admin" />
+                </ProtectedRoute>
+              }
             />
-            <Route path="payments" element={<AdminOrStaffPaymentsPage area="admin" />} />
-            <Route path="configuration-vault" element={<DashboardConfigurationVaultPage />} />
-            <Route path="intake-engine" element={<DashboardIntakeEnginePage />} />
-            <Route path="academic-engine" element={<DashboardAcademicEnginePage />} />
-            <Route path="digital-vault" element={<DashboardDigitalVaultPage />} />
-            <Route path="financial-ledger" element={<DashboardFinancialLedgerPage />} />
-            <Route path="content" element={<DashboardContentPage />} />
-            <Route path="users" element={<DashboardUsersPage />} />
+            <Route
+              path="payments"
+              element={
+                <ProtectedRoute area="admin" permissions={["payments.read"]}>
+                  <AdminOrStaffPaymentsPage area="admin" />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="configuration-vault"
+              element={
+                <ProtectedRoute area="admin" requireAdmin>
+                  <DashboardConfigurationVaultPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="intake-engine"
+              element={
+                <ProtectedRoute area="admin" requireAdmin>
+                  <DashboardIntakeEnginePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="academic-engine"
+              element={
+                <ProtectedRoute area="admin" permissions={["applications.read"]}>
+                  <DashboardAcademicEnginePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="digital-vault"
+              element={
+                <ProtectedRoute area="admin" requireAdmin>
+                  <DashboardDigitalVaultPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="financial-ledger"
+              element={
+                <ProtectedRoute area="admin" requireAdmin>
+                  <DashboardFinancialLedgerPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="content"
+              element={
+                <ProtectedRoute area="admin" permissions={["site_content.read"]}>
+                  <DashboardContentPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="users"
+              element={
+                <ProtectedRoute area="admin" permissions={["users.read"]}>
+                  <DashboardUsersPage />
+                </ProtectedRoute>
+              }
+            />
           </Route>
 
           <Route
@@ -527,21 +656,102 @@ export function AppRouter() {
           >
             <Route index element={<StaffOverviewPage />} />
             <Route path="profile" element={<DashboardProfilePage />} />
-            <Route path="leads" element={<LeadListPage area="staff" />} />
-            <Route path="leads/:leadId" element={<StaffLeadDetailRoute />} />
-            <Route path="clients" element={<ClientListPage area="staff" />} />
-            <Route path="clients/:clientId" element={<StaffClientDetailRoute />} />
-            <Route path="applications" element={<ApplicationListPage area="staff" />} />
-            <Route path="applications/:applicationId" element={<StaffApplicationDetailRoute />} />
-            <Route path="tasks" element={<TaskListPage area="staff" />} />
-            <Route path="documents" element={<AdminOrStaffDocumentsPage area="staff" />} />
-            <Route path="appointments" element={<AdminOrStaffAppointmentsPage area="staff" />} />
-            <Route path="messages" element={<AdminOrStaffMessagesPage area="staff" />} />
+            <Route
+              path="leads"
+              element={
+                <ProtectedRoute area="staff" permissions={["leads.read"]}>
+                  <LeadListPage area="staff" />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="leads/:leadId"
+              element={
+                <ProtectedRoute area="staff" permissions={["leads.read"]}>
+                  <StaffLeadDetailRoute />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="clients"
+              element={
+                <ProtectedRoute area="staff" permissions={["clients.read"]}>
+                  <ClientListPage area="staff" />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="clients/:clientId"
+              element={
+                <ProtectedRoute area="staff" permissions={["clients.read"]}>
+                  <StaffClientDetailRoute />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="applications"
+              element={
+                <ProtectedRoute area="staff" permissions={["applications.read"]}>
+                  <ApplicationListPage area="staff" />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="applications/:applicationId"
+              element={
+                <ProtectedRoute area="staff" permissions={["applications.read"]}>
+                  <StaffApplicationDetailRoute />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="tasks"
+              element={
+                <ProtectedRoute area="staff" permissions={["tasks.read"]}>
+                  <TaskListPage area="staff" />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="documents"
+              element={
+                <ProtectedRoute area="staff" permissions={["documents.read"]}>
+                  <AdminOrStaffDocumentsPage area="staff" />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="appointments"
+              element={
+                <ProtectedRoute area="staff" permissions={["appointments.read"]}>
+                  <AdminOrStaffAppointmentsPage area="staff" />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="messages"
+              element={
+                <ProtectedRoute area="staff" permissions={["messages.read"]}>
+                  <AdminOrStaffMessagesPage area="staff" />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="messages/calls/:meetingId"
-              element={<MeetingRoomPage mode="internal" area="staff" />}
+              element={
+                <ProtectedRoute area="staff" permissions={["messages.read"]}>
+                  <MeetingRoomPage mode="internal" area="staff" />
+                </ProtectedRoute>
+              }
             />
-            <Route path="payments" element={<AdminOrStaffPaymentsPage area="staff" />} />
+            <Route
+              path="payments"
+              element={
+                <ProtectedRoute area="staff" permissions={["payments.read"]}>
+                  <AdminOrStaffPaymentsPage area="staff" />
+                </ProtectedRoute>
+              }
+            />
           </Route>
 
           <Route path={APP_ROUTES.dashboardClient} element={<ProtectedClientLayout />}>

@@ -111,3 +111,19 @@ export function useChangePassword() {
     },
   });
 }
+
+export function useUpdateProfile() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: authService.updateProfile,
+    onSuccess: (user) => {
+      queryClient.setQueryData(queryKeys.auth.currentUser, user);
+      queryClient.setQueryData(queryKeys.session.currentActor, {
+        accountType: "internal",
+        dashboardArea: user.role === "admin" ? "admin" : "staff",
+        user,
+      });
+    },
+  });
+}

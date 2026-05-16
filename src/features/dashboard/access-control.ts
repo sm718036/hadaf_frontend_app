@@ -19,6 +19,7 @@ import {
 import { APP_ROUTES } from "@/config/routes";
 import type { SessionUser } from "@/features/auth/auth.service";
 import type { Permission, UserRole } from "@/features/auth/auth.schemas";
+import { hasPermission } from "@/features/auth/permissions";
 import type { AuthenticatedActor } from "@/features/session/session.service";
 
 export type DashboardArea = "admin" | "staff" | "client";
@@ -29,10 +30,6 @@ export type DashboardNavItem = {
   icon: LucideIcon;
   permission?: Permission;
 };
-
-function hasPermission(user: SessionUser, permission: Permission) {
-  return user.role === "admin" || user.permissions.includes(permission);
-}
 
 export function getDefaultInternalDashboardRoute(user: SessionUser) {
   return user.role === "admin" ? APP_ROUTES.dashboardAdmin : APP_ROUTES.dashboardStaff;

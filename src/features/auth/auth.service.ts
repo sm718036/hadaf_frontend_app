@@ -5,6 +5,7 @@ import type {
   RequestPasswordResetInput,
   ResetPasswordInput,
   SignInInput,
+  UpdateOwnProfileInput,
   UserRole,
 } from "@/features/auth/auth.schemas";
 import { apiFormRequest, apiRequest } from "@/lib/api";
@@ -65,6 +66,8 @@ export const authService = {
     apiRequest<PasswordActionResult>("/api/auth/reset-password", { method: "POST", body: input }),
   changePassword: (input: ChangePasswordInput) =>
     apiRequest<PasswordActionResult>("/api/auth/change-password", { method: "POST", body: input }),
+  updateProfile: (input: UpdateOwnProfileInput) =>
+    apiRequest<SessionUser>("/api/auth/profile", { method: "PUT", body: input }),
   verifyEmail: (token: string) =>
     apiRequest<VerifyEmailResult>(`/api/auth/verify-email?token=${encodeURIComponent(token)}`),
   bootstrapAdmin: (input: BootstrapAdminInput) =>

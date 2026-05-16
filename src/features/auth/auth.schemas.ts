@@ -81,6 +81,15 @@ const changePasswordSchema = z
     message: "Passwords do not match.",
   });
 
+const updateOwnProfileSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(2, "Name must be at least 2 characters long.")
+    .max(80, "Name must be 80 characters or fewer."),
+  email: z.string().trim().toLowerCase().email("Enter a valid email address."),
+});
+
 export type UserRole = z.infer<typeof userRoleSchema>;
 export type Permission = z.infer<typeof permissionSchema>;
 export type SignInInput = z.infer<typeof signInSchema>;
@@ -88,3 +97,4 @@ export type BootstrapAdminInput = z.infer<typeof bootstrapAdminSchema>;
 export type RequestPasswordResetInput = z.infer<typeof requestPasswordResetSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+export type UpdateOwnProfileInput = z.infer<typeof updateOwnProfileSchema>;

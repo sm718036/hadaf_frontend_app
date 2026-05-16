@@ -27,6 +27,7 @@ import {
   useCurrentUser,
   useRevokeUserSession,
   useRemoveProfileAvatar,
+  useUpdateProfile,
   useUploadProfileAvatar,
   useUserSessions,
 } from "@/features/auth/use-auth";
@@ -46,7 +47,13 @@ export function DashboardProfilePage() {
   const revokeSessionMutation = useRevokeUserSession();
   const uploadAvatarMutation = useUploadProfileAvatar();
   const removeAvatarMutation = useRemoveProfileAvatar();
+  const updateProfileMutation = useUpdateProfile();
   const changePasswordMutation = useChangePassword();
+  const [profileForm, setProfileForm] = useState({
+    name: "",
+    email: "",
+  });
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     newPassword: "",
@@ -55,6 +62,17 @@ export function DashboardProfilePage() {
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [isResetEmailPending, setIsResetEmailPending] = useState(false);
+
+  useEffect(() => {
+    if (!currentUserQuery.data) {
+      return;
+    }
+
+    setProfileForm({
+      name: currentUserQuery.data.name,
+      email: currentUserQuery.data.email,
+    });
+  }, [currentUserQuery.data]);
 
   if (currentUserQuery.isError || !currentUserQuery.data) {
     return <EmptyHint message="Unable to load the profile." tone="error" />;
@@ -99,6 +117,13 @@ export function DashboardProfilePage() {
                 </span>
               </div>
               <div className="mt-4 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsProfileDialogOpen(true)}
+                  className="rounded-full border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  Edit Profile
+                </button>
                 <label className="btn-gold cursor-pointer">
                   {uploadAvatarMutation.isPending ? "Uploading..." : "Upload Photo"}
                   <input
@@ -268,6 +293,46 @@ export function DashboardProfilePage() {
           <p className="mt-5 px-5 text-sm text-rose-600">Unable to load active sessions.</p>
         ) : null}
       </div>
+      <AppDialog
+        open={isProfileDialogOpen}
+        onOpenChange={setIsProfileDialogOpen}
+        title="Update Profile"
+        description="Update the identity details used across the portal."
+        contentClassName="max-h-[90vh] w-[calc(100%-1rem)] max-w-xl overflow-hidden"
+      >
+        <form
+          className="grid gap-4"
+          onSubmit={async (event) => {
+            event.preventDefault();
+
+            try {
+              await updateProfileMutation.mutateAsync(profileForm);
+              toast.success("Profile updated.");
+              setIsProfileDialogOpen(false);
+            } catch (error) {
+              toast.error(error instanceof Error ? error.message : "Unable to update profile.");
+            }
+          }}
+        >
+          <TextField
+            label="Full Name"
+            type="text"
+            value={profileForm.name}
+            onChange={(name) => setProfileForm((current) => ({ ...current, name }))}
+          />
+          <TextField
+            label="Email Address"
+            type="email"
+            value={profileForm.email}
+            onChange={(email) => setProfileForm((current) => ({ ...current, email }))}
+          />
+          <div className="flex justify-end">
+            <button type="submit" disabled={updateProfileMutation.isPending} className="btn-gold">
+              {updateProfileMutation.isPending ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
+        </form>
+      </AppDialog>
       <AppDialog
         open={Boolean(selectedSession)}
         onOpenChange={(open) => !open && setSelectedSessionId(null)}
@@ -534,6 +599,30 @@ function PasswordInput({
           required
         />
       </div>
+    </label>
+  );
+}
+
+function TextField({
+  label,
+  type,
+  value,
+  onChange,
+}: {
+  label: string;
+  type: "text" | "email";
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="grid gap-2">
+      <span className="text-sm font-semibold text-slate-700">{label}</span>
+      <input
+        type={type}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+      />
     </label>
   );
 }
